@@ -145,7 +145,6 @@
             font-size: 13px;
         }
 
-        /* بطاقة خطوات التشغيل الذكية */
         .instructions-card {
             background: #101726;
             border: 1px dashed #38BDF8;
@@ -262,6 +261,26 @@
         }
         .btn-intent { background: #0284C7; }
         .btn-vlc { background: #D97706; }
+
+        /* شريط التنبيه السريع بالأسفل */
+        #toast {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1E293B;
+            color: #F8FAFC;
+            padding: 10px 22px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: bold;
+            display: none;
+            z-index: 10000;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+            border: 1px solid var(--primary);
+            text-align: center;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
@@ -307,7 +326,6 @@
             <input type="text" id="search_input" placeholder="🔍 ابحث بالاسم..." />
         </div>
 
-        <!-- صندوق الخطوات الإرشادي للزوار -->
         <div class="instructions-card" id="instructions_box">
             <div class="instructions-header">
                 <h3>📖 طريقة التشغيل السريعة (3 خطوات)</h3>
@@ -340,11 +358,29 @@
         <div class="items-grid" id="items_container"></div>
     </div>
 
+    <div id="toast"></div>
+
     <script>
         let currentTab = "live";
         let rawData = { live: [], movies: [], series: [] };
+        let backClickCount = 0;
+        let backTimer = null;
+
+        function showToast(msg, duration = 2000) {
+            const t = document.getElementById("toast");
+            t.textContent = msg;
+            t.style.display = "block";
+            setTimeout(() => { t.style.display = "none"; }, duration);
+        }
+
+        // تهيئة سجل التصفح لالتقاط زر الرجوع في أندرويد
+        function pushAppState() {
+            history.pushState({ app: "albasem" }, "", window.location.href);
+        }
 
         document.addEventListener("DOMContentLoaded", () => {
+            pushAppState();
+
             const savedUrl = localStorage.getItem("albasem_last_url");
             if (savedUrl) {
                 document.getElementById("iptv_url").value = savedUrl;
@@ -357,7 +393,52 @@
             document.getElementById("tab_live").addEventListener("click", () => switchSection("live"));
             document.getElementById("tab_movies").addEventListener("click", () => switchSection("movies"));
             document.getElementById("tab_series").addEventListener("click", () => switchSection("series"));
+
+            // ربط زر الرجوع للجوال بالأحداث التسلسلية
+            window.addEventListener("popstate", handleSystemBack);
         });
+
+        // دالة إدارة زر الرجوع التسلسلي للجوال
+        function handleSystemBack(e) {
+            // 1. إذا كان مربع البحث ممتلئ -> امسح البحث أولاً
+            const searchInput = document.getElementById("search_input");
+            if (searchInput && searchInput.value.trim() !== "") {
+                searchInput.value = "";
+                renderItems();
+                showToast("تم مسح البحث 🔄");
+                pushAppState();
+                return;
+            }
+
+            // 2. إذا كان المستخدم نازل لتحت بالقائمة -> اصعد لأعلى الصفحة بسلاسة
+            if (window.scrollY > 220) {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                pushAppState();
+                return;
+            }
+
+            // 3. إذا كان في قسم الأفلام أو المسلسلات -> ارجع لقسم المحطات المباشرة
+            if (currentTab !== "live" && (rawData.live.length > 0 || rawData.movies.length > 0 || rawData.series.length > 0)) {
+                switchSection("live");
+                showToast("الرجوع إلى البث المباشر 📺");
+                pushAppState();
+                return;
+            }
+
+            // 4. إذا كان في أعلى الصفحة وفي الوضع الرئيسي -> تأكيد الخروج بنقرة ثانية
+            backClickCount++;
+            if (backClickCount === 1) {
+                showToast("اضغط رجوع مرة أخرى للخروج 🚪");
+                pushAppState();
+                clearTimeout(backTimer);
+                backTimer = setTimeout(() => {
+                    backClickCount = 0;
+                }, 2000);
+            } else if (backClickCount >= 2) {
+                // السماح بالخروج الحقيقي من المتصفح أو التطبيق
+                history.back();
+            }
+        }
 
         function hideInstructions() {
             const box = document.getElementById("instructions_box");
