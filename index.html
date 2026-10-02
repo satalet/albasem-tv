@@ -145,6 +145,67 @@
             font-size: 13px;
         }
 
+        /* بطاقة خطوات التشغيل الذكية */
+        .instructions-card {
+            background: #101726;
+            border: 1px dashed #38BDF8;
+            border-radius: 14px;
+            padding: 16px;
+            margin: 15px 0 25px 0;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+        .instructions-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #1E293B;
+            padding-bottom: 8px;
+        }
+        .instructions-header h3 {
+            font-size: 14px;
+            font-weight: 800;
+            color: #38BDF8;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .instruction-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            background: #0B0E14;
+            padding: 10px 12px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            border: 1px solid #1E293B;
+        }
+        .step-badge {
+            background: #0284C7;
+            color: white;
+            min-width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+        .step-content h4 {
+            font-size: 12px;
+            font-weight: 700;
+            color: #F8FAFC;
+            margin-bottom: 2px;
+        }
+        .step-content p {
+            font-size: 11px;
+            color: #94A3B8;
+            line-height: 1.4;
+            margin: 0;
+        }
+
         .items-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -246,6 +307,35 @@
             <input type="text" id="search_input" placeholder="🔍 ابحث بالاسم..." />
         </div>
 
+        <!-- صندوق الخطوات الإرشادي للزوار -->
+        <div class="instructions-card" id="instructions_box">
+            <div class="instructions-header">
+                <h3>📖 طريقة التشغيل السريعة (3 خطوات)</h3>
+                <span style="font-size: 11px; color: #10B981; font-weight: bold;">سهل ومباشر ⚡</span>
+            </div>
+            <div class="instruction-step">
+                <div class="step-badge">1</div>
+                <div class="step-content">
+                    <h4>انسخ رابط الباقة</h4>
+                    <p>انسخ الرابط الذي وصلك (رابط M3U أو اشتراكك)، أو اضغط على إحدى الباقات الجاهزة بالأعلى.</p>
+                </div>
+            </div>
+            <div class="instruction-step">
+                <div class="step-badge">2</div>
+                <div class="step-content">
+                    <h4>الصق الرابط واضغط "فرز ⚡"</h4>
+                    <p>الصق الرابط في الخانة بالأعلى واضغط الزر الأزرق، وسيقوم النظام بتوزيع المحطات والأفلام والمسلسلات فوراً.</p>
+                </div>
+            </div>
+            <div class="instruction-step">
+                <div class="step-badge">3</div>
+                <div class="step-content">
+                    <h4>اختر قناتك واستمتع بالمشاهدة</h4>
+                    <p>المس صورة أي محطة؛ ستفتح فوراً على مشغل الفيديو بجوالك (مثل VLC أو MX Player) بدون أي تقطيع.</p>
+                </div>
+            </div>
+        </div>
+
         <div id="loader" style="display:none; text-align:center; padding:20px; color:#38BDF8; font-weight:bold;">⏳ جاري فحص وتصنيف المحتوى...</div>
         <div class="items-grid" id="items_container"></div>
     </div>
@@ -268,6 +358,11 @@
             document.getElementById("tab_movies").addEventListener("click", () => switchSection("movies"));
             document.getElementById("tab_series").addEventListener("click", () => switchSection("series"));
         });
+
+        function hideInstructions() {
+            const box = document.getElementById("instructions_box");
+            if (box) box.style.display = "none";
+        }
 
         function quickLoad(url) {
             document.getElementById("iptv_url").value = url;
@@ -317,6 +412,7 @@
             const file = event.target.files[0];
             if (!file) return;
 
+            hideInstructions();
             document.getElementById("loader").style.display = "block";
             document.getElementById("items_container").innerHTML = "";
 
@@ -334,6 +430,8 @@
         async function loadAndParse() {
             let url = document.getElementById("iptv_url").value.trim();
             if (!url) return alert("يرجى وضع رابط أولاً!");
+
+            hideInstructions();
 
             const btn = document.getElementById("btn_parse_trigger");
             btn.disabled = true;
@@ -438,7 +536,6 @@
             renderItems();
         }
 
-        // إطلاق Intent الرسمي مع type=video/* الصارم لإجبار أندرويد على مشغلات الفيديو
         function buildAndroidIntent(streamUrl, title) {
             let clean = streamUrl.replace(/^https?:\/\//, "");
             let scheme = streamUrl.startsWith("https://") ? "https" : "http";
