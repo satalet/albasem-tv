@@ -1,0 +1,15 @@
+{
+  "name": "الباسم سات TV",
+  "short_name": "AlbasemTV",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0B0E14",
+  "theme_color": "#0B0E14",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3845/3845868.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
