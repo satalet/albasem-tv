@@ -191,7 +191,7 @@
         .btn-actions { display: flex; gap: 4px; }
         .btn-app {
             flex: 1;
-            padding: 5px 0;
+            padding: 6px 0;
             font-size: 10px;
             font-weight: bold;
             border-radius: 6px;
@@ -207,7 +207,7 @@
 
     <div class="header">
         <h1>👑 الباسم سات | بوابة المشاهدة الذكية</h1>
-        <p>🛡️ مفعّل: كاش أمان 10 ثواني (HLS) لمنع تقطيع البث المباشر</p>
+        <p>💡 اضغط على صورة المحطة لفتحها بأسرع مشغل خارجي بجوالك</p>
     </div>
 
     <div class="container">
@@ -366,7 +366,7 @@
                                 rawData.live.push({
                                     name: item.name || "قناة",
                                     logo: item.stream_icon || "",
-                                    url: base + "/live/" + user + "/" + pwd + "/" + item.stream_id + ".m3u8",
+                                    url: base + "/live/" + user + "/" + pwd + "/" + item.stream_id + ".ts",
                                     group: item.category_name || ""
                                 });
                             });
@@ -438,10 +438,11 @@
             renderItems();
         }
 
-        function buildUniversalIntent(streamUrl, title) {
+        // إطلاق Intent الرسمي مع type=video/* الصارم لإجبار أندرويد على مشغلات الفيديو
+        function buildAndroidIntent(streamUrl, title) {
             let clean = streamUrl.replace(/^https?:\/\//, "");
             let scheme = streamUrl.startsWith("https://") ? "https" : "http";
-            return "intent://" + clean + "#Intent;scheme=" + scheme + ";action=android.intent.action.VIEW;i.network-caching=10000;i.extra_network_caching=10000;S.title=" + encodeURIComponent(title) + ";end";
+            return "intent://" + clean + "#Intent;scheme=" + scheme + ";type=video/*;action=android.intent.action.VIEW;S.title=" + encodeURIComponent(title) + ";end";
         }
 
         function renderItems() {
@@ -493,7 +494,7 @@
                     poster.appendChild(noPoster);
                 }
 
-                const intentUrl = buildUniversalIntent(item.url, item.name);
+                const intentUrl = buildAndroidIntent(item.url, item.name);
                 const vlcUrl = "vlc://" + item.url;
 
                 poster.onclick = () => { window.location.href = intentUrl; };
@@ -512,7 +513,7 @@
                 const aIntent = document.createElement("a");
                 aIntent.className = "btn-app btn-intent";
                 aIntent.href = intentUrl;
-                aIntent.textContent = "كل المشغلات 📱";
+                aIntent.textContent = "مشغل الجوال 📱";
 
                 const aVlc = document.createElement("a");
                 aVlc.className = "btn-app btn-vlc";
