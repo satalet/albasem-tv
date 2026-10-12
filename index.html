@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>الباسم سات | البوابة الذكية</title>
+    <title>الباسم سات | بوابة المشاهدة الذكية</title>
     
     <meta name="theme-color" content="#0B0E14">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -31,7 +31,7 @@
         .header h1 { font-size: 24px; font-weight: 900; color: #FFB703; }
         .header p { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
 
-        .container { max-width: 1200px; margin: 0 auto; padding: 0 12px; }
+        .container { max-width: 1250px; margin: 0 auto; padding: 0 12px; }
 
         .search-box {
             background: var(--bg-card);
@@ -81,53 +81,85 @@
             justify-content: center;
         }
 
-        .presets {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 12px;
-            overflow-x: auto;
-            padding-bottom: 4px;
-        }
-        .preset-btn {
-            background: #1E293B;
-            border: 1px solid var(--border);
-            color: var(--primary);
-            border-radius: 6px;
-            padding: 6px 12px;
-            font-size: 11px;
-            font-weight: bold;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
         .portal-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-bottom: 12px;
+            gap: 10px;
+            margin-bottom: 15px;
         }
         .portal-card {
             background: var(--bg-card);
             border: 1.5px solid var(--border);
             border-radius: 12px;
-            padding: 10px 4px;
+            padding: 12px 6px;
             text-align: center;
             cursor: pointer;
             transition: 0.2s;
         }
         .portal-card.active { border-color: var(--primary); background: #1A2234; }
-        .portal-card .icon { font-size: 24px; margin-bottom: 2px; }
-        .portal-card h3 { font-size: 12px; margin-bottom: 2px; }
+        .portal-card .icon { font-size: 26px; margin-bottom: 4px; }
+        .portal-card h3 { font-size: 13px; margin-bottom: 4px; }
         .portal-card .badge {
             display: inline-block;
-            padding: 2px 6px;
+            padding: 2px 8px;
             border-radius: 10px;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: bold;
         }
         .card-live .badge { background: rgba(16,185,129,0.15); color: var(--accent-live); }
         .card-movies .badge { background: rgba(245,158,11,0.15); color: var(--accent-movie); }
         .card-series .badge { background: rgba(139,92,246,0.15); color: var(--accent-series); }
+
+        /* شريط الباقات (الأقسام) */
+        .packages-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 14px;
+        }
+        .packages-header {
+            font-size: 12px;
+            color: var(--primary);
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .packages-bar {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 6px;
+            white-space: nowrap;
+        }
+        .pkg-chip {
+            background: #1E293B;
+            border: 1px solid var(--border);
+            color: #E2E8F0;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.2s;
+        }
+        .pkg-chip:hover { background: #334155; }
+        .pkg-chip.active {
+            background: #0284C7;
+            border-color: #38BDF8;
+            color: #fff;
+        }
+        .pkg-count {
+            background: rgba(0,0,0,0.3);
+            padding: 1px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+        }
 
         .filter-bar input {
             background: var(--bg-card);
@@ -137,7 +169,7 @@
             color: #fff;
             width: 100%;
             outline: none;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
             font-size: 13px;
         }
 
@@ -224,7 +256,7 @@
 
     <div class="header">
         <h1>👑 الباسم سات | بوابة المشاهدة الذكية</h1>
-        <p>⚡ يدعم جميع روابط IPTV وملفات M3U ومشغلات كالي وأندرويد</p>
+        <p>⚡ فرز وتصنيف ذكي حسب الباقات والمجموعات لكالي وأندرويد</p>
     </div>
 
     <div class="container">
@@ -235,12 +267,7 @@
             <input type="file" id="m3u_file" accept=".m3u,.m3u8,.txt" style="display:none;">
         </div>
 
-        <div class="presets">
-            <button class="preset-btn" onclick="quickLoad('https://raw.githubusercontent.com/Free-TV/IPTV/master/countries/ps.m3u')">🇵🇸 باقة فلسطين</button>
-            <button class="preset-btn" onclick="quickLoad('https://raw.githubusercontent.com/Free-TV/IPTV/master/categories/news.m3u')">📰 باقة الأخبار</button>
-            <button class="preset-btn" onclick="quickLoad('https://raw.githubusercontent.com/Free-TV/IPTV/master/categories/sports.m3u')">⚽ باقة الرياضة</button>
-        </div>
-
+        <!-- الأقسام الثلاثة الرئيسية -->
         <div class="portal-grid">
             <div class="portal-card card-live active" id="tab_live">
                 <div class="icon">📺</div>
@@ -259,8 +286,14 @@
             </div>
         </div>
 
+        <!-- شريط الباقات المفرزة داخل القسم -->
+        <div class="packages-section" id="packages_section" style="display:none;">
+            <div class="packages-header">📁 اختر الباقة للتصفية السريعة:</div>
+            <div class="packages-bar" id="packages_bar"></div>
+        </div>
+
         <div class="filter-bar">
-            <input type="text" id="search_input" placeholder="🔍 ابحث بالاسم في القسم الحالي..." />
+            <input type="text" id="search_input" placeholder="🔍 ابحث بالاسم في الباقة المحددة..." />
         </div>
 
         <div id="loader" style="display:none; text-align:center; padding:20px; color:#38BDF8;">⏳ جاري جلب وفرز المحتوى...</div>
@@ -271,6 +304,7 @@
 
     <script>
         let currentTab = "live";
+        let currentGroup = "all";
         let rawData = { live: [], movies: [], series: [] };
 
         function showToast(msg) {
@@ -291,14 +325,13 @@
             document.getElementById("tab_live").addEventListener("click", () => switchSection("live"));
             document.getElementById("tab_movies").addEventListener("click", () => switchSection("movies"));
             document.getElementById("tab_series").addEventListener("click", () => switchSection("series"));
+
+            // إذا كان في رابط محفوظ، نشغله فوراً عند الفتح
+            if (saved) {
+                loadAndParse();
+            }
         });
 
-        function quickLoad(url) {
-            document.getElementById("iptv_url").value = url;
-            loadAndParse();
-        }
-
-        // جلب ذكي: مباشر أولاً ثم عبر كلاود فلير لفك أي قيود حظر
         async function fetchSmart(url) {
             try {
                 const res = await fetch(url);
@@ -308,10 +341,9 @@
                 }
             } catch(e) {}
 
-            // المرور عبر Cloudflare Worker لفك CORS و Mixed Content
             const proxy = "https://tv-stream-proxy.satalet.workers.dev/?url=" + encodeURIComponent(url);
             const resProxy = await fetch(proxy);
-            if (!resProxy.ok) throw new Error("تعذر جلب الرابط. تأكد من عمل السيرفر أو استخدم خيار فتح ملف M3U.");
+            if (!resProxy.ok) throw new Error("تعذر جلب الرابط من السيرفر");
             return await resProxy.text();
         }
 
@@ -328,8 +360,9 @@
                 parseM3UContent(e.target.result);
                 document.getElementById("loader").style.display = "none";
                 updateCounts();
+                buildPackagesBar();
                 renderItems();
-                showToast("تم فتح الملف وتصنيف القنوات بنجاح ✅");
+                showToast("تم فتح الملف وتصنيف الباقات بنجاح ✅");
             };
             reader.readAsText(file);
         }
@@ -351,8 +384,9 @@
                 const text = await fetchSmart(url);
                 parseM3UContent(text);
                 updateCounts();
+                buildPackagesBar();
                 renderItems();
-                showToast("تم جلب وتصنيف القنوات بنجاح ⚡");
+                showToast("تم جلب وتصنيف الباقات بنجاح ⚡");
             } catch (err) {
                 alert(err.message);
             } finally {
@@ -375,12 +409,12 @@
                     const logoMatch = line.match(/tvg-logo=\"([^\"]+)\"/i) || line.match(/tvg-logo='([^']+)'/i);
                     const logo = logoMatch ? logoMatch[1] : "";
                     const groupMatch = line.match(/group-title=\"([^\"]+)\"/i) || line.match(/group-title='([^']+)'/i);
-                    const group = groupMatch ? groupMatch[1].toLowerCase() : "";
+                    const group = groupMatch ? groupMatch[1].trim() : "عام";
                     current = { name, logo, group };
                 } else if (!line.startsWith("#") && current) {
                     current.url = line;
                     const u = line.toLowerCase();
-                    const g = current.group || "";
+                    const g = current.group.toLowerCase();
 
                     if (u.includes("/series/") || g.includes("series") || g.includes("مسلسل")) {
                         rawData.series.push(current);
@@ -402,32 +436,90 @@
 
         function switchSection(tab) {
             currentTab = tab;
+            currentGroup = "all";
             document.querySelectorAll(".portal-card").forEach(c => c.classList.remove("active"));
             document.getElementById("tab_" + tab).classList.add("active");
+            buildPackagesBar();
             renderItems();
+        }
+
+        // بناء أزرار الباقات ديناميكياً بناءً على محتوى القسم الحالي
+        function buildPackagesBar() {
+            const section = document.getElementById("packages_section");
+            const bar = document.getElementById("packages_bar");
+            bar.innerHTML = "";
+
+            const items = rawData[currentTab] || [];
+            if (items.length === 0) {
+                section.style.display = "none";
+                return;
+            }
+
+            section.style.display = "block";
+
+            // حساب عدد العناصر في كل باقة
+            const groupsMap = {};
+            items.forEach(it => {
+                const g = it.group || "عام";
+                groupsMap[g] = (groupsMap[g] || 0) + 1;
+            });
+
+            // زر الكل
+            const allChip = document.createElement("div");
+            allChip.className = "pkg-chip" + (currentGroup === "all" ? " active" : "");
+            allChip.innerHTML = `<span>الكل</span> <span class="pkg-count">${items.length}</span>`;
+            allChip.onclick = () => {
+                currentGroup = "all";
+                document.querySelectorAll(".pkg-chip").forEach(c => c.classList.remove("active"));
+                allChip.classList.add("active");
+                renderItems();
+            };
+            bar.appendChild(allChip);
+
+            // إضافة كل باقة وزرها
+            Object.keys(groupsMap).sort().forEach(grp => {
+                const chip = document.createElement("div");
+                chip.className = "pkg-chip" + (currentGroup === grp ? " active" : "");
+                chip.innerHTML = `<span>${grp}</span> <span class="pkg-count">${groupsMap[grp]}</span>`;
+                chip.onclick = () => {
+                    currentGroup = grp;
+                    document.querySelectorAll(".pkg-chip").forEach(c => c.classList.remove("active"));
+                    chip.classList.add("active");
+                    renderItems();
+                };
+                bar.appendChild(chip);
+            });
         }
 
         function renderItems() {
             const container = document.getElementById("items_container");
             container.innerHTML = "";
             const q = (document.getElementById("search_input").value || "").trim().toLowerCase();
-            const list = (rawData[currentTab] || []).filter(item => {
-                return (!q) || (item.name && item.name.toLowerCase().includes(q)) || (item.group && item.group.toLowerCase().includes(q));
-            });
+            
+            let list = rawData[currentTab] || [];
 
-            const displayList = list.slice(0, 150); // عرض سريع وسلس
+            // تصفية حسب الباقة المحددة
+            if (currentGroup !== "all") {
+                list = list.filter(item => (item.group || "عام") === currentGroup);
+            }
+
+            // تصفية حسب البحث
+            if (q) {
+                list = list.filter(item => item.name && item.name.toLowerCase().includes(q));
+            }
+
+            const displayList = list.slice(0, 150); // أول 150 لسرعة وسلاسة التصفح
 
             if (displayList.length === 0) {
-                container.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px;color:#64748B;'>لا توجد قنوات هنا حالياً</div>";
+                container.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px;color:#64748B;'>لا توجد عناصر في هذه الباقة.</div>";
                 return;
             }
 
             displayList.forEach(st => {
                 const streamUrl = st.url;
                 const cleanHost = streamUrl.replace(/^https?:\/\//, '');
-
-                // تشغيل Android Intent الصحيح
                 const scheme = streamUrl.startsWith("https://") ? "https" : "http";
+
                 const androidIntent = `intent://${cleanHost}#Intent;scheme=${scheme};type=video/*;action=android.intent.action.VIEW;S.title=${encodeURIComponent(st.name)};end`;
                 const vlcDirect = `vlc://${streamUrl}`;
 
@@ -472,7 +564,7 @@
             link.href = URL.createObjectURL(blob);
             link.download = `${name.replace(/[^a-zA-Z0-9]/g, '_')}.m3u`;
             link.click();
-            showToast("تم تنزيل ملف القناة وتشغيلها بمشغل جوالك 🎬");
+            showToast("تم فتح القناة بمشغل هاتفك 🎬");
         }
 
         function copyMPV(url) {
