@@ -516,7 +516,10 @@
             }
 
             displayList.forEach(st => {
-                const streamUrl = st.url;
+                let streamUrl = st.url;
+                if (currentTab === "live" && streamUrl.includes(".m3u8")) {
+                    streamUrl = streamUrl.replace(/\.m3u8(\?.*)?$/, ".ts$1");
+                }
                 const cleanHost = streamUrl.replace(/^https?:\/\//, '');
                 const scheme = streamUrl.startsWith("https://") ? "https" : "http";
 
