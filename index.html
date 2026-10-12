@@ -539,12 +539,8 @@
                 info.className = "item-info";
                 info.innerHTML = `
                     <div class="item-title" title="${st.name}">${st.name}</div>
-                    <a class="btn-system-play" href="${androidIntent}">مشغل النظام 📱</a>
-                    <div class="btn-grid">
-                        <a class="btn-direct" href="${streamUrl}" target="_blank">ستريم مباشر 🌐</a>
-                        <button class="btn-file-dl" onclick="downloadPlayFile('${streamUrl}', '${st.name}')">ملف تشغيل ⚡</button>
-                        <button class="btn-mpv" onclick="copyMPV('${streamUrl}')">أمر MPV لكالي 📋</button>
-                    </div>
+                    <button class="btn-system-play" style="background:#10B981;cursor:pointer;" onclick="downloadPlayFile('${streamUrl}', '${st.name}')">تشغيل بمشغل الجوال 📱⚡</button>
+                    <button class="btn-mpv" style="width:100%;" onclick="copyMPV('${streamUrl}')">أمر MPV لكالي 📋</button>
                 `;
 
                 card.appendChild(poster);
