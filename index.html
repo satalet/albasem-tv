@@ -517,7 +517,7 @@
                 const scheme = streamUrl.startsWith("https://") ? "https" : "http";
 
                 // أمر الأندرويد العام (Generic Intent) الموجه لمشغل النظام المدمج مباشرة
-                const androidIntent = `intent://${cleanHost}#Intent;scheme=${scheme};type=video/*;action=android.intent.action.VIEW;S.title=${encodeURIComponent(st.name)};end`;
+                const androidIntent = `intent://${cleanHost}#Intent;scheme=${scheme};type=video/*;package=org.videolan.vlc;S.title=${encodeURIComponent(st.name)};S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dorg.videolan.vlc;end`;
 
                 const card = document.createElement("div");
                 card.className = "item-card";
@@ -539,7 +539,7 @@
                 info.className = "item-info";
                 info.innerHTML = `
                     <div class="item-title" title="${st.name}">${st.name}</div>
-                    <button class="btn-system-play" style="background:#10B981;cursor:pointer;" onclick="downloadPlayFile('${streamUrl}', '${st.name}')">تشغيل بمشغل الجوال 📱⚡</button>
+                    <a class="btn-system-play" style="background:#0284C7;text-align:center;display:block;" href="${androidIntent}">تشغيل مباشر بالجوال 📱⚡</a>
                     <button class="btn-mpv" style="width:100%;" onclick="copyMPV('${streamUrl}')">أمر MPV لكالي 📋</button>
                 `;
 
