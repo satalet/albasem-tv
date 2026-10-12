@@ -7,7 +7,6 @@
     
     <meta name="theme-color" content="#0B0E14">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
     <style>
         :root {
@@ -19,8 +18,8 @@
             --text-main: #F8FAFC;
             --text-muted: #94A3B8;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Cairo", sans-serif; }
-        body { background-color: var(--bg-main); color: var(--text-main); padding-bottom: 30px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Cairo", sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-main); color: var(--text-main); padding-bottom: 40px; }
         
         .header {
             background: linear-gradient(180deg, #151B28 0%, rgba(11,14,20,0) 100%);
@@ -64,7 +63,6 @@
             cursor: pointer;
             height: 38px;
         }
-        .btn-action:disabled { background: #475569; cursor: not-allowed; }
 
         .categories-bar {
             display: flex;
@@ -106,15 +104,14 @@
         }
         .item-poster {
             width: 100%;
-            height: 130px;
+            height: 125px;
             background: #0B0E14;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            position: relative;
+            padding: 8px;
         }
-        .item-poster img { width: 100%; height: 100%; object-fit: contain; padding: 6px; }
+        .item-poster img { width: 100%; height: 100%; object-fit: contain; }
         .no-logo { font-size: 34px; color: #475569; }
         
         .item-info {
@@ -136,53 +133,24 @@
         .btn-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 4px;
+            gap: 5px;
         }
-        .btn-grid button, .btn-grid a {
-            background: #1E293B;
+        .btn-grid a, .btn-grid button {
             color: #fff;
-            border: 1px solid var(--border);
             border-radius: 6px;
-            padding: 5px 0;
+            padding: 6px 0;
             font-size: 10px;
             font-weight: bold;
             text-align: center;
             text-decoration: none;
             cursor: pointer;
+            border: none;
+            display: block;
         }
-        .btn-play-now {
-            background: #10B981 !important;
-            grid-column: span 2;
-            border: none !important;
-        }
-
-        #player-modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(5px);
-            z-index: 99999;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 12px;
-        }
-        .player-box {
-            background: #151922;
-            border: 1px solid var(--border);
-            width: 100%;
-            max-width: 800px;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-        .player-head {
-            padding: 10px 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #0B0E14;
-        }
-        video { width: 100%; max-height: 65vh; background: #000; }
+        .btn-vlc { background: #EA580C; }
+        .btn-android { background: #0284C7; }
+        .btn-copy { background: #334155; }
+        .btn-play-file { background: #10B981; }
 
         #toast {
             position: fixed;
@@ -204,7 +172,7 @@
 
     <div class="header">
         <h1>👑 الباسم سات | بوابة البث السريع</h1>
-        <p>⚡ تشغيل مباشر عبر المتصفح وللجوال وكالي لينكس</p>
+        <p>⚡ تشغيل مباشر عبر مشغلات الفيديو للجوال ولكالي لينكس</p>
     </div>
 
     <div class="container">
@@ -214,26 +182,14 @@
         </div>
 
         <div class="categories-bar" id="categories_bar"></div>
-
-        <div id="loader" style="display:none; text-align:center; padding:20px; color:#38BDF8;">⏳ جاري الاتصال وجلب القنوات...</div>
+        <div id="loader" style="display:none; text-align:center; padding:20px; color:#38BDF8;">⏳ جاري جلب القنوات...</div>
         <div class="items-grid" id="items_container"></div>
-    </div>
-
-    <div id="player-modal">
-        <div class="player-box">
-            <div class="player-head">
-                <span id="player-title" style="color:#FFB703; font-weight:bold; font-size:13px;"></span>
-                <button onclick="closePlayer()" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
-            </div>
-            <video id="video-player" controls playsinline></video>
-        </div>
     </div>
 
     <div id="toast"></div>
 
     <script>
         let serverConfig = null;
-        let hls = null;
 
         function showToast(msg) {
             const t = document.getElementById("toast");
@@ -317,6 +273,7 @@
             try {
                 const streamsUrl = `${serverConfig.base}/player_api.php?username=${serverConfig.user}&password=${serverConfig.pass}&action=get_live_streams&category_id=${catId}`;
                 const streams = await fetchAPI(streamsUrl);
+
                 renderStreams(streams);
             } catch (e) {
                 showToast("تعذر جلب قنوات هذا القسم");
@@ -336,13 +293,18 @@
 
             streams.forEach(st => {
                 const streamUrl = `${serverConfig.base}/live/${serverConfig.user}/${serverConfig.pass}/${st.stream_id}.m3u8`;
+                const cleanHost = streamUrl.replace(/^https?:\/\//, '');
+
+                // الرابط الصحيح لـ Intent بنظام أندرويد
+                const androidIntent = `intent://${cleanHost}#Intent;scheme=http;type=video/*;action=android.intent.action.VIEW;S.title=${encodeURIComponent(st.name)};end`;
+                // رابط مباشر لـ VLC
+                const vlcDirect = `vlc://${streamUrl}`;
 
                 const card = document.createElement("div");
                 card.className = "item-card";
 
                 const poster = document.createElement("div");
                 poster.className = "item-poster";
-                poster.onclick = () => playMedia(streamUrl, st.name);
 
                 if (st.stream_icon) {
                     const img = document.createElement("img");
@@ -359,9 +321,10 @@
                 info.innerHTML = `
                     <div class="item-title" title="${st.name}">${st.name}</div>
                     <div class="btn-grid">
-                        <button class="btn-play-now" onclick="playMedia('${streamUrl}', '${st.name}')">تشغيل بالمتصفح ▶</button>
-                        <a href="intent://${streamUrl.replace(/^https?:\/\//, '')}#Intent;type=video/*;action=android.intent.action.VIEW;end">أندرويد 📱</a>
-                        <button onclick="copyCmd('${streamUrl}')">أمر MPV 📋</button>
+                        <a class="btn-android" href="${androidIntent}">مشغل أندرويد 📱</a>
+                        <a class="btn-vlc" href="${vlcDirect}">VLC مباشر 🚀</a>
+                        <button class="btn-play-file" onclick="downloadPlayFile('${streamUrl}', '${st.name}')">تشغيل كملف ⚡</button>
+                        <button class="btn-copy" onclick="copyStream('${streamUrl}')">نسخ الرابط 📋</button>
                     </div>
                 `;
 
@@ -371,37 +334,20 @@
             });
         }
 
-        function playMedia(url, title) {
-            const modal = document.getElementById("player-modal");
-            const video = document.getElementById("video-player");
-            document.getElementById("player-title").textContent = title;
-            modal.style.display = "flex";
-
-            if (hls) hls.destroy();
-
-            if (Hls.isSupported()) {
-                hls = new Hls();
-                hls.loadSource(url);
-                hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-            } else {
-                video.src = url;
-                video.play();
-            }
+        // تشغيل القناة عبر تنزيل ملف تشغيل سريع يفتحه النظام مباشرة
+        function downloadPlayFile(url, name) {
+            const m3uContent = `#EXTM3U\n#EXTINF:-1,${name}\n${url}\n`;
+            const blob = new Blob([m3uContent], { type: "audio/x-mpegurl" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `${name.replace(/[^a-zA-Z0-9]/g, '_')}.m3u`;
+            link.click();
+            showToast("تم فتح القناة بمشغل هاتفك 🎬");
         }
 
-        function closePlayer() {
-            const modal = document.getElementById("player-modal");
-            const video = document.getElementById("video-player");
-            modal.style.display = "none";
-            video.pause();
-            if (hls) hls.destroy();
-        }
-
-        function copyCmd(url) {
-            const cmd = `mpv "${url}"`;
-            navigator.clipboard.writeText(cmd).then(() => {
-                showToast("تم نسخ أمر MPV لتيرمنال كالي 📋");
+        function copyStream(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                showToast("تم نسخ الرابط المباشر 📋");
             });
         }
     </script>
