@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>الباسم سات | البث السريع</title>
+    <title>الباسم سات | البوابة الذكية</title>
     
     <meta name="theme-color" content="#0B0E14">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -15,6 +15,8 @@
             --border: #222938;
             --primary: #38BDF8;
             --accent-live: #10B981;
+            --accent-movie: #F59E0B;
+            --accent-series: #8B5CF6;
             --text-main: #F8FAFC;
             --text-muted: #94A3B8;
         }
@@ -27,7 +29,7 @@
             text-align: center;
         }
         .header h1 { font-size: 24px; font-weight: 900; color: #FFB703; }
-        .header p { color: var(--text-muted); font-size: 13px; }
+        .header p { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
 
         .container { max-width: 1200px; margin: 0 auto; padding: 0 12px; }
 
@@ -41,7 +43,7 @@
             margin-bottom: 12px;
             flex-wrap: wrap;
         }
-        .search-box input {
+        .search-box input[type="text"] {
             flex: 1;
             min-width: 200px;
             background: #0B0E14;
@@ -52,7 +54,7 @@
             font-size: 13px;
             outline: none;
         }
-        .btn-action {
+        .btn-parse {
             background: #0284C7;
             color: #fff;
             border: none;
@@ -63,30 +65,80 @@
             cursor: pointer;
             height: 38px;
         }
-
-        .categories-bar {
+        .btn-parse:disabled { background: #475569; cursor: not-allowed; }
+        .btn-file {
+            background: #10B981;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 0 14px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            height: 38px;
             display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding: 8px 0;
-            margin-bottom: 15px;
-            white-space: nowrap;
+            align-items: center;
+            justify-content: center;
         }
-        .cat-chip {
+
+        .presets {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+        .preset-btn {
             background: #1E293B;
             border: 1px solid var(--border);
-            color: #E2E8F0;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
+            color: var(--primary);
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .portal-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .portal-card {
+            background: var(--bg-card);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 4px;
+            text-align: center;
             cursor: pointer;
             transition: 0.2s;
         }
-        .cat-chip.active {
-            background: #0284C7;
-            border-color: #38BDF8;
+        .portal-card.active { border-color: var(--primary); background: #1A2234; }
+        .portal-card .icon { font-size: 24px; margin-bottom: 2px; }
+        .portal-card h3 { font-size: 12px; margin-bottom: 2px; }
+        .portal-card .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .card-live .badge { background: rgba(16,185,129,0.15); color: var(--accent-live); }
+        .card-movies .badge { background: rgba(245,158,11,0.15); color: var(--accent-movie); }
+        .card-series .badge { background: rgba(139,92,246,0.15); color: var(--accent-series); }
+
+        .filter-bar input {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
             color: #fff;
+            width: 100%;
+            outline: none;
+            margin-bottom: 12px;
+            font-size: 13px;
         }
 
         .items-grid {
@@ -109,7 +161,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 8px;
+            padding: 6px;
         }
         .item-poster img { width: 100%; height: 100%; object-fit: contain; }
         .no-logo { font-size: 34px; color: #475569; }
@@ -133,7 +185,7 @@
         .btn-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 5px;
+            gap: 4px;
         }
         .btn-grid a, .btn-grid button {
             color: #fff;
@@ -147,10 +199,10 @@
             border: none;
             display: block;
         }
-        .btn-vlc { background: #EA580C; }
         .btn-android { background: #0284C7; }
-        .btn-copy { background: #334155; }
-        .btn-play-file { background: #10B981; }
+        .btn-vlc { background: #EA580C; }
+        .btn-mpv { background: #475569; }
+        .btn-file-dl { background: #10B981; }
 
         #toast {
             position: fixed;
@@ -171,25 +223,55 @@
 <body>
 
     <div class="header">
-        <h1>👑 الباسم سات | بوابة البث السريع</h1>
-        <p>⚡ تشغيل مباشر عبر مشغلات الفيديو للجوال ولكالي لينكس</p>
+        <h1>👑 الباسم سات | بوابة المشاهدة الذكية</h1>
+        <p>⚡ يدعم جميع روابط IPTV وملفات M3U ومشغلات كالي وأندرويد</p>
     </div>
 
     <div class="container">
         <div class="search-box">
-            <input type="text" id="iptv_url" placeholder="ضع رابط السيرفر هنا..." />
-            <button class="btn-action" id="btn_connect">اتصال بالسيرفر ⚡</button>
+            <input type="text" id="iptv_url" placeholder="ضع رابط M3U أو رابط سيرفر Xtream هنا..." />
+            <button class="btn-parse" id="btn_parse_trigger">فرز وتشغيل ⚡</button>
+            <label class="btn-file" for="m3u_file">📁 فتح ملف M3U</label>
+            <input type="file" id="m3u_file" accept=".m3u,.m3u8,.txt" style="display:none;">
         </div>
 
-        <div class="categories-bar" id="categories_bar"></div>
-        <div id="loader" style="display:none; text-align:center; padding:20px; color:#38BDF8;">⏳ جاري جلب القنوات...</div>
+        <div class="presets">
+            <button class="preset-btn" onclick="quickLoad('https://raw.githubusercontent.com/Free-TV/IPTV/master/countries/ps.m3u')">🇵🇸 باقة فلسطين</button>
+            <button class="preset-btn" onclick="quickLoad('https://raw.githubusercontent.com/Free-TV/IPTV/master/categories/news.m3u')">📰 باقة الأخبار</button>
+            <button class="preset-btn" onclick="quickLoad('https://raw.githubusercontent.com/Free-TV/IPTV/master/categories/sports.m3u')">⚽ باقة الرياضة</button>
+        </div>
+
+        <div class="portal-grid">
+            <div class="portal-card card-live active" id="tab_live">
+                <div class="icon">📺</div>
+                <h3>المحطات</h3>
+                <span class="badge" id="count-live">0</span>
+            </div>
+            <div class="portal-card card-movies" id="tab_movies">
+                <div class="icon">🎬</div>
+                <h3>الأفلام</h3>
+                <span class="badge" id="count-movies">0</span>
+            </div>
+            <div class="portal-card card-series" id="tab_series">
+                <div class="icon">🍿</div>
+                <h3>المسلسلات</h3>
+                <span class="badge" id="count-series">0</span>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <input type="text" id="search_input" placeholder="🔍 ابحث بالاسم في القسم الحالي..." />
+        </div>
+
+        <div id="loader" style="display:none; text-align:center; padding:20px; color:#38BDF8;">⏳ جاري جلب وفرز المحتوى...</div>
         <div class="items-grid" id="items_container"></div>
     </div>
 
     <div id="toast"></div>
 
     <script>
-        let serverConfig = null;
+        let currentTab = "live";
+        let rawData = { live: [], movies: [], series: [] };
 
         function showToast(msg) {
             const t = document.getElementById("toast");
@@ -199,105 +281,154 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            const saved = localStorage.getItem("albasem_url") || "http://SHOFTV.NET:80/get.php?username=97339666628&password=Mi14687435777&type=m3u_plus&output=m3u8";
-            document.getElementById("iptv_url").value = saved;
-            document.getElementById("btn_connect").addEventListener("click", initXtream);
+            const saved = localStorage.getItem("albasem_url");
+            if (saved) document.getElementById("iptv_url").value = saved;
+
+            document.getElementById("btn_parse_trigger").addEventListener("click", loadAndParse);
+            document.getElementById("m3u_file").addEventListener("change", handleFileSelect);
+            document.getElementById("search_input").addEventListener("input", renderItems);
+
+            document.getElementById("tab_live").addEventListener("click", () => switchSection("live"));
+            document.getElementById("tab_movies").addEventListener("click", () => switchSection("movies"));
+            document.getElementById("tab_series").addEventListener("click", () => switchSection("series"));
         });
 
-        async function fetchAPI(url) {
-            const proxy = "https://tv-stream-proxy.satalet.workers.dev/?url=" + encodeURIComponent(url);
-            const res = await fetch(proxy);
-            if (!res.ok) throw new Error("تعذر جلب البيانات");
-            return await res.json();
+        function quickLoad(url) {
+            document.getElementById("iptv_url").value = url;
+            loadAndParse();
         }
 
-        async function initXtream() {
-            const urlInput = document.getElementById("iptv_url").value.trim();
-            if (!urlInput) return;
+        // جلب ذكي: مباشر أولاً ثم عبر كلاود فلير لفك أي قيود حظر
+        async function fetchSmart(url) {
+            try {
+                const res = await fetch(url);
+                if (res.ok) {
+                    const txt = await res.text();
+                    if (txt && txt.length > 20) return txt;
+                }
+            } catch(e) {}
 
-            localStorage.setItem("albasem_url", urlInput);
+            // المرور عبر Cloudflare Worker لفك CORS و Mixed Content
+            const proxy = "https://tv-stream-proxy.satalet.workers.dev/?url=" + encodeURIComponent(url);
+            const resProxy = await fetch(proxy);
+            if (!resProxy.ok) throw new Error("تعذر جلب الرابط. تأكد من عمل السيرفر أو استخدم خيار فتح ملف M3U.");
+            return await resProxy.text();
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById("loader").style.display = "block";
+            document.getElementById("items_container").innerHTML = "";
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                rawData = { live: [], movies: [], series: [] };
+                parseM3UContent(e.target.result);
+                document.getElementById("loader").style.display = "none";
+                updateCounts();
+                renderItems();
+                showToast("تم فتح الملف وتصنيف القنوات بنجاح ✅");
+            };
+            reader.readAsText(file);
+        }
+
+        async function loadAndParse() {
+            let url = document.getElementById("iptv_url").value.trim();
+            if (!url) return alert("يرجى إدخال الرابط أولاً!");
+
+            localStorage.setItem("albasem_url", url);
+            const btn = document.getElementById("btn_parse_trigger");
             const loader = document.getElementById("loader");
-            const btn = document.getElementById("btn_connect");
 
-            loader.style.display = "block";
             btn.disabled = true;
+            loader.style.display = "block";
+            document.getElementById("items_container").innerHTML = "";
+            rawData = { live: [], movies: [], series: [] };
 
             try {
-                const u = new URL(urlInput);
-                const base = u.protocol + "//" + u.host;
-                const user = u.searchParams.get("username");
-                const pass = u.searchParams.get("password");
-
-                serverConfig = { base, user, pass };
-
-                const catUrl = `${base}/player_api.php?username=${user}&password=${pass}&action=get_live_categories`;
-                const categories = await fetchAPI(catUrl);
-
-                renderCategories(categories);
-                showToast("تم جلب الأقسام بنجاح ✅");
-
-                if (categories.length > 0) {
-                    loadStreamsForCategory(categories[0].category_id);
-                }
+                const text = await fetchSmart(url);
+                parseM3UContent(text);
+                updateCounts();
+                renderItems();
+                showToast("تم جلب وتصنيف القنوات بنجاح ⚡");
             } catch (err) {
-                alert("حدث خطأ في الاتصال: " + err.message);
+                alert(err.message);
             } finally {
                 loader.style.display = "none";
                 btn.disabled = false;
             }
         }
 
-        function renderCategories(categories) {
-            const bar = document.getElementById("categories_bar");
-            bar.innerHTML = "";
+        function parseM3UContent(text) {
+            const lines = text.split(/\r?\n/);
+            let current = null;
 
-            categories.forEach((cat, idx) => {
-                const chip = document.createElement("div");
-                chip.className = "cat-chip" + (idx === 0 ? " active" : "");
-                chip.textContent = cat.category_name;
-                chip.onclick = () => {
-                    document.querySelectorAll(".cat-chip").forEach(c => c.classList.remove("active"));
-                    chip.classList.add("active");
-                    loadStreamsForCategory(cat.category_id);
-                };
-                bar.appendChild(chip);
-            });
-        }
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
 
-        async function loadStreamsForCategory(catId) {
-            const loader = document.getElementById("loader");
-            const container = document.getElementById("items_container");
-            loader.style.display = "block";
-            container.innerHTML = "";
+                if (line.startsWith("#EXTINF:")) {
+                    const nameMatch = line.match(/,(.+)$/);
+                    const name = nameMatch ? nameMatch[1].trim() : "بث مباشر";
+                    const logoMatch = line.match(/tvg-logo=\"([^\"]+)\"/i) || line.match(/tvg-logo='([^']+)'/i);
+                    const logo = logoMatch ? logoMatch[1] : "";
+                    const groupMatch = line.match(/group-title=\"([^\"]+)\"/i) || line.match(/group-title='([^']+)'/i);
+                    const group = groupMatch ? groupMatch[1].toLowerCase() : "";
+                    current = { name, logo, group };
+                } else if (!line.startsWith("#") && current) {
+                    current.url = line;
+                    const u = line.toLowerCase();
+                    const g = current.group || "";
 
-            try {
-                const streamsUrl = `${serverConfig.base}/player_api.php?username=${serverConfig.user}&password=${serverConfig.pass}&action=get_live_streams&category_id=${catId}`;
-                const streams = await fetchAPI(streamsUrl);
-
-                renderStreams(streams);
-            } catch (e) {
-                showToast("تعذر جلب قنوات هذا القسم");
-            } finally {
-                loader.style.display = "none";
+                    if (u.includes("/series/") || g.includes("series") || g.includes("مسلسل")) {
+                        rawData.series.push(current);
+                    } else if (u.includes("/movie/") || u.endsWith(".mp4") || u.endsWith(".mkv") || g.includes("movie") || g.includes("فلم")) {
+                        rawData.movies.push(current);
+                    } else {
+                        rawData.live.push(current);
+                    }
+                    current = null;
+                }
             }
         }
 
-        function renderStreams(streams) {
+        function updateCounts() {
+            document.getElementById("count-live").innerText = rawData.live.length;
+            document.getElementById("count-movies").innerText = rawData.movies.length;
+            document.getElementById("count-series").innerText = rawData.series.length;
+        }
+
+        function switchSection(tab) {
+            currentTab = tab;
+            document.querySelectorAll(".portal-card").forEach(c => c.classList.remove("active"));
+            document.getElementById("tab_" + tab).classList.add("active");
+            renderItems();
+        }
+
+        function renderItems() {
             const container = document.getElementById("items_container");
             container.innerHTML = "";
+            const q = (document.getElementById("search_input").value || "").trim().toLowerCase();
+            const list = (rawData[currentTab] || []).filter(item => {
+                return (!q) || (item.name && item.name.toLowerCase().includes(q)) || (item.group && item.group.toLowerCase().includes(q));
+            });
 
-            if (!streams || streams.length === 0) {
-                container.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:20px;color:#64748B;'>لا توجد قنوات هنا</div>";
+            const displayList = list.slice(0, 150); // عرض سريع وسلس
+
+            if (displayList.length === 0) {
+                container.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px;color:#64748B;'>لا توجد قنوات هنا حالياً</div>";
                 return;
             }
 
-            streams.forEach(st => {
-                const streamUrl = `${serverConfig.base}/live/${serverConfig.user}/${serverConfig.pass}/${st.stream_id}.m3u8`;
+            displayList.forEach(st => {
+                const streamUrl = st.url;
                 const cleanHost = streamUrl.replace(/^https?:\/\//, '');
 
-                // الرابط الصحيح لـ Intent بنظام أندرويد
-                const androidIntent = `intent://${cleanHost}#Intent;scheme=http;type=video/*;action=android.intent.action.VIEW;S.title=${encodeURIComponent(st.name)};end`;
-                // رابط مباشر لـ VLC
+                // تشغيل Android Intent الصحيح
+                const scheme = streamUrl.startsWith("https://") ? "https" : "http";
+                const androidIntent = `intent://${cleanHost}#Intent;scheme=${scheme};type=video/*;action=android.intent.action.VIEW;S.title=${encodeURIComponent(st.name)};end`;
                 const vlcDirect = `vlc://${streamUrl}`;
 
                 const card = document.createElement("div");
@@ -306,9 +437,9 @@
                 const poster = document.createElement("div");
                 poster.className = "item-poster";
 
-                if (st.stream_icon) {
+                if (st.logo) {
                     const img = document.createElement("img");
-                    img.src = st.stream_icon;
+                    img.src = st.logo;
                     img.loading = "lazy";
                     img.onerror = () => { poster.innerHTML = "<div class='no-logo'>📺</div>"; };
                     poster.appendChild(img);
@@ -321,10 +452,10 @@
                 info.innerHTML = `
                     <div class="item-title" title="${st.name}">${st.name}</div>
                     <div class="btn-grid">
-                        <a class="btn-android" href="${androidIntent}">مشغل أندرويد 📱</a>
+                        <a class="btn-android" href="${androidIntent}">أندرويد 📱</a>
                         <a class="btn-vlc" href="${vlcDirect}">VLC مباشر 🚀</a>
-                        <button class="btn-play-file" onclick="downloadPlayFile('${streamUrl}', '${st.name}')">تشغيل كملف ⚡</button>
-                        <button class="btn-copy" onclick="copyStream('${streamUrl}')">نسخ الرابط 📋</button>
+                        <button class="btn-file-dl" onclick="downloadPlayFile('${streamUrl}', '${st.name}')">تشغيل كملف ⚡</button>
+                        <button class="btn-mpv" onclick="copyMPV('${streamUrl}')">أمر MPV 📋</button>
                     </div>
                 `;
 
@@ -334,7 +465,6 @@
             });
         }
 
-        // تشغيل القناة عبر تنزيل ملف تشغيل سريع يفتحه النظام مباشرة
         function downloadPlayFile(url, name) {
             const m3uContent = `#EXTM3U\n#EXTINF:-1,${name}\n${url}\n`;
             const blob = new Blob([m3uContent], { type: "audio/x-mpegurl" });
@@ -342,12 +472,13 @@
             link.href = URL.createObjectURL(blob);
             link.download = `${name.replace(/[^a-zA-Z0-9]/g, '_')}.m3u`;
             link.click();
-            showToast("تم فتح القناة بمشغل هاتفك 🎬");
+            showToast("تم تنزيل ملف القناة وتشغيلها بمشغل جوالك 🎬");
         }
 
-        function copyStream(url) {
-            navigator.clipboard.writeText(url).then(() => {
-                showToast("تم نسخ الرابط المباشر 📋");
+        function copyMPV(url) {
+            const cmd = `mpv "${url}"`;
+            navigator.clipboard.writeText(cmd).then(() => {
+                showToast("تم نسخ أمر MPV لتيرمنال كالي 📋");
             });
         }
     </script>
