@@ -16,7 +16,6 @@
             --border: #222938;
             --primary: #38BDF8;
             --accent-live: #10B981;
-            --accent-movie: #F59E0B;
             --text-main: #F8FAFC;
             --text-muted: #94A3B8;
         }
@@ -67,7 +66,6 @@
         }
         .btn-action:disabled { background: #475569; cursor: not-allowed; }
 
-        /* شريط الأقسام الدائري */
         .categories-bar {
             display: flex;
             gap: 8px;
@@ -152,14 +150,12 @@
             text-decoration: none;
             cursor: pointer;
         }
-        .btn-grid button:hover, .btn-grid a:hover { background: #334155; }
         .btn-play-now {
             background: #10B981 !important;
             grid-column: span 2;
             border: none !important;
         }
 
-        /* نافذة الفيديو المدمجة */
         #player-modal {
             position: fixed;
             inset: 0;
@@ -208,7 +204,7 @@
 
     <div class="header">
         <h1>👑 الباسم سات | بوابة البث السريع</h1>
-        <p>⚡ تشغيل مباشر عبر المتصفح ولكالي لينكس وأندرويد</p>
+        <p>⚡ تشغيل مباشر عبر المتصفح وللجوال وكالي لينكس</p>
     </div>
 
     <div class="container">
@@ -217,14 +213,12 @@
             <button class="btn-action" id="btn_connect">اتصال بالسيرفر ⚡</button>
         </div>
 
-        <!-- شريط الأقسام السريعة -->
         <div class="categories-bar" id="categories_bar"></div>
 
         <div id="loader" style="display:none; text-align:center; padding:20px; color:#38BDF8;">⏳ جاري الاتصال وجلب القنوات...</div>
         <div class="items-grid" id="items_container"></div>
     </div>
 
-    <!-- نافذة المشغل المدمج -->
     <div id="player-modal">
         <div class="player-box">
             <div class="player-head">
@@ -254,9 +248,8 @@
             document.getElementById("btn_connect").addEventListener("click", initXtream);
         });
 
-        // دالة جلب آمنة وسريعة باستخدام بروكسي خفيف
         async function fetchAPI(url) {
-            const proxy = "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
+            const proxy = "https://tv-stream-proxy.satalet.workers.dev/?url=" + encodeURIComponent(url);
             const res = await fetch(proxy);
             if (!res.ok) throw new Error("تعذر جلب البيانات");
             return await res.json();
@@ -281,14 +274,12 @@
 
                 serverConfig = { base, user, pass };
 
-                // جلب الأقسام فقط (خفيف جداً < 10KB)
                 const catUrl = `${base}/player_api.php?username=${user}&password=${pass}&action=get_live_categories`;
                 const categories = await fetchAPI(catUrl);
 
                 renderCategories(categories);
                 showToast("تم جلب الأقسام بنجاح ✅");
 
-                // تحميل أول قسم تلقائياً
                 if (categories.length > 0) {
                     loadStreamsForCategory(categories[0].category_id);
                 }
@@ -326,7 +317,6 @@
             try {
                 const streamsUrl = `${serverConfig.base}/player_api.php?username=${serverConfig.user}&password=${serverConfig.pass}&action=get_live_streams&category_id=${catId}`;
                 const streams = await fetchAPI(streamsUrl);
-
                 renderStreams(streams);
             } catch (e) {
                 showToast("تعذر جلب قنوات هذا القسم");
