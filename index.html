@@ -340,16 +340,9 @@
         });
 
         async function fetchSmart(url) {
-            try {
-                const res = await fetch(url);
-                if (res.ok) {
-                    const txt = await res.text();
-                    if (txt && txt.length > 20) return txt;
-                }
-            } catch(e) {}
-
+            // توجيه فوري عبر البروكسي لمنع متصفح الأندرويد من فرض HTTPS
             const resProxy = await fetch(PROXY_URL + encodeURIComponent(url));
-            if (!resProxy.ok) throw new Error("تعذر جلب الرابط من السيرفر");
+            if (!resProxy.ok) throw new Error("تعذر جلب الرابط من السيرفر، تأكد من صحة الرابط.");
             return await resProxy.text();
         }
 
