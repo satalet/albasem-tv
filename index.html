@@ -7,6 +7,7 @@
     
     <meta name="theme-color" content="#0B0E14">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
     <style>
         :root {
@@ -21,7 +22,7 @@
             --text-muted: #94A3B8;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Cairo", sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--bg-main); color: var(--text-main); padding-bottom: 40px; }
+        body { background-color: var(--bg-main); color: var(--text-main); padding-bottom: 50px; }
         
         .header {
             background: linear-gradient(180deg, #151B28 0%, rgba(11,14,20,0) 100%);
@@ -85,7 +86,7 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 14px;
         }
         .portal-card {
             background: var(--bg-card);
@@ -110,7 +111,6 @@
         .card-movies .badge { background: rgba(245,158,11,0.15); color: var(--accent-movie); }
         .card-series .badge { background: rgba(139,92,246,0.15); color: var(--accent-series); }
 
-        /* شريط الباقات (الأقسام) */
         .packages-section {
             background: var(--bg-card);
             border: 1px solid var(--border);
@@ -175,7 +175,7 @@
 
         .items-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
             gap: 12px;
         }
         .item-card {
@@ -188,12 +188,14 @@
         }
         .item-poster {
             width: 100%;
-            height: 125px;
+            height: 120px;
             background: #0B0E14;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 6px;
+            cursor: pointer;
+            position: relative;
         }
         .item-poster img { width: 100%; height: 100%; object-fit: contain; }
         .no-logo { font-size: 34px; color: #475569; }
@@ -214,6 +216,19 @@
             overflow: hidden;
             min-height: 28px;
         }
+        .btn-play-browser {
+            background: #10B981 !important;
+            color: #fff !important;
+            font-weight: 900 !important;
+            border: none;
+            padding: 6px 0;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 4px;
+        }
+        .btn-play-browser:hover { background: #059669 !important; }
         .btn-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -222,8 +237,8 @@
         .btn-grid a, .btn-grid button {
             color: #fff;
             border-radius: 6px;
-            padding: 6px 0;
-            font-size: 10px;
+            padding: 5px 0;
+            font-size: 9px;
             font-weight: bold;
             text-align: center;
             text-decoration: none;
@@ -233,8 +248,39 @@
         }
         .btn-android { background: #0284C7; }
         .btn-vlc { background: #EA580C; }
-        .btn-mpv { background: #475569; }
-        .btn-file-dl { background: #10B981; }
+        .btn-mpv { background: #334155; }
+        .btn-file-dl { background: #475569; }
+
+        /* نافذة المشغل المباشر السينمائي */
+        #player-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(8px);
+            z-index: 999999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+        .player-box {
+            background: #151922;
+            border: 1px solid var(--border);
+            width: 100%;
+            max-width: 850px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+        .player-head {
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0B0E14;
+            border-bottom: 1px solid var(--border);
+        }
+        video { width: 100%; height: auto; max-height: 65vh; background: #000; outline: none; }
 
         #toast {
             position: fixed;
@@ -256,7 +302,7 @@
 
     <div class="header">
         <h1>👑 الباسم سات | بوابة المشاهدة الذكية</h1>
-        <p>⚡ فرز وتصنيف ذكي حسب الباقات والمجموعات لكالي وأندرويد</p>
+        <p>⚡ يدعم البث المباشر فوراً داخل المتصفح ولكالي وأندرويد</p>
     </div>
 
     <div class="container">
@@ -267,7 +313,6 @@
             <input type="file" id="m3u_file" accept=".m3u,.m3u8,.txt" style="display:none;">
         </div>
 
-        <!-- الأقسام الثلاثة الرئيسية -->
         <div class="portal-grid">
             <div class="portal-card card-live active" id="tab_live">
                 <div class="icon">📺</div>
@@ -286,7 +331,6 @@
             </div>
         </div>
 
-        <!-- شريط الباقات المفرزة داخل القسم -->
         <div class="packages-section" id="packages_section" style="display:none;">
             <div class="packages-header">📁 اختر الباقة للتصفية السريعة:</div>
             <div class="packages-bar" id="packages_bar"></div>
@@ -300,12 +344,35 @@
         <div class="items-grid" id="items_container"></div>
     </div>
 
+    <!-- المشغل السينمائي المدمج -->
+    <div id="player-modal">
+        <div class="player-box">
+            <div class="player-head">
+                <span id="player-title" style="color:#FFB703; font-weight:bold; font-size:14px;"></span>
+                <button onclick="closePlayer()" style="background:none; border:none; color:#EF4444; font-size:22px; cursor:pointer; font-weight:bold;">✕</button>
+            </div>
+            <video id="video-player" controls autoplay playsinline></video>
+        </div>
+    </div>
+
     <div id="toast"></div>
 
     <script>
+        const PROXY_URL = "https://tv-stream-proxy.satalet.workers.dev/?url=";
         let currentTab = "live";
         let currentGroup = "all";
         let rawData = { live: [], movies: [], series: [] };
+        let hlsInstance = null;
+
+        // محول الروابط الذكي لتفادي حظر المتصفحات (Mixed Content)
+        class StreamProxyLoader extends Hls.DefaultConfig.loader {
+            load(context, config, callbacks) {
+                if (context.url && context.url.startsWith("http://")) {
+                    context.url = PROXY_URL + encodeURIComponent(context.url);
+                }
+                super.load(context, config, callbacks);
+            }
+        }
 
         function showToast(msg) {
             const t = document.getElementById("toast");
@@ -326,10 +393,7 @@
             document.getElementById("tab_movies").addEventListener("click", () => switchSection("movies"));
             document.getElementById("tab_series").addEventListener("click", () => switchSection("series"));
 
-            // إذا كان في رابط محفوظ، نشغله فوراً عند الفتح
-            if (saved) {
-                loadAndParse();
-            }
+            if (saved) loadAndParse();
         });
 
         async function fetchSmart(url) {
@@ -341,8 +405,7 @@
                 }
             } catch(e) {}
 
-            const proxy = "https://tv-stream-proxy.satalet.workers.dev/?url=" + encodeURIComponent(url);
-            const resProxy = await fetch(proxy);
+            const resProxy = await fetch(PROXY_URL + encodeURIComponent(url));
             if (!resProxy.ok) throw new Error("تعذر جلب الرابط من السيرفر");
             return await resProxy.text();
         }
@@ -443,7 +506,6 @@
             renderItems();
         }
 
-        // بناء أزرار الباقات ديناميكياً بناءً على محتوى القسم الحالي
         function buildPackagesBar() {
             const section = document.getElementById("packages_section");
             const bar = document.getElementById("packages_bar");
@@ -457,14 +519,12 @@
 
             section.style.display = "block";
 
-            // حساب عدد العناصر في كل باقة
             const groupsMap = {};
             items.forEach(it => {
                 const g = it.group || "عام";
                 groupsMap[g] = (groupsMap[g] || 0) + 1;
             });
 
-            // زر الكل
             const allChip = document.createElement("div");
             allChip.className = "pkg-chip" + (currentGroup === "all" ? " active" : "");
             allChip.innerHTML = `<span>الكل</span> <span class="pkg-count">${items.length}</span>`;
@@ -476,7 +536,6 @@
             };
             bar.appendChild(allChip);
 
-            // إضافة كل باقة وزرها
             Object.keys(groupsMap).sort().forEach(grp => {
                 const chip = document.createElement("div");
                 chip.className = "pkg-chip" + (currentGroup === grp ? " active" : "");
@@ -498,17 +557,15 @@
             
             let list = rawData[currentTab] || [];
 
-            // تصفية حسب الباقة المحددة
             if (currentGroup !== "all") {
                 list = list.filter(item => (item.group || "عام") === currentGroup);
             }
 
-            // تصفية حسب البحث
             if (q) {
                 list = list.filter(item => item.name && item.name.toLowerCase().includes(q));
             }
 
-            const displayList = list.slice(0, 150); // أول 150 لسرعة وسلاسة التصفح
+            const displayList = list.slice(0, 150);
 
             if (displayList.length === 0) {
                 container.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px;color:#64748B;'>لا توجد عناصر في هذه الباقة.</div>";
@@ -528,6 +585,7 @@
 
                 const poster = document.createElement("div");
                 poster.className = "item-poster";
+                poster.onclick = () => playInBrowser(streamUrl, st.name);
 
                 if (st.logo) {
                     const img = document.createElement("img");
@@ -543,11 +601,12 @@
                 info.className = "item-info";
                 info.innerHTML = `
                     <div class="item-title" title="${st.name}">${st.name}</div>
+                    <button class="btn-play-browser" onclick="playInBrowser('${streamUrl}', '${st.name}')">تشغيل بالمتصفح ▶</button>
                     <div class="btn-grid">
                         <a class="btn-android" href="${androidIntent}">أندرويد 📱</a>
-                        <a class="btn-vlc" href="${vlcDirect}">VLC مباشر 🚀</a>
-                        <button class="btn-file-dl" onclick="downloadPlayFile('${streamUrl}', '${st.name}')">تشغيل كملف ⚡</button>
-                        <button class="btn-mpv" onclick="copyMPV('${streamUrl}')">أمر MPV 📋</button>
+                        <a class="btn-vlc" href="${vlcDirect}">VLC 🚀</a>
+                        <button class="btn-mpv" onclick="copyMPV('${streamUrl}')">MPV 📋</button>
+                        <button class="btn-file-dl" onclick="downloadPlayFile('${streamUrl}', '${st.name}')">ملف ⚡</button>
                     </div>
                 `;
 
@@ -555,6 +614,56 @@
                 card.appendChild(info);
                 container.appendChild(card);
             });
+        }
+
+        // تشغيل مباشر داخل المتصفح عبر HLS.js والمحول الذكي
+        function playInBrowser(url, title) {
+            const modal = document.getElementById("player-modal");
+            const video = document.getElementById("video-player");
+            document.getElementById("player-title").textContent = title;
+            modal.style.display = "flex";
+
+            if (hlsInstance) {
+                hlsInstance.destroy();
+                hlsInstance = null;
+            }
+
+            const targetSource = PROXY_URL + encodeURIComponent(url);
+
+            if (Hls.isSupported()) {
+                hlsInstance = new Hls({
+                    loader: StreamProxyLoader,
+                    enableWorker: true,
+                    lowLatencyMode: true
+                });
+                hlsInstance.loadSource(targetSource);
+                hlsInstance.attachMedia(video);
+                hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+                    video.play().catch(e => console.log("User gesture required"));
+                });
+                hlsInstance.on(Hls.Events.ERROR, (event, data) => {
+                    if (data.fatal) {
+                        showToast("تعذر البث الداخلي - جرب المشغل الخارجي (VLC / أندرويد)");
+                    }
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = targetSource;
+                video.play();
+            } else {
+                video.src = targetSource;
+                video.play();
+            }
+        }
+
+        function closePlayer() {
+            const modal = document.getElementById("player-modal");
+            const video = document.getElementById("video-player");
+            modal.style.display = "none";
+            video.pause();
+            if (hlsInstance) {
+                hlsInstance.destroy();
+                hlsInstance = null;
+            }
         }
 
         function downloadPlayFile(url, name) {
