@@ -415,7 +415,7 @@
                     const groupMatch = line.match(/group-title=\"([^\"]+)\"/i) || line.match(/group-title='([^']+)'/i);
                     const group = groupMatch ? groupMatch[1].trim() : "عام";
                     current = { name, logo, group };
-                } else if (!line.startsWith("#") and current) {
+                } else if (!line.startsWith("#") && current) {
                     current.url = line;
                     const u = line.toLowerCase();
                     const g = current.group.toLowerCase();
