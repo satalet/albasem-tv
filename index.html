@@ -806,7 +806,7 @@
         }
 
         function copyMPV(url) {
-            const cmd = `mpv "${url}"`;
+            const cmd = `mpv --no-ytdl --user-agent="IPTVSmartersPro" "${url}"`;
             navigator.clipboard.writeText(cmd).then(() => {
                 showToast("تم نسخ أمر MPV! الصقه بتيرمنال كالي 📋");
             });
