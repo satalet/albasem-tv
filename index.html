@@ -633,9 +633,17 @@
                     body: JSON.stringify({ url: url })
                 });
 
-                if (!res.ok) throw new Error("تعذر الاتصال بمحرك Render، تأكد من عمل السيرفر.");
-                const jsonRes = await res.json();
-                if (!jsonRes.success) throw new Error(jsonRes.message || "فشل جلب القنوات من السيرفر.");
+                let jsonRes;
+                try {
+                    jsonRes = await res.json();
+                } catch(e) {
+                    jsonRes = null;
+                }
+
+                if (!res.ok || (jsonRes && !jsonRes.success)) {
+                    const msg = (jsonRes && jsonRes.message) ? jsonRes.message : "تعذر الاتصال بالسيرفر أو انتهت المهلة.";
+                    throw new Error(msg);
+                }
 
                 const data = jsonRes.data;
                 ["live", "movies", "series"].forEach(tab => {
