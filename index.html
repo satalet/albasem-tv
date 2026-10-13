@@ -161,6 +161,7 @@
             gap: 6px;
             transition: 0.2s;
         }
+        .pkg-chip:hover { background: #334155; }
         .pkg-chip.active {
             background: #0284C7;
             border-color: #38BDF8;
@@ -254,6 +255,7 @@
             width: 100%;
         }
 
+        /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
@@ -281,16 +283,28 @@
             cursor: pointer;
             color: #94A3B8;
         }
-        .ocr-area {
-            border: 2px dashed #475569;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
+        .ocr-tools {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
             margin: 12px 0;
-            cursor: pointer;
-            background: #0B0E14;
         }
-        .ocr-area:hover { border-color: var(--primary); }
+        .btn-tool {
+            background: #1E293B;
+            border: 1px solid #334155;
+            color: #fff;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            transition: 0.2s;
+        }
+        .btn-tool:hover {
+            border-color: var(--primary);
+            background: #242E42;
+        }
 
         #toast {
             position: fixed;
@@ -319,7 +333,7 @@
         <div class="search-box">
             <input type="text" id="iptv_url" placeholder="ضع رابط M3U أو رابط سيرفر Xtream هنا..." />
             <button class="btn-parse" id="btn_parse_trigger">فرز وتشغيل ⚡</button>
-            <button class="btn-ocr-open" onclick="openScannerModal()">📸 فاحص وقارئ صور (OCR)</button>
+            <button class="btn-ocr-open" onclick="openScannerModal()">📸 فاحص وقارئ الشاشة (OCR)</button>
             <label class="btn-file" for="m3u_file">📁 فتح M3U</label>
             <input type="file" id="m3u_file" accept=".m3u,.m3u8,.txt" style="display:none;">
         </div>
@@ -355,20 +369,31 @@
         <div class="items-grid" id="items_container"></div>
     </div>
 
+    <!-- Scanner / OCR Modal -->
     <div class="modal" id="scanner_modal">
         <div class="modal-content">
             <div class="modal-close" onclick="closeScannerModal()">&times;</div>
-            <h3 style="color:#FFB703;margin-bottom:8px;">🎯 الفاحص الذكي وقراءة الصور</h3>
-            <p style="font-size:12px;color:#94A3B8;">ارفع صورة سكرين شوت أو الصق نص البوست لفحص السيرفر فوراً:</p>
+            <h3 style="color:#FFB703;margin-bottom:6px;">🎯 الفاحص الذكي وقراءة الشاشة</h3>
+            <p style="font-size:12px;color:#94A3B8;">التقط سكرين شوت أو الصق الحافظة مباشرة بدون الحاجة لحفظ صور:</p>
 
-            <div class="ocr-area" onclick="document.getElementById('ocr_file').click()">
-                <div style="font-size:32px;">🖼️</div>
-                <div style="font-size:13px;font-weight:bold;margin-top:4px;">اضغط لاختيار صورة أو سكرين شوت</div>
-                <div style="font-size:11px;color:#64748B;">(أو الصق صورة من الحافظة مباشرة Ctrl+V)</div>
+            <div class="ocr-tools">
+                <div class="btn-tool" onclick="captureLiveScreen()">
+                    <div style="font-size:24px;margin-bottom:4px;">📸</div>
+                    <div>لقط الشاشة مباشرة (Live Snippet)</div>
+                </div>
+                <div class="btn-tool" onclick="pasteClipboardDirect()">
+                    <div style="font-size:24px;margin-bottom:4px;">📋</div>
+                    <div>لصق الحافظة فوراً (صورة أو نص)</div>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:11px;color:#64748B;">أو رفع صورة محفوظة:</span>
+                <button onclick="document.getElementById('ocr_file').click()" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:11px;font-weight:bold;">اختر من الملفات 📁</button>
                 <input type="file" id="ocr_file" accept="image/*" style="display:none;" onchange="handleImageUpload(event)">
             </div>
 
-            <textarea id="raw_scan_text" style="width:100%;height:75px;background:#0B0E14;border:1px solid #334155;border-radius:8px;color:#fff;padding:8px;font-size:12px;outline:none;" placeholder="أو الصق النص المنسوخ هنا مباشرة..."></textarea>
+            <textarea id="raw_scan_text" style="width:100%;height:65px;background:#0B0E14;border:1px solid #334155;border-radius:8px;color:#fff;padding:8px;font-size:12px;outline:none;" placeholder="النص المستخرج أو الملصوق سيظهر هنا..."></textarea>
             
             <button class="btn-parse" style="width:100%;margin-top:8px;" id="btn_do_scan" onclick="processTextScan()">بدء الفحص والتشخيص ⚡</button>
             <div id="scan_status" style="display:none;font-size:12px;margin-top:10px;text-align:center;"></div>
@@ -405,6 +430,55 @@
             document.getElementById("scanner_modal").style.display = "none";
         }
 
+        // 1. ميزة التقاط الشاشة الحي بدون حفظ ملفات
+        async function captureLiveScreen() {
+            try {
+                const stream = await navigator.mediaDevices.getDisplayMedia({ video: { mediaSource: "screen" } });
+                const track = stream.getVideoTracks()[0];
+                const imageCapture = new ImageCapture(track);
+                const bitmap = await imageCapture.grabFrame();
+                track.stop();
+
+                const canvas = document.createElement("canvas");
+                canvas.width = bitmap.width;
+                canvas.height = bitmap.height;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(bitmap, 0, 0);
+
+                canvas.toBlob(blob => {
+                    readImageAndScan(blob);
+                });
+            } catch (err) {
+                showToast("تم إلغاء التقاط الشاشة");
+            }
+        }
+
+        // 2. ميزة قراءة الحافظة مباشرة (صورة أو نص) بضغطة زر
+        async function pasteClipboardDirect() {
+            try {
+                const items = await navigator.clipboard.read();
+                for (let item of items) {
+                    const imgType = item.types.find(t => t.startsWith('image/'));
+                    if (imgType) {
+                        const blob = await item.getType(imgType);
+                        readImageAndScan(blob);
+                        return;
+                    }
+                }
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    document.getElementById("raw_scan_text").value = text;
+                    processTextScan();
+                } else {
+                    alert("الحافظة فارغة! خذ لقطة شاشة أو انسخ نصاً أولاً.");
+                }
+            } catch (err) {
+                // بديل للمتصفحات التي تطلب أذونات Clipboard
+                alert("اضغط Ctrl+V مباشرة داخل الصفحة للصق الصورة المنسوخة.");
+            }
+        }
+
+        // لصق سريع عبر Ctrl+V
         window.addEventListener('paste', e => {
             const items = (e.clipboardData || e.originalEvent.clipboardData).items;
             for (let item of items) {
@@ -441,7 +515,7 @@
 
         function processTextScan() {
             const txt = document.getElementById("raw_scan_text").value.trim();
-            if (!txt) return alert("يرجى إدخال نص أو رفع صورة أولاً!");
+            if (!txt) return alert("يرجى إدخال نص أو التقاط سكرين شوت أولاً!");
             checkWithBackend(txt);
         }
 
