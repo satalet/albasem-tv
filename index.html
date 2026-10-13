@@ -225,27 +225,21 @@
             text-decoration: none;
             display: block;
             margin-bottom: 4px;
+            text-align: center;
         }
-        .btn-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4px;
-        }
-        .btn-grid a, .btn-grid button {
+        .btn-mpv {
+            background: #334155;
             color: #fff;
             border-radius: 6px;
-            padding: 5px 0;
-            font-size: 9.5px;
+            padding: 6px 0;
+            font-size: 10px;
             font-weight: bold;
             text-align: center;
-            text-decoration: none;
             cursor: pointer;
             border: none;
             display: block;
+            width: 100%;
         }
-        .btn-direct { background: #10B981; }
-        .btn-file-dl { background: #D97706; }
-        .btn-mpv { background: #334155; grid-column: span 2; padding: 6px 0; }
 
         #toast {
             position: fixed;
@@ -267,7 +261,7 @@
 
     <div class="header">
         <h1>👑 الباسم سات | بوابة المشاهدة الذكية</h1>
-        <p>⚡ تشغيل مباشر عبر مشغلات أندرويد المدمجة وأمر MPV لكالي</p>
+        <p>⚡ فرز مباشر عبر محرك بايثون وتشغيل فوري في أندرويد وكالي</p>
     </div>
 
     <div class="container">
@@ -305,14 +299,14 @@
             <input type="text" id="search_input" placeholder="🔍 ابحث بالاسم في الباقة المحددة..." />
         </div>
 
-        <div id="loader" style="display:none; text-align:center; padding:20px; color:#38BDF8;">⏳ جاري جلب وفرز المحتوى...</div>
+        <div id="loader" style="display:none; text-align:center; padding:20px; color:#38BDF8;">⏳ جاري فحص الرابط وسحب الباقات من السيرفر...</div>
         <div class="items-grid" id="items_container"></div>
     </div>
 
     <div id="toast"></div>
 
     <script>
-        const PROXY_URL = "https://tv-stream-proxy.satalet.workers.dev/?url=";
+        const BACKEND_URL = "https://scan-ip-tv.onrender.com";
         let currentTab = "live";
         let currentGroup = "all";
         let rawData = { live: [], movies: [], series: [] };
@@ -339,18 +333,48 @@
             if (saved) loadAndParse();
         });
 
-        const BACKEND_URL = "https://scan-ip-tv.onrender.com";
+        async function loadAndParse() {
+            let url = document.getElementById("iptv_url").value.trim();
+            if (!url) return alert("يرجى إدخال الرابط أولاً!");
 
-        async function fetchSmart(url) {
-            const res = await fetch(`${BACKEND_URL}/api/parse`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: url })
-            });
-            if (!res.ok) throw new Error("تعذر جلب البيانات من محرك الفرز السحابي.");
-            const data = await res.json();
-            if (!data.success) throw new Error(data.message || "فشل فرز القنوات");
-            return data.data;
+            localStorage.setItem("albasem_url", url);
+            const btn = document.getElementById("btn_parse_trigger");
+            const loader = document.getElementById("loader");
+
+            btn.disabled = true;
+            loader.style.display = "block";
+            document.getElementById("items_container").innerHTML = "";
+            rawData = { live: [], movies: [], series: [] };
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/parse`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ url: url })
+                });
+
+                if (!res.ok) throw new Error("تعذر الاتصال بمحرك Render، تأكد من عمل السيرفر.");
+                const jsonRes = await res.json();
+                if (!jsonRes.success) throw new Error(jsonRes.message || "فشل جلب القنوات من السيرفر.");
+
+                const data = jsonRes.data;
+                ["live", "movies", "series"].forEach(tab => {
+                    (data[tab] || []).forEach(item => {
+                        item.group = item.group || item.category || "عام";
+                    });
+                });
+
+                rawData = data;
+                updateCounts();
+                buildPackagesBar();
+                renderItems();
+                showToast("تم الفرز بنجاح عبر محرك Render ⚡");
+            } catch (err) {
+                alert("خطأ: " + err.message);
+            } finally {
+                loader.style.display = "none";
+                btn.disabled = false;
+            }
         }
 
         function handleFileSelect(event) {
@@ -371,34 +395,6 @@
                 showToast("تم فتح الملف وتصنيف الباقات بنجاح ✅");
             };
             reader.readAsText(file);
-        }
-
-        async function loadAndParse() {
-            let url = document.getElementById("iptv_url").value.trim();
-            if (!url) return alert("يرجى إدخال الرابط أولاً!");
-
-            localStorage.setItem("albasem_url", url);
-            const btn = document.getElementById("btn_parse_trigger");
-            const loader = document.getElementById("loader");
-
-            btn.disabled = true;
-            loader.style.display = "block";
-            document.getElementById("items_container").innerHTML = "";
-            rawData = { live: [], movies: [], series: [] };
-
-            try {
-                const backendData = await fetchSmart(url);
-                rawData = backendData;
-                updateCounts();
-                buildPackagesBar();
-                renderItems();
-                showToast("تم جلب وتصنيف الباقات بنجاح ⚡");
-            } catch (err) {
-                alert(err.message);
-            } finally {
-                loader.style.display = "none";
-                btn.disabled = false;
-            }
         }
 
         function parseM3UContent(text) {
@@ -520,10 +516,11 @@
                 if (currentTab === "live" && streamUrl.includes(".m3u8")) {
                     streamUrl = streamUrl.replace(/\.m3u8(\?.*)?$/, ".ts$1");
                 }
+
                 const cleanHost = streamUrl.replace(/^https?:\/\//, '');
                 const scheme = streamUrl.startsWith("https://") ? "https" : "http";
 
-                // أمر الأندرويد العام (Generic Intent) الموجه لمشغل النظام المدمج مباشرة
+                // أمر Intent الموجه لـ VLC مع التحويل التلقائي للمتجر
                 const androidIntent = `intent://${cleanHost}#Intent;scheme=${scheme};type=video/*;package=org.videolan.vlc;S.title=${encodeURIComponent(st.name)};S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dorg.videolan.vlc;end`;
 
                 const card = document.createElement("div");
@@ -546,24 +543,14 @@
                 info.className = "item-info";
                 info.innerHTML = `
                     <div class="item-title" title="${st.name}">${st.name}</div>
-                    <a class="btn-system-play" style="background:#0284C7;text-align:center;display:block;" href="${androidIntent}">تشغيل مباشر بالجوال 📱⚡</a>
-                    <button class="btn-mpv" style="width:100%;" onclick="copyMPV('${streamUrl}')">أمر MPV لكالي 📋</button>
+                    <a class="btn-system-play" href="${androidIntent}">تشغيل مباشر بالجوال 📱⚡</a>
+                    <button class="btn-mpv" onclick="copyMPV('${streamUrl}')">أمر MPV لكالي 📋</button>
                 `;
 
                 card.appendChild(poster);
                 card.appendChild(info);
                 container.appendChild(card);
             });
-        }
-
-        function downloadPlayFile(url, name) {
-            const m3uContent = `#EXTM3U\n#EXTINF:-1,${name}\n${url}\n`;
-            const blob = new Blob([m3uContent], { type: "audio/x-mpegurl" });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = `${name.replace(/[^a-zA-Z0-9]/g, '_')}.m3u`;
-            link.click();
-            showToast("تم تنزيل ملف القناة! اضغط على الإشعار لفتحه فوراً 🎬");
         }
 
         function copyMPV(url) {
