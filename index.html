@@ -339,11 +339,18 @@
             if (saved) loadAndParse();
         });
 
+        const BACKEND_URL = "https://scan-ip-tv.onrender.com";
+
         async function fetchSmart(url) {
-            // توجيه فوري عبر البروكسي لمنع متصفح الأندرويد من فرض HTTPS
-            const resProxy = await fetch(PROXY_URL + encodeURIComponent(url));
-            if (!resProxy.ok) throw new Error("تعذر جلب الرابط من السيرفر، تأكد من صحة الرابط.");
-            return await resProxy.text();
+            const res = await fetch(`${BACKEND_URL}/api/parse`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: url })
+            });
+            if (!res.ok) throw new Error("تعذر جلب البيانات من محرك الفرز السحابي.");
+            const data = await res.json();
+            if (!data.success) throw new Error(data.message || "فشل فرز القنوات");
+            return data.data;
         }
 
         function handleFileSelect(event) {
@@ -380,8 +387,8 @@
             rawData = { live: [], movies: [], series: [] };
 
             try {
-                const text = await fetchSmart(url);
-                parseM3UContent(text);
+                const backendData = await fetchSmart(url);
+                rawData = backendData;
                 updateCounts();
                 buildPackagesBar();
                 renderItems();
