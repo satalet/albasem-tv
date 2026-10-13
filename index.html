@@ -506,22 +506,49 @@
         }
 
         async function readImageAndScan(file) {
-            const st = document.getElementById("scan_status");
-            st.style.display = "block";
-            st.style.color = "#38BDF8";
-            st.innerText = "⏳ جاري قراءة نصوص الصورة بواسطة محرك OCR...";
+        const st = document.getElementById("scan_status");
+        st.style.display = "block";
+        st.style.color = "#38BDF8";
+        st.innerText = "🧠 جاري تحليل الصورة واستخراج البيانات عبر الذكاء الاصطناعي...";
 
+        const reader = new FileReader();
+        reader.onload = async function() {
+            const b64 = reader.result;
             try {
-                const res = await Tesseract.recognize(file, 'eng+ara');
-                const text = res.data.text;
-                document.getElementById("raw_scan_text").value = text;
-                st.innerText = "🔍 تم استخراج النص! جاري فحص السيرفر في Render...";
-                checkWithBackend(text);
+                const r = await fetch(`${BACKEND_URL}/api/ai-scan`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ image: b64, mime_type: file.type || "image/jpeg" })
+                });
+                const d = await r.json();
+
+                if (d.success) {
+                    st.style.display = "none";
+                    const box = document.getElementById("scan_result_box");
+                    box.style.display = "block";
+                    box.style.borderColor = "#10B981";
+                    document.getElementById("res_title").innerHTML = "🎉 تم الاستخراج والفحص بنجاح!";
+                    document.getElementById("res_details").innerHTML = `
+                        <b>السيرفر:</b> ${d.host}:${d.port}<br>
+                        <b>المستخدم:</b> ${d.user} | <b>المرور:</b> ${d.pass}<br>
+                        <b>تاريخ الانتهاء:</b> ${d.exp_date} | <b>السرعة:</b> ${d.latency}
+                    `;
+                    document.getElementById("btn_apply_link").onclick = () => {
+                        document.getElementById("iptv_url").value = d.url;
+                        closeScannerModal();
+                        loadAndParse();
+                    };
+                } else {
+                    st.style.color = "#EF4444";
+                    st.innerText = "❌ " + (d.message || "فشل الفحص.");
+                }
             } catch(err) {
                 st.style.color = "#EF4444";
-                st.innerText = "❌ فشل في قراءة الصورة: " + err.message;
+                st.innerText = "❌ خطأ بالاتصال بمحرك AI: " + err.message;
             }
-        }
+        };
+        reader.readAsDataURL(file);
+    }
 
         function processTextScan() {
             const txt = document.getElementById("raw_scan_text").value.trim();
