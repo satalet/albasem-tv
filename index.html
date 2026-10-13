@@ -319,7 +319,9 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            const saved = localStorage.getItem("albasem_url");
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryUrl = urlParams.get('url');
+            const saved = queryUrl || localStorage.getItem("albasem_url");
             if (saved) document.getElementById("iptv_url").value = saved;
 
             document.getElementById("btn_parse_trigger").addEventListener("click", loadAndParse);
@@ -413,7 +415,7 @@
                     const groupMatch = line.match(/group-title=\"([^\"]+)\"/i) || line.match(/group-title='([^']+)'/i);
                     const group = groupMatch ? groupMatch[1].trim() : "عام";
                     current = { name, logo, group };
-                } else if (!line.startsWith("#") && current) {
+                } else if (!line.startsWith("#") and current) {
                     current.url = line;
                     const u = line.toLowerCase();
                     const g = current.group.toLowerCase();
@@ -520,7 +522,6 @@
                 const cleanHost = streamUrl.replace(/^https?:\/\//, '');
                 const scheme = streamUrl.startsWith("https://") ? "https" : "http";
 
-                // أمر Intent الموجه لـ VLC مع التحويل التلقائي للمتجر
                 const androidIntent = `intent://${cleanHost}#Intent;scheme=${scheme};type=video/*;package=org.videolan.vlc;S.title=${encodeURIComponent(st.name)};S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dorg.videolan.vlc;end`;
 
                 const card = document.createElement("div");
