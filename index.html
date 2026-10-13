@@ -529,7 +529,7 @@
                     box.style.borderColor = "#10B981";
                     document.getElementById("res_title").innerHTML = "🎉 تم الاستخراج والفحص بنجاح!";
                     document.getElementById("res_details").innerHTML = `
-                        <b>السيرفر:</b> ${d.host}:${d.port}<br>
+                        <b>حالة السيرفر:</b> <span style="color:#10B981;font-weight:bold;">🟢 شغال وفعّال (Active)</span><br><b>السيرفر:</b> ${d.host}:${d.port}<br>
                         <b>المستخدم:</b> ${d.user} | <b>المرور:</b> ${d.pass}<br>
                         <b>تاريخ الانتهاء:</b> ${d.exp_date} | <b>السرعة:</b> ${d.latency}
                     `;
