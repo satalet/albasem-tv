@@ -432,6 +432,14 @@
 
         // 1. ميزة التقاط الشاشة الحي بدون حفظ ملفات
         async function captureLiveScreen() {
+            // إذا كان المتصفح جوالاً أو لا يدعم تصوير الشاشة الحي، نحول فورا للاستوديو
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            if (isMobile || !navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                showToast("جاري فتح الاستوديو لاختيار لقطة الشاشة 📱");
+                document.getElementById("ocr_file").click();
+                return;
+            }
+
             try {
                 const stream = await navigator.mediaDevices.getDisplayMedia({ video: { mediaSource: "screen" } });
                 const track = stream.getVideoTracks()[0];
@@ -446,10 +454,12 @@
                 ctx.drawImage(bitmap, 0, 0);
 
                 canvas.toBlob(blob => {
-                    readImageAndScan(blob);
+                    if (blob) readImageAndScan(blob);
                 });
             } catch (err) {
-                showToast("تم إلغاء التقاط الشاشة");
+                // في حال الإلغاء أو رفض الإذن، التحويل التلقائي للاستوديو
+                showToast("تحويل للاستوديو لاختيار الصورة 📁");
+                document.getElementById("ocr_file").click();
             }
         }
 
