@@ -403,6 +403,7 @@
     </style>
     <!-- مشغل ويب Artplayer و HLS -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mpegts.js@latest/dist/mpegts.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0B0E14">
@@ -976,25 +977,66 @@
             art = null;
         }
 
+        const isLive = rawUrl.includes("/live/");
+        let streamUrl = rawUrl;
+        
+        // تحويل روابط البث المباشر للتدفق الصافي .ts لتجاوز توكنات m3u8
+        if (isLive && streamUrl.endsWith(".m3u8")) {
+            streamUrl = streamUrl.replace(".m3u8", ".ts");
+        }
+
+        let playerUrl = streamUrl;
+        if (playerUrl && playerUrl.startsWith("http://")) {
+            playerUrl = "https://scan-ip-tv.onrender.com/api/proxy?url=" + encodeURIComponent(streamUrl);
+        }
+
+        let streamType = "auto";
+        if (streamUrl.endsWith(".ts") || isLive) {
+            streamType = "ts";
+        } else if (streamUrl.endsWith(".m3u8")) {
+            streamType = "m3u8";
+        }
+
         art = new Artplayer({
             container: "#artplayer-container",
-            url: url,
+            url: playerUrl,
+            type: streamType,
             title: title,
-            isLive: url.includes(".m3u8") || url.includes("/live/"),
+            isLive: isLive,
             autoplay: true,
             pip: true,
             fullscreen: true,
             fullscreenWeb: true,
             setting: true,
-            playbackRate: true,
+            playbackRate: !isLive,
             aspectRatio: true,
             customType: {
-                m3u8: function (video, url) {
+                m3u8: function (video, url, artInstance) {
                     if (Hls.isSupported()) {
                         const hls = new Hls();
                         hls.loadSource(url);
                         hls.attachMedia(video);
+                        artInstance.on("destroy", () => hls.destroy());
                     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+                        video.src = url;
+                    }
+                },
+                ts: function (video, url, artInstance) {
+                    if (window.mpegts && mpegts.isSupported()) {
+                        const tsPlayer = mpegts.createPlayer({
+                            type: "m2ts",
+                            isLive: true,
+                            url: url
+                        }, {
+                            enableWorker: true,
+                            lazyLoad: false,
+                            liveBufferLatencyChasing: true
+                        });
+                        tsPlayer.attachMediaElement(video);
+                        tsPlayer.load();
+                        tsPlayer.play().catch(e => console.log("Autoplay blocked:", e));
+                        artInstance.on("destroy", () => tsPlayer.destroy());
+                    } else {
                         video.src = url;
                     }
                 }
