@@ -442,7 +442,7 @@
                 <h3>المسلسلات</h3>
                 <span class="badge" id="count-series">0</span>
             </div>
-            <div class="portal-card card-links" id="tab_links" onclick="switchMainTab("links")">
+            <div class="portal-card card-links" id="tab_links" onclick="switchMainTab('links')">
                 <div class="icon">🔗</div>
                 <h3>سيرفراتي</h3>
                 <span class="badge" id="count-links">0</span>
@@ -1212,6 +1212,11 @@
             if (tabEl) tabEl.classList.remove("active");
         }
     }
+
+    
+    document.getElementById("tab_live")?.addEventListener("click", () => switchMainTab("live"));
+    document.getElementById("tab_movies")?.addEventListener("click", () => switchMainTab("movies"));
+    document.getElementById("tab_series")?.addEventListener("click", () => switchMainTab("series"));
 
     window.addEventListener("DOMContentLoaded", () => {
         loadSavedLinks();
