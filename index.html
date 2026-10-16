@@ -898,6 +898,14 @@
 
                 const poster = document.createElement("div");
                 poster.className = "item-poster";
+                poster.style.position = "relative";
+                poster.style.cursor = "pointer";
+                poster.onclick = () => openWebPlayer(st.url, st.name || "");
+                
+                const playBadge = document.createElement("div");
+                playBadge.className = "play-badge";
+                playBadge.innerText = "▶";
+                poster.appendChild(playBadge);
 
                 if (st.logo) {
                     const img = document.createElement("img");
