@@ -404,6 +404,10 @@
     <!-- مشغل ويب Artplayer و HLS -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0B0E14">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
 
@@ -1000,6 +1004,13 @@
             art = null;
         }
         document.getElementById("player_modal").style.display = "none";
+    }
+    </script>
+    <script>
+    if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+            navigator.serviceWorker.register("./sw.js").catch(err => console.log("SW error", err));
+        });
     }
     </script>
 </body>
