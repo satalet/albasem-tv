@@ -750,6 +750,7 @@
                 buildPackagesBar();
                 renderItems();
                 showToast("تم الفرز بنجاح عبر محرك Render ⚡");
+                saveScannedLinkAuto(url, (rawData.live[0]?.name ? `باقة: ${rawData.live[0].name}` : "سيرفر مفروز ⚡"));
             } catch (err) {
                 alert("خطأ: " + err.message);
             } finally {
@@ -948,6 +949,29 @@
             });
         }
     </script>
+
+    <!-- مستودع الروابط وفاحص السيرفرات (Links Hub) -->
+    <div id="links_view_section" style="display: none; max-width: 1250px; margin: 0 auto; padding: 0 12px;">
+        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
+                <input type="text" id="manual_link_title" placeholder="اسم السيرفر أو القناة (اختياري)..." style="flex: 1; min-width: 200px; background: #0B0E14; border: 1px solid var(--border); border-radius: 8px; padding: 10px; color: #fff; outline: none;" />
+                <input type="text" id="manual_link_url" placeholder="ضع الرابط هنا (M3U / TS / Stream)..." style="flex: 2; min-width: 260px; background: #0B0E14; border: 1px solid var(--border); border-radius: 8px; padding: 10px; color: #fff; outline: none;" />
+                <button onclick="addManualLink()" style="background: #0284C7; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;">➕ إضافة رابط</button>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 12px;">
+                <div style="font-size: 13px; color: var(--text-muted);">
+                    ⚡ السيرفرات المفروزة والشغالة تُحفظ هنا تلقائياً وتفحص بنقرة واحدة.
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="runFastCheck()" id="btn_check_all" style="background: #10B981; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer;">⚡ فحص سريع للكل</button>
+                    <button onclick="clearDeadLinks()" style="background: #EF4444; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer;">🗑️ تنظيف المعطلة</button>
+                </div>
+            </div>
+        </div>
+        <div id="links_list_container" style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="text-align: center; padding: 30px; color: var(--text-muted);">جاري تحميل السيرفرات...</div>
+        </div>
+    </div>
 
     <!-- نافذة المشغل المنبثقة -->
     <div id="player_modal" class="player-modal">
@@ -1193,21 +1217,24 @@
 
     function switchMainTab(tab) {
         const linksSec = document.getElementById("links_view_section");
-        const packagesSec = document.getElementById("packages_section") || document.querySelector(".packages-container") || document.querySelector(".filter-bar");
-        const contentSec = document.getElementById("content_grid") || document.querySelector(".grid-container");
+        const packagesSec = document.getElementById("packages_section");
+        const filterBar = document.querySelector(".filter-bar");
+        const itemsContainer = document.getElementById("items_container");
 
         if (tab === "links") {
             if (linksSec) linksSec.style.display = "block";
             if (packagesSec) packagesSec.style.display = "none";
-            if (contentSec) contentSec.style.display = "none";
+            if (filterBar) filterBar.style.display = "none";
+            if (itemsContainer) itemsContainer.style.display = "none";
             document.querySelectorAll(".portal-card").forEach(c => c.classList.remove("active"));
             const tabEl = document.getElementById("tab_links");
             if (tabEl) tabEl.classList.add("active");
             loadSavedLinks();
         } else {
             if (linksSec) linksSec.style.display = "none";
-            if (packagesSec) packagesSec.style.display = "";
-            if (contentSec) contentSec.style.display = "";
+            if (packagesSec && rawData[tab] && rawData[tab].length > 0) packagesSec.style.display = "block";
+            if (filterBar) filterBar.style.display = "block";
+            if (itemsContainer) itemsContainer.style.display = "grid";
             const tabEl = document.getElementById("tab_links");
             if (tabEl) tabEl.classList.remove("active");
         }
