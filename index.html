@@ -963,7 +963,11 @@
         openWebPlayer(stream, title);
     }
     
-    function openWebPlayer(url, title) {
+    function openWebPlayer(rawUrl, title) {
+        let url = rawUrl;
+        if (url && url.startsWith("http://")) {
+            url = "https://scan-ip-tv.onrender.com/api/proxy?url=" + encodeURIComponent(rawUrl);
+        }
         document.getElementById("player_title").innerText = "🎬 " + title;
         document.getElementById("player_modal").style.display = "flex";
 
