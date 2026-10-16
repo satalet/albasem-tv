@@ -80,6 +80,23 @@
             align-items: center;
             justify-content: center;
         }
+                .btn-hub {
+            background: #D97706;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 0 14px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.2s;
+        }
+        .btn-hub:hover { background: #B45309; }
+        .btn-hub.active { background: #FFB703; color: #000; }
         .btn-ocr-open {
             background: #9333EA;
             color: #fff;
@@ -421,7 +438,8 @@
         <div class="search-box">
             <input type="text" id="iptv_url" placeholder="ضع رابط M3U أو رابط سيرفر Xtream هنا..." />
             <button class="btn-parse" id="btn_parse_trigger">فرز وتشغيل ⚡</button>
-            <button class="btn-ocr-open" onclick="openScannerModal()">📸 فاحص وقارئ الشاشة (OCR)</button>
+            <button class="btn-hub" id="btn_hub_toggle" onclick="toggleLinksHub()">🔗 سيرفراتي (<span id="count-links">0</span>)</button>
+            <button class="btn-ocr-open" onclick="openScannerModal()">📸 فاحص الشاشة (OCR)</button>
             <label class="btn-file" for="m3u_file">📁 فتح M3U</label>
             <input type="file" id="m3u_file" accept=".m3u,.m3u8,.txt" style="display:none;">
         </div>
@@ -442,11 +460,7 @@
                 <h3>المسلسلات</h3>
                 <span class="badge" id="count-series">0</span>
             </div>
-            <div class="portal-card card-links" id="tab_links" onclick="switchMainTab('links')">
-                <div class="icon">🔗</div>
-                <h3>سيرفراتي</h3>
-                <span class="badge" id="count-links">0</span>
-            </div>
+
         </div>
 
         <div class="packages-section" id="packages_section" style="display:none;">
@@ -1126,7 +1140,7 @@
                         <span style="font-size: 12px; padding: 4px 10px; border-radius: 6px; background: rgba(255,255,255,0.05); color: ${statusColor}; border: 1px solid ${statusColor}; font-weight: bold;">
                             ${statusText}
                         </span>
-                        <button onclick="openWebPlayer('${encodeURIComponent(item.url)}', '${encodeURIComponent(item.title || "بث مباشر")}')" style="background: #FFB703; color: #000; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer;">▶ تشغيل</button>
+                        <button onclick="applyAndParseLink('${encodeURIComponent(item.url)}')" style="background: #10B981; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer;">⚡ فرز وتشغيل</button>
                         <button onclick="deleteSingleLink('${item.id}')" style="background: rgba(239, 68, 68, 0.2); color: #EF4444; border: 1px solid #EF4444; padding: 6px 10px; border-radius: 6px; cursor: pointer;">🗑️</button>
                     </div>
                 </div>
@@ -1217,6 +1231,24 @@
         }
     }
 
+    
+    function toggleLinksHub() {
+        const sec = document.getElementById("links_view_section");
+        const isOpen = sec && sec.style.display === "block";
+        if (isOpen) {
+            switchMainTab("live");
+        } else {
+            switchMainTab("links");
+        }
+    }
+
+    function applyAndParseLink(encodedUrl) {
+        const url = decodeURIComponent(encodedUrl);
+        document.getElementById("iptv_url").value = url;
+        switchMainTab("live");
+        loadAndParse();
+    }
+
     function switchMainTab(tab) {
         const linksSec = document.getElementById("links_view_section");
         const packagesSec = document.getElementById("packages_section");
@@ -1229,16 +1261,18 @@
             if (filterBar) filterBar.style.display = "none";
             if (itemsContainer) itemsContainer.style.display = "none";
             document.querySelectorAll(".portal-card").forEach(c => c.classList.remove("active"));
-            const tabEl = document.getElementById("tab_links");
-            if (tabEl) tabEl.classList.add("active");
+            const btnHub = document.getElementById("btn_hub_toggle");
+            if (btnHub) btnHub.classList.add("active");
             loadSavedLinks();
         } else {
             if (linksSec) linksSec.style.display = "none";
             if (packagesSec && rawData[tab] && rawData[tab].length > 0) packagesSec.style.display = "block";
             if (filterBar) filterBar.style.display = "block";
             if (itemsContainer) itemsContainer.style.display = "grid";
-            const tabEl = document.getElementById("tab_links");
-            if (tabEl) tabEl.classList.remove("active");
+            const btnHub = document.getElementById("btn_hub_toggle");
+            if (btnHub) btnHub.classList.remove("active");
+            const activeCard = document.getElementById("tab_" + tab);
+            if (activeCard) activeCard.classList.add("active");
         }
     }
 
