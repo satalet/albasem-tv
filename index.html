@@ -944,6 +944,13 @@
 
     <script>
     let art = null;
+    
+    function handlePosterPlay(el) {
+        const stream = decodeURIComponent(el.getAttribute("data-stream") || "");
+        const title = decodeURIComponent(el.getAttribute("data-title") || "");
+        openWebPlayer(stream, title);
+    }
+    
     function openWebPlayer(url, title) {
         document.getElementById("player_title").innerText = "🎬 " + title;
         document.getElementById("player_modal").style.display = "flex";
