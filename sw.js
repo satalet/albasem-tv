@@ -1,4 +1,4 @@
-const CACHE_NAME = 'albasem-v1';
+const CACHE_NAME = 'albasem-v2';
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
@@ -9,6 +9,15 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  // تمرير الطلبات بشكل طبيعي
-  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+  const url = e.request.url;
+
+  // استثناء البروكسي وتدفقات الفيديو وقوائم التشغيل تماماً ليتولاها المتصفح مباشرة
+  if (url.includes('/api/proxy') || url.includes('.ts') || url.includes('.m3u8')) {
+    return;
+  }
+
+  // تمرير الملفات العادية للموقع
+  e.respondWith(
+    fetch(e.request).catch(() => caches.match(e.request))
+  );
 });
