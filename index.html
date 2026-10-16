@@ -626,6 +626,7 @@
                         <b>المستخدم:</b> ${d.user} | <b>المرور:</b> ${d.pass}<br>
                         <b>تاريخ الانتهاء:</b> ${d.exp_date} | <b>السرعة:</b> ${d.latency}
                     `;
+                    saveScannedLinkAuto(d.url, `سيرفر OCR (${d.host})`);
                     document.getElementById("btn_apply_link").onclick = () => {
                         document.getElementById("iptv_url").value = d.url;
                         closeScannerModal();
@@ -674,6 +675,7 @@
                         <b>المستخدم:</b> ${d.user} | <b>المرور:</b> ${d.pass}<br>
                         <b>تاريخ الانتهاء:</b> ${d.exp_date} | <b>الاستجابة:</b> ${d.latency}
                     `;
+                    saveScannedLinkAuto(d.url, `سيرفر OCR (${d.host})`);
                     document.getElementById("btn_apply_link").onclick = () => {
                         document.getElementById("iptv_url").value = d.url;
                         closeScannerModal();
