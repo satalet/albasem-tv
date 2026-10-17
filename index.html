@@ -1012,7 +1012,11 @@
     function openWebPlayer(rawUrl, title) {
         let url = rawUrl;
         if (url && url.startsWith("http://")) {
-            url = "https://actions-wallpapers-dakota-chambers.trycloudflare.com/proxy?url=" + encodeURIComponent(rawUrl);
+            let playTarget = rawUrl;
+            if (playTarget && playTarget.includes(".ts")) {
+                playTarget = playTarget.replace(/\.ts(\?|$)/, ".m3u8$1");
+            }
+            url = "https://actions-wallpapers-dakota-chambers.trycloudflare.com/proxy?url=" + encodeURIComponent(playTarget);
         }
         document.getElementById("player_title").innerText = "🎬 " + title;
         document.getElementById("player_modal").style.display = "flex";
@@ -1032,7 +1036,11 @@
 
         let playerUrl = streamUrl;
         if (playerUrl && playerUrl.startsWith("http://")) {
-            playerUrl = "https://actions-wallpapers-dakota-chambers.trycloudflare.com/proxy?url=" + encodeURIComponent(streamUrl);
+            let playTarget2 = streamUrl;
+            if (playTarget2 && playTarget2.includes(".ts")) {
+                playTarget2 = playTarget2.replace(/\.ts(\?|$)/, ".m3u8$1");
+            }
+            playerUrl = "https://actions-wallpapers-dakota-chambers.trycloudflare.com/proxy?url=" + encodeURIComponent(playTarget2);
         }
 
         let streamType = "auto";
