@@ -1107,15 +1107,31 @@
     // ==========================================
     const API_BASE = "https://scan-ip-tv.onrender.com";
 
+    const GIST_RAW_URL = "https://gist.githubusercontent.com/satalet/221a7afceec9f215c9eb61421eab0715/raw/links.json";
+
     async function loadSavedLinks() {
+        try {
+            // سحب سحابي فوري ومباشر من GitHub بدون انتظار استيقاظ سيرفر Render
+            const res = await fetch(`${GIST_RAW_URL}?t=${Date.now()}`);
+            if (res.ok) {
+                const data = await res.json();
+                renderLinksList(data);
+                const countBadge = document.getElementById("count-links");
+                if (countBadge) countBadge.innerText = data.length || 0;
+                return;
+            }
+        } catch (e) {
+            console.log("جاري محاولة السحب عبر API البديل...", e);
+        }
+
         try {
             const res = await fetch(`${API_BASE}/api/links`);
             const data = await res.json();
             renderLinksList(data);
             const countBadge = document.getElementById("count-links");
             if (countBadge) countBadge.innerText = data.length || 0;
-        } catch (e) {
-            console.error("فشل جلب الروابط", e);
+        } catch (err) {
+            console.error("فشل جلب الروابط", err);
         }
     }
 
