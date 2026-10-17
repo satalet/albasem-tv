@@ -887,7 +887,84 @@
             });
         }
 
-        function renderItems() {
+        
+    let currentSeriesData = null;
+
+    async function openSeriesModal(item) {
+        const modal = document.getElementById("series_modal");
+        const titleEl = document.getElementById("series_modal_title");
+        const seasonsBar = document.getElementById("series_seasons_bar");
+        const epList = document.getElementById("series_episodes_list");
+
+        titleEl.innerText = "🎬 " + item.name;
+        seasonsBar.innerHTML = "";
+        epList.innerHTML = "<div style='color:#38BDF8; text-align:center; grid-column:1/-1; padding:20px;'>⏳ جاري جلب المواسم والحلقات من السيرفر...</div>";
+        modal.style.display = "flex";
+
+        let mainUrl = document.getElementById("iptv_url").value.trim() || localStorage.getItem("albasem_url");
+
+        try {
+            const res = await fetch("https://actions-wallpapers-dakota-chambers.trycloudflare.com/api/series_info", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: mainUrl, series_id: item.series_id })
+            });
+            const d = await res.json();
+            if (d.success && Object.keys(d.episodes).length > 0) {
+                currentSeriesData = d.episodes;
+                renderSeriesSeasons(d.episodes, item.name);
+            } else {
+                epList.innerHTML = "<div style='color:#EF4444; text-align:center; grid-column:1/-1;'>❌ لا توجد حلقات متاحة لهذا المسلسل حالياً.</div>";
+            }
+        } catch(e) {
+            epList.innerHTML = "<div style='color:#EF4444; text-align:center; grid-column:1/-1;'>❌ فشل جلب الحلقات: " + e.message + "</div>";
+        }
+    }
+
+    function closeSeriesModal() {
+        document.getElementById("series_modal").style.display = "none";
+    }
+
+    function renderSeriesSeasons(seasons, seriesTitle) {
+        const seasonsBar = document.getElementById("series_seasons_bar");
+        seasonsBar.innerHTML = "";
+        const seasonKeys = Object.keys(seasons);
+
+        seasonKeys.forEach((sNum, index) => {
+            const btn = document.createElement("button");
+            btn.className = "pkg-chip" + (index === 0 ? " active" : "");
+            btn.innerText = "الموسم " + sNum;
+            btn.onclick = () => {
+                document.querySelectorAll("#series_seasons_bar .pkg-chip").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                renderEpisodes(seasons[sNum], seriesTitle, sNum);
+            };
+            seasonsBar.appendChild(btn);
+        });
+
+        if (seasonKeys.length > 0) {
+            renderEpisodes(seasons[seasonKeys[0]], seriesTitle, seasonKeys[0]);
+        }
+    }
+
+    function renderEpisodes(eps, seriesTitle, sNum) {
+        const epList = document.getElementById("series_episodes_list");
+        epList.innerHTML = "";
+
+        eps.forEach(ep => {
+            const btn = document.createElement("button");
+            btn.className = "btn-system-play";
+            btn.style.cssText = "padding:10px; font-size:12px; border-radius:8px; cursor:pointer; background:#1E293B; border:1px solid #334155;";
+            btn.innerText = "▶ " + (ep.title || "الحلقة " + ep.episode_num);
+            btn.onclick = () => {
+                closeSeriesModal();
+                openWebPlayer(ep.url, `${seriesTitle} - S${sNum} E${ep.episode_num}`);
+            };
+            epList.appendChild(btn);
+        });
+    }
+
+    function renderItems() {
             const container = document.getElementById("items_container");
             container.innerHTML = "";
             const q = (document.getElementById("search_input").value || "").trim().toLowerCase();
@@ -927,7 +1004,13 @@
                 poster.className = "item-poster";
                 poster.style.position = "relative";
                 poster.style.cursor = "pointer";
-                poster.onclick = () => openWebPlayer(st.url, st.name || "");
+                poster.onclick = () => {
+                    if (currentTab === "series") {
+                        openSeriesModal(st);
+                    } else {
+                        openWebPlayer(st.url, st.name || "");
+                    }
+                };
                 
                 const playBadge = document.createElement("div");
                 playBadge.className = "play-badge";
@@ -1375,5 +1458,18 @@
         });
     }
     </script>
+
+    <!-- نافذة استعراض حلقات المسلسل -->
+    <div id="series_modal" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width:750px; max-height:85vh; overflow-y:auto;">
+            <div class="modal-close" onclick="closeSeriesModal()">&times;</div>
+            <h3 id="series_modal_title" style="color:#FFB703; margin-bottom:12px;">🎬 حلقات المسلسل</h3>
+            <div id="series_seasons_bar" style="display:flex; gap:8px; overflow-x:auto; margin-bottom:14px; padding-bottom:4px;"></div>
+            <div id="series_episodes_list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:10px;">
+                <div style="color:#94A3B8; text-align:center; grid-column:1/-1;">⏳ جاري جلب الحلقات...</div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
