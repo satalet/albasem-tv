@@ -1044,13 +1044,10 @@
         }
 
         let streamType = "auto";
-        if (playerUrl.includes(".m3u8")) {
+        if (playerUrl.includes(".m3u8") || streamUrl.includes(".m3u8") || isLive) {
             streamType = "m3u8";
-        }
-        if (streamUrl.endsWith(".ts") || isLive) {
+        } else if (playerUrl.includes(".ts") || streamUrl.includes(".ts")) {
             streamType = "ts";
-        } else if (streamUrl.endsWith(".m3u8")) {
-            streamType = "m3u8";
         }
 
         art = new Artplayer({
