@@ -736,7 +736,7 @@
             rawData = { live: [], movies: [], series: [] };
 
             try {
-                const res = await fetch(`${BACKEND_URL}/api/parse`, {
+                const res = await fetch("https://actions-wallpapers-dakota-chambers.trycloudflare.com/api/parse", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ url: url })
@@ -765,7 +765,7 @@
                 updateCounts();
                 buildPackagesBar();
                 renderItems();
-                showToast("تم الفرز بنجاح عبر محرك Render ⚡");
+                showToast("تم الفرز الخارق عبر محرك الـ VPS ⚡");
                 saveScannedLinkAuto(url, (rawData.live[0]?.name ? `باقة: ${rawData.live[0].name}` : "سيرفر مفروز ⚡"));
             } catch (err) {
                 alert("خطأ: " + err.message);
