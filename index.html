@@ -1010,6 +1010,7 @@
     }
     
     function openWebPlayer(rawUrl, title) {
+        closeWebPlayer();
         let url = rawUrl;
         if (url && url.startsWith("http://")) {
             let playTarget = rawUrl;
@@ -1123,11 +1124,32 @@
     }
 
     function closeWebPlayer() {
-        if (art) {
-            art.destroy();
-            art = null;
+        if (window.art) {
+            if (window.art.hls) {
+                try { window.art.hls.destroy(); } catch(e){}
+                window.art.hls = null;
+            }
+            if (window.art.mpegts) {
+                try { window.art.mpegts.destroy(); } catch(e){}
+                window.art.mpegts = null;
+            }
+            try { window.art.destroy(true); } catch(e){}
+            window.art = null;
         }
-        document.getElementById("player_modal").style.display = "none";
+        const container = document.getElementById("artplayer-container");
+        if (container) {
+            const vids = container.querySelectorAll("video");
+            vids.forEach(v => {
+                try {
+                    v.pause();
+                    v.removeAttribute("src");
+                    v.load();
+                } catch(e){}
+            });
+            container.innerHTML = "";
+        }
+        const modal = document.getElementById("player_modal");
+        if (modal) modal.style.display = "none";
     }
     
     // ==========================================
