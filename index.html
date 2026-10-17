@@ -1056,41 +1056,61 @@
             playbackRate: !isLive,
             aspectRatio: true,
             customType: {
-                m3u8: function (video, url, artInstance) {
+                m3u8: function(video, url, art) {
                     if (Hls.isSupported()) {
-                        const hls = new Hls();
+                        const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
                         hls.loadSource(url);
                         hls.attachMedia(video);
-                        artInstance.on("destroy", () => hls.destroy());
+                        art.hls = hls;
                     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
                         video.src = url;
                     }
                 },
-                ts: function (video, url, artInstance) {
-                    if (window.mpegts && mpegts.isSupported()) {
-                        const tsPlayer = mpegts.createPlayer({
-                            type: "m2ts",
-                            isLive: true,
-                            url: url
-                        }, {
-                            enableWorker: true,
-                            lazyLoad: false,
-                            liveBufferLatencyChasing: false,
-                            liveBufferLatencyMaxLatency: 4.0,
-                            liveBufferLatencyMinRemain: 2.0,
-                            autoCleanupSourceBuffer: true,
-                            autoCleanupMaxBackwardDuration: 30,
-                            autoCleanupMinBackwardDuration: 15
-                        });
-                        tsPlayer.attachMediaElement(video);
-                        tsPlayer.load();
-                        tsPlayer.play().catch(e => console.log("Autoplay blocked:", e));
-                        artInstance.on("destroy", () => tsPlayer.destroy());
+                ts: function(video, url, art) {
+                    if (mpegts.isSupported()) {
+                        let isReconnecting = false;
+                        function startStream() {
+                            if (art.mpegts) {
+                                try { art.mpegts.destroy(); } catch(e){}
+                            }
+                            const player = mpegts.createPlayer({
+                                type: "mse",
+                                isLive: true,
+                                url: url + (url.includes("?") ? "&_r=" : "?_r=") + Date.now()
+                            }, {
+                                enableWorker: true,
+                                lazyLoad: false,
+                                liveBufferLatencyChasing: true,
+                                autoCleanupSourceBuffer: true,
+                                stashInitialSize: 128
+                            });
+                            player.attachMediaElement(video);
+                            player.load();
+                            player.play().catch(()=>{});
+                            art.mpegts = player;
+
+                            player.on(mpegts.Events.ERROR, function(type, details, err) {
+                                console.warn("MpegTS Error, reconnecting...", type, details);
+                                reconnect();
+                            });
+                        }
+
+                        function reconnect() {
+                            if (isReconnecting) return;
+                            isReconnecting = true;
+                            setTimeout(() => {
+                                startStream();
+                                isReconnecting = false;
+                            }, 1000);
+                        }
+
+                        video.addEventListener("ended", reconnect);
+                        startStream();
                     } else {
                         video.src = url;
                     }
                 }
-            }
+            },
         });
     }
 
