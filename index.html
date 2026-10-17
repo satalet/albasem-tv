@@ -1051,7 +1051,7 @@
             streamType = "ts";
         }
 
-        art = new Artplayer({
+        window.art = new Artplayer({
             container: "#artplayer-container",
             url: playerUrl,
             type: streamType,
@@ -1124,30 +1124,46 @@
     }
 
     function closeWebPlayer() {
+        console.log("🛑 جاري إغلاق المشغل وإيقاف الصوت بالكامل...");
         if (window.art) {
-            if (window.art.hls) {
-                try { window.art.hls.destroy(); } catch(e){}
-                window.art.hls = null;
-            }
-            if (window.art.mpegts) {
-                try { window.art.mpegts.destroy(); } catch(e){}
-                window.art.mpegts = null;
-            }
-            try { window.art.destroy(true); } catch(e){}
+            try {
+                if (window.art.hls) {
+                    window.art.hls.stopLoad();
+                    window.art.hls.detachMedia();
+                    window.art.hls.destroy();
+                    window.art.hls = null;
+                }
+            } catch(e){}
+            try {
+                if (window.art.mpegts) {
+                    window.art.mpegts.unload();
+                    window.art.mpegts.detachMediaElement();
+                    window.art.mpegts.destroy();
+                    window.art.mpegts = null;
+                }
+            } catch(e){}
+            try {
+                window.art.pause();
+                window.art.destroy(true);
+            } catch(e){}
             window.art = null;
         }
+
+        // تفريغ وقتل أي وسم video موجود بالصفحة داخل الحاوية
         const container = document.getElementById("artplayer-container");
         if (container) {
             const vids = container.querySelectorAll("video");
             vids.forEach(v => {
                 try {
                     v.pause();
-                    v.removeAttribute("src");
+                    v.src = "";
                     v.load();
+                    v.remove();
                 } catch(e){}
             });
             container.innerHTML = "";
         }
+
         const modal = document.getElementById("player_modal");
         if (modal) modal.style.display = "none";
     }
