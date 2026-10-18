@@ -417,28 +417,6 @@
         @media (max-width: 768px) {
             #artplayer-container { height: 260px; }
         }
-    
-        /* إصلاح تكبير الشاشة في كالي والجوال */
-        .art-video-player.art-fullscreen-web,
-        .art-video-player:fullscreen,
-        .art-video-player:-webkit-full-screen {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            z-index: 9999999 !important;
-            background: #000 !important;
-        }
-        #player_modal:has(.art-fullscreen-web) .modal-content,
-        #player_modal:has(:fullscreen) .modal-content {
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-        }
-
     </style>
     <!-- مشغل ويب Artplayer و HLS -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -541,9 +519,6 @@
     <div id="toast"></div>
 
     <script>
-        var artInstance = null;
-        var hlsInstance = null;
-        var mpegtsPlayer = null;
         const BACKEND_URL = "https://scan-ip-tv.onrender.com";
         let currentTab = "live";
         let currentGroup = "all";
@@ -868,7 +843,7 @@
         }
 
         function getVisibleItems(tab) {
-            const list = rawData[tab] || [];
+            const list = (rawData && rawData[tab]) ? rawData[tab] : [];
             if (adultUnlocked) return list;
             return list.filter(it => !isItemAdult(it));
         }
@@ -963,14 +938,6 @@
                 };
                 bar.appendChild(chip);
             });
-
-                setTimeout(() => {
-                    }
-                }, 150);
-            });
-                }
-            });
-
         }
 
         
@@ -1228,10 +1195,7 @@
             isLive: isLive,
             autoplay: true,
             pip: true,
-                            fullscreen: true,
-                fullscreenWeb: false,
-                autoOrientation: true,
-                aspectRatio: true,
+            fullscreen: true,
             fullscreenWeb: true,
             setting: true,
             playbackRate: !isLive,
@@ -1374,13 +1338,6 @@
     }
 
     function renderLinksList(links) {
-        const savedStatus = JSON.parse(localStorage.getItem("albasem_checked_status") || "{}");
-        if (Array.isArray(links)) {
-            links.forEach(item => {
-                if (savedStatus[item.url]) item.status = savedStatus[item.url];
-            });
-            currentHubLinks = links;
-        }
         const container = document.getElementById("links_list_container");
         if (!container) return;
         if (!links || links.length === 0) {
@@ -1444,32 +1401,18 @@
         }
     }
 
-    let currentHubLinks = [];
-
     async function runFastCheck() {
         const btn = document.getElementById("btn_check_all");
         if (btn) {
             btn.disabled = true;
-            btn.innerText = "⏳ جاري الفحص الدقيق (VPS)...";
+            btn.innerText = "⏳ جاري الفحص السريع...";
         }
         try {
-            const linksRes = await fetch(`${GIST_RAW_URL}?t=${Date.now()}`);
-            const currentLinks = await linksRes.json();
-
-            const res = await fetch("https://actions-wallpapers-dakota-chambers.trycloudflare.com/api/links/check", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ links: currentLinks })
-            });
-            const updatedLinks = await res.json();
-            currentHubLinks = updatedLinks;
-            localStorage.setItem("albasem_checked_status", JSON.stringify(
-                updatedLinks.reduce((acc, item) => { acc[item.url] = item.status; return acc; }, {})
-            ));
-            renderLinksList(updatedLinks);
-            showToast("✅ تم الفحص الدقيق لكافة السيرفرات!");
+            const res = await fetch("https://actions-wallpapers-dakota-chambers.trycloudflare.com/api/links/check", { method: "POST" });
+            const data = await res.json();
+            renderLinksList(data);
         } catch (e) {
-            alert("فشل تنفيذ الفحص: " + e.message);
+            alert("فشل تنفيذ الفحص السريع");
         } finally {
             if (btn) {
                 btn.disabled = false;
@@ -1493,20 +1436,13 @@
     }
 
     async function clearDeadLinks() {
-        const deadItems = currentHubLinks.filter(item => item.status === "dead");
-        if (deadItems.length === 0) {
-            return alert("لا توجد روابط معطلة لحذفها (قم بإجراء الفحص السريع أولاً).");
-        }
-        if (!confirm(`تم العثور على (${deadItems.length}) رابط متوقف فعلياً. هل تريد حذفها؟`)) return;
+        if (!confirm("هل تريد حذف كافة الروابط المعطلة دفعة واحدة؟")) return;
         try {
-            for (const item of deadItems) {
-                await fetch(`${API_BASE}/api/links`, {
-                    method: "DELETE",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ id: item.id })
-                });
-            }
-            showToast("🗑️ تم تنظيف الروابط المعطلة بنجاح");
+            await fetch(`${API_BASE}/api/links`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ clear_dead: true })
+            });
             loadSavedLinks();
         } catch (e) {
             alert("فشل تنظيف الروابط");
