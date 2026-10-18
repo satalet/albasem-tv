@@ -1128,9 +1128,15 @@
     <!-- نافذة المشغل المنبثقة -->
     <div id="player_modal" class="player-modal">
         <div class="player-content">
-            <div class="player-header">
-                <span id="player_title">مشغل الفيديو</span>
-                <button class="player-close" onclick="closeWebPlayer()">✕</button>
+            <div class="player-header" style="flex-wrap: wrap; gap: 8px;">
+                <span id="player_title" style="flex:1; min-width:180px;">مشغل الفيديو</span>
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <button onclick="switchAudioTrack(0)" title="إصلاح الصوت الصامت وتشغيل المسار 1" style="background:#0284C7; color:#fff; border:none; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:bold;">🔊 إصلاح الصوت (مسار 1)</button>
+                    <button onclick="switchAudioTrack(1)" title="تبديل للغة الصوت الثانية في أفلام MULTI" style="background:#8B5CF6; color:#fff; border:none; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:bold;">🗣️ لغة 2</button>
+                    <button onclick="document.getElementById('sub_file_input').click()" title="إضافة ملف ترجمة خارجي SRT/VTT" style="background:#10B981; color:#fff; border:none; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:bold;">💬 ترجمة</button>
+                    <input type="file" id="sub_file_input" accept=".srt,.vtt" style="display:none;" onchange="loadCustomSubtitle(event)">
+                    <button class="player-close" onclick="closeWebPlayer()" style="margin-right:6px;">✕</button>
+                </div>
             </div>
             <div id="artplayer-container"></div>
         </div>
@@ -1145,7 +1151,44 @@
         openWebPlayer(stream, title);
     }
     
+    
+    let currentRawStreamUrl = "";
+    let currentStreamTitle = "";
+
+    function switchAudioTrack(trackIndex) {
+        if (!currentRawStreamUrl) return;
+        showToast(`🔊 جاري تفعيل معالج الصوت وتوليف المسار (${trackIndex + 1})...`);
+        const fixedUrl = "https://actions-wallpapers-dakota-chambers.trycloudflare.com/proxy_fix?aud=" + trackIndex + "&url=" + encodeURIComponent(currentRawStreamUrl);
+        if (window.art) {
+            window.art.switchUrl(fixedUrl);
+            window.art.play();
+        }
+    }
+
+    function srtToVtt(srtText) {
+        let vtt = "WEBVTT\n\n" + srtText
+            .replace(/\r\n/g, "\n")
+            .replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, "$1.$2");
+        return URL.createObjectURL(new Blob([vtt], { type: "text/vtt;charset=utf-8" }));
+    }
+
+    function loadCustomSubtitle(event) {
+        const file = event.target.files[0];
+        if (!file || !window.art) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result;
+            const subUrl = file.name.endsWith(".srt") ? srtToVtt(content) : URL.createObjectURL(file);
+            window.art.subtitle.switch(subUrl, { name: "الترجمة العربية" });
+            window.art.subtitle.show = true;
+            showToast("✅ تم تركيب الترجمة بنجاح!");
+        };
+        reader.readAsText(file, "UTF-8");
+    }
+
     function openWebPlayer(rawUrl, title) {
+        currentRawStreamUrl = rawUrl;
+        currentStreamTitle = title;
         closeWebPlayer();
         let url = rawUrl;
         if (url && url.startsWith("http://")) {
