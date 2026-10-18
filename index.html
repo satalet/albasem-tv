@@ -1128,15 +1128,17 @@
     <!-- نافذة المشغل المنبثقة -->
     <div id="player_modal" class="player-modal">
         <div class="player-content">
-            <div class="player-header" style="flex-wrap: wrap; gap: 8px;">
+                        <div class="player-header" style="flex-wrap: wrap; gap: 8px;">
                 <span id="player_title" style="flex:1; min-width:180px;">مشغل الفيديو</span>
-                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                    <button onclick="switchAudioTrack(0)" title="إصلاح الصوت الصامت وتشغيل المسار 1" style="background:#0284C7; color:#fff; border:none; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:bold;">🔊 إصلاح الصوت (مسار 1)</button>
-                    <button onclick="switchAudioTrack(1)" title="تبديل للغة الصوت الثانية في أفلام MULTI" style="background:#8B5CF6; color:#fff; border:none; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:bold;">🗣️ لغة 2</button>
-                    <button onclick="document.getElementById('sub_file_input').click()" title="إضافة ملف ترجمة خارجي SRT/VTT" style="background:#10B981; color:#fff; border:none; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:bold;">💬 ترجمة</button>
-                    <input type="file" id="sub_file_input" accept=".srt,.vtt" style="display:none;" onchange="loadCustomSubtitle(event)">
-                    <button class="player-close" onclick="closeWebPlayer()" style="margin-right:6px;">✕</button>
+                <div id="media_tracks_controls" style="display:none; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <select id="audio_track_select" onchange="onAudioTrackChange(this.value)" style="background:#0B0E14; color:#38BDF8; border:1px solid #334155; border-radius:6px; padding:4px 8px; font-size:11px; font-weight:bold; outline:none; cursor:pointer;">
+                        <option value="">🔊 الصوت الأصلي</option>
+                    </select>
+                    <select id="sub_track_select" onchange="onSubTrackChange(this.value)" style="background:#0B0E14; color:#10B981; border:1px solid #334155; border-radius:6px; padding:4px 8px; font-size:11px; font-weight:bold; outline:none; cursor:pointer;">
+                        <option value="off">💬 بدون ترجمة</option>
+                    </select>
                 </div>
+                <button class="player-close" onclick="closeWebPlayer()">✕</button>
             </div>
             <div id="artplayer-container"></div>
         </div>
@@ -1155,35 +1157,92 @@
     let currentRawStreamUrl = "";
     let currentStreamTitle = "";
 
-    function switchAudioTrack(trackIndex) {
-        if (!currentRawStreamUrl) return;
-        showToast(`🔊 جاري تفعيل معالج الصوت وتوليف المسار (${trackIndex + 1})...`);
-        const fixedUrl = "https://actions-wallpapers-dakota-chambers.trycloudflare.com/proxy_fix?aud=" + trackIndex + "&url=" + encodeURIComponent(currentRawStreamUrl);
-        if (window.art) {
-            window.art.switchUrl(fixedUrl);
-            window.art.play();
+    function onAudioTrackChange(audIdx) {
+        if (!currentRawStreamUrl || !window.art || audIdx === "") return;
+        showToast("🔊 جاري تبديل مسار الصوت المدمج وتصحيح الكودك...");
+        const fixedUrl = "https://actions-wallpapers-dakota-chambers.trycloudflare.com/proxy_fix?aud=" + audIdx + "&url=" + encodeURIComponent(currentRawStreamUrl);
+        window.art.switchUrl(fixedUrl);
+        window.art.play();
+    }
+
+    function onSubTrackChange(subIdx) {
+        if (!window.art) return;
+        if (subIdx === "off") {
+            window.art.subtitle.show = false;
+            showToast("💬 تم إيقاف الترجمة");
+            return;
         }
+        showToast("💬 جاري سحب الترجمة المدمجة من الفيلم...");
+        const subUrl = "https://actions-wallpapers-dakota-chambers.trycloudflare.com/api/extract_sub?sub=" + subIdx + "&url=" + encodeURIComponent(currentRawStreamUrl);
+        window.art.subtitle.switch(subUrl, { name: "Embedded Subtitle" });
+        window.art.subtitle.show = true;
     }
 
-    function srtToVtt(srtText) {
-        let vtt = "WEBVTT\n\n" + srtText
-            .replace(/\r\n/g, "\n")
-            .replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, "$1.$2");
-        return URL.createObjectURL(new Blob([vtt], { type: "text/vtt;charset=utf-8" }));
-    }
+    async function probeEmbeddedTracks(rawUrl, isLive) {
+        const ctrlBox = document.getElementById("media_tracks_controls");
+        const audSel = document.getElementById("audio_track_select");
+        const subSel = document.getElementById("sub_track_select");
+        if (!ctrlBox || !audSel || !subSel) return;
 
-    function loadCustomSubtitle(event) {
-        const file = event.target.files[0];
-        if (!file || !window.art) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const content = e.target.result;
-            const subUrl = file.name.endsWith(".srt") ? srtToVtt(content) : URL.createObjectURL(file);
-            window.art.subtitle.switch(subUrl, { name: "الترجمة العربية" });
-            window.art.subtitle.show = true;
-            showToast("✅ تم تركيب الترجمة بنجاح!");
-        };
-        reader.readAsText(file, "UTF-8");
+        if (isLive) {
+            ctrlBox.style.display = "none";
+            return;
+        }
+
+        ctrlBox.style.display = "flex";
+        audSel.innerHTML = '<option value="">⏳ فحص الصوت...</option>';
+        subSel.innerHTML = '<option value="off">⏳ فحص الترجمة...</option>';
+
+        try {
+            const res = await fetch("https://actions-wallpapers-dakota-chambers.trycloudflare.com/api/media_tracks", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: rawUrl })
+            });
+            const d = await res.json();
+
+            // 1. تعبئة مسارات الصوت المدمجة
+            audSel.innerHTML = '<option value="">🔊 الصوت الافتراضي</option>';
+            if (d.audio && d.audio.length > 0) {
+                d.audio.forEach(a => {
+                    const opt = document.createElement("option");
+                    opt.value = a.id;
+                    opt.innerText = `🔊 ${a.label}`;
+                    audSel.appendChild(opt);
+                });
+                // إذا كان مسار الصوت الأول AC3 أو EAC3 أو DTS (غير مدعوم بالمتصفح)، نقوم بتشغيل مصحح الصوت تلقائياً!
+                const firstCodec = (d.audio[0].codec || "").toLowerCase();
+                if (["ac3", "eac3", "dts", "truehd"].includes(firstCodec)) {
+                    audSel.value = "0";
+                    onAudioTrackChange("0");
+                }
+            }
+
+            // 2. تعبئة مسارات الترجمة المدمجة
+            subSel.innerHTML = '<option value="off">💬 إيقاف الترجمة</option>';
+            if (d.subs && d.subs.length > 0) {
+                let arabSubId = null;
+                d.subs.forEach(s => {
+                    const opt = document.createElement("option");
+                    opt.value = s.id;
+                    opt.innerText = `💬 ${s.label}`;
+                    subSel.appendChild(opt);
+                    if (s.lang.includes("ar") || s.label.toLowerCase().includes("arab") || s.label.includes("عرب")) {
+                        arabSubId = String(s.id);
+                    }
+                });
+                // تفعيل الترجمة العربية تلقائياً إذا كانت مدمجة مع الفيلم
+                if (arabSubId !== null) {
+                    subSel.value = arabSubId;
+                    onSubTrackChange(arabSubId);
+                }
+            } else {
+                subSel.innerHTML = '<option value="off">💬 لا توجد ترجمة منفصلة</option>';
+            }
+        } catch (e) {
+            audSel.innerHTML = '<option value="0">🔊 إصلاح الصوت (AAC)</option>';
+            subSel.innerHTML = '<option value="off">💬 بدون ترجمة</option>';
+        }
     }
 
     function openWebPlayer(rawUrl, title) {
@@ -1230,7 +1289,16 @@
             streamType = "ts";
         }
 
+        probeEmbeddedTracks(rawUrl, isLive);
         window.art = new Artplayer({
+            subtitle: {
+                style: {
+                    color: '#ffffff',
+                    fontSize: '22px',
+                    fontWeight: 'bold',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.9)'
+                }
+            },
             container: "#artplayer-container",
             url: playerUrl,
             type: streamType,
