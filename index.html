@@ -417,6 +417,28 @@
         @media (max-width: 768px) {
             #artplayer-container { height: 260px; }
         }
+    
+        /* إصلاح تكبير الشاشة في كالي والجوال */
+        .art-video-player.art-fullscreen-web,
+        .art-video-player:fullscreen,
+        .art-video-player:-webkit-full-screen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 9999999 !important;
+            background: #000 !important;
+        }
+        #player_modal:has(.art-fullscreen-web) .modal-content,
+        #player_modal:has(:fullscreen) .modal-content {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
     </style>
     <!-- مشغل ويب Artplayer و HLS -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -938,6 +960,20 @@
                 };
                 bar.appendChild(chip);
             });
+
+            artInstance.on('fullscreen', () => {
+                setTimeout(() => {
+                    if (artInstance && !artInstance.playing) {
+                        artInstance.play().catch(() => {});
+                    }
+                }, 150);
+            });
+            artInstance.on('resize', () => {
+                if (artInstance && !artInstance.playing && document.getElementById("player_modal").style.display === "flex") {
+                    artInstance.play().catch(() => {});
+                }
+            });
+
         }
 
         
@@ -1195,7 +1231,10 @@
             isLive: isLive,
             autoplay: true,
             pip: true,
-            fullscreen: true,
+                            fullscreen: true,
+                fullscreenWeb: false,
+                autoOrientation: true,
+                aspectRatio: true,
             fullscreenWeb: true,
             setting: true,
             playbackRate: !isLive,
