@@ -541,6 +541,9 @@
     <div id="toast"></div>
 
     <script>
+        var artInstance = null;
+        var hlsInstance = null;
+        var mpegtsPlayer = null;
         const BACKEND_URL = "https://scan-ip-tv.onrender.com";
         let currentTab = "live";
         let currentGroup = "all";
@@ -961,16 +964,10 @@
                 bar.appendChild(chip);
             });
 
-            artInstance.on('fullscreen', () => {
                 setTimeout(() => {
-                    if (artInstance && !artInstance.playing) {
-                        artInstance.play().catch(() => {});
                     }
                 }, 150);
             });
-            artInstance.on('resize', () => {
-                if (artInstance && !artInstance.playing && document.getElementById("player_modal").style.display === "flex") {
-                    artInstance.play().catch(() => {});
                 }
             });
 
