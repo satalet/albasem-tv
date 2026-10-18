@@ -1308,16 +1308,32 @@
     // 🔗 إدارة مستودع السيرفرات والروابط (Links Hub)
     // ==========================================
     const API_BASE = "https://scan-ip-tv.onrender.com";
-
+    const VPS_BASE = "https://actions-wallpapers-dakota-chambers.trycloudflare.com";
     const GIST_RAW_URL = "https://gist.githubusercontent.com/satalet/221a7afceec9f215c9eb61421eab0715/raw/links.json";
 
-    async function loadSavedLinks() {
+    let cachedLinksList = [];
+
+    async function loadSavedLinks(forceReload = false) {
+        // إذا كانت الروابط محملة ومفحوصة مسبقاً ولم نطلب تحديثاً قسرياً، نعرضها كما هي دون مسح نتيجة الفحص
+        if (!forceReload && cachedLinksList.length > 0) {
+            renderLinksList(cachedLinksList);
+            return;
+        }
+
+        const savedStatusMap = JSON.parse(localStorage.getItem("albasem_links_status_v2") || "{}");
+
         try {
-            // سحب سحابي فوري ومباشر من GitHub بدون انتظار استيقاظ سيرفر Render
             const res = await fetch(`${GIST_RAW_URL}?t=${Date.now()}`);
             if (res.ok) {
                 const data = await res.json();
-                renderLinksList(data);
+                data.forEach(item => {
+                    if (savedStatusMap[item.url]) {
+                        item.status = savedStatusMap[item.url].status;
+                        item.conns = savedStatusMap[item.url].conns;
+                    }
+                });
+                cachedLinksList = data;
+                renderLinksList(cachedLinksList);
                 const countBadge = document.getElementById("count-links");
                 if (countBadge) countBadge.innerText = data.length || 0;
                 return;
@@ -1329,7 +1345,8 @@
         try {
             const res = await fetch(`${API_BASE}/api/links`);
             const data = await res.json();
-            renderLinksList(data);
+            cachedLinksList = data;
+            renderLinksList(cachedLinksList);
             const countBadge = document.getElementById("count-links");
             if (countBadge) countBadge.innerText = data.length || 0;
         } catch (err) {
@@ -1345,17 +1362,33 @@
             return;
         }
 
-        container.innerHTML = links.map(item => {
-            const statusColor = item.status === "online" ? "#10B981" : (item.status === "dead" ? "#EF4444" : "#94A3B8");
-            const statusText = item.status === "online" ? "🟢 شغال" : (item.status === "dead" ? "🔴 متوقف" : "⚪ غير مفحوص");
+        container.innerHTML = links.map((item, idx) => {
+            let statusColor = "#94A3B8";
+            let statusText = "⚪ غير مفحوص";
+            const connLabel = item.conns ? ` (${item.conns})` : "";
+
+            if (item.status === "checking") {
+                statusColor = "#38BDF8";
+                statusText = "⏳ جاري الفحص...";
+            } else if (item.status === "online") {
+                statusColor = "#10B981";
+                statusText = `🟢 شغال${connLabel}`;
+            } else if (item.status === "busy") {
+                statusColor = "#F59E0B";
+                statusText = `🟡 مشغول${connLabel}`;
+            } else if (item.status === "dead") {
+                statusColor = "#EF4444";
+                statusText = `🔴 متوقف${connLabel}`;
+            }
+
             return `
-                <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; gap: 12px; flex-wrap: wrap;">
+                <div id="link_card_${idx}" style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid ${item.status === 'checking' ? '#38BDF8' : 'var(--border)'}; border-radius: 10px; padding: 12px 16px; gap: 12px; flex-wrap: wrap; transition: 0.2s;">
                     <div style="flex: 1; min-width: 220px;">
-                        <div style="font-weight: bold; font-size: 15px; color: #fff; margin-bottom: 4px;">${item.title || "بدون عنوان"}</div>
+                        <div style="font-weight: bold; font-size: 15px; color: #fff; margin-bottom: 4px;">${idx + 1}. ${item.title || "بدون عنوان"}</div>
                         <div style="font-size: 12px; color: var(--text-muted); word-break: break-all;">${item.url}</div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 12px; padding: 4px 10px; border-radius: 6px; background: rgba(255,255,255,0.05); color: ${statusColor}; border: 1px solid ${statusColor}; font-weight: bold;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span onclick="checkOneLink(${idx})" title="اضغط لإعادة فحص هذا الرابط فقط" style="cursor:pointer; font-size: 12px; padding: 5px 12px; border-radius: 6px; background: rgba(255,255,255,0.05); color: ${statusColor}; border: 1px solid ${statusColor}; font-weight: bold;">
                             ${statusText}
                         </span>
                         <button onclick="applyAndParseLink('${encodeURIComponent(item.url)}')" style="background: #10B981; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer;">⚡ فرز وتشغيل</button>
@@ -1364,6 +1397,60 @@
                 </div>
             `;
         }).join("");
+    }
+
+    function saveStatusToLocal() {
+        const map = {};
+        cachedLinksList.forEach(it => {
+            if (it.url && it.status && it.status !== "checking") {
+                map[it.url] = { status: it.status, conns: it.conns || "" };
+            }
+        });
+        localStorage.setItem("albasem_links_status_v2", JSON.stringify(map));
+    }
+
+    async function checkOneLink(index) {
+        if (!cachedLinksList[index]) return;
+        cachedLinksList[index].status = "checking";
+        cachedLinksList[index].conns = "";
+        renderLinksList(cachedLinksList);
+
+        try {
+            const res = await fetch(`${VPS_BASE}/api/links/check`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: cachedLinksList[index].url })
+            });
+            const d = await res.json();
+            cachedLinksList[index].status = d.status || (d.online ? "online" : "dead");
+            cachedLinksList[index].conns = d.conns || "";
+        } catch (e) {
+            cachedLinksList[index].status = "dead";
+            cachedLinksList[index].conns = "خطأ اتصال";
+        }
+        saveStatusToLocal();
+        renderLinksList(cachedLinksList);
+    }
+
+    async function runFastCheck() {
+        const btn = document.getElementById("btn_check_all");
+        if (btn) btn.disabled = true;
+
+        if (!cachedLinksList || cachedLinksList.length === 0) {
+            await loadSavedLinks(true);
+        }
+
+        const total = cachedLinksList.length;
+        for (let i = 0; i < total; i++) {
+            if (btn) btn.innerText = `⏳ فحص (${i + 1} من ${total})...`;
+            await checkOneLink(i);
+        }
+
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = "⚡ فحص سريع للكل";
+        }
+        showToast("✅ اكتمل الفحص المتسلسل الدقيق لكافة السيرفرات!");
     }
 
     async function addManualLink() {
@@ -1381,7 +1468,7 @@
             });
             urlInput.value = "";
             titleInput.value = "";
-            loadSavedLinks();
+            await loadSavedLinks(true);
         } catch (e) {
             alert("حدث خطأ أثناء حفظ الرابط");
         }
@@ -1395,45 +1482,9 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ url, title: title || "سيرفر مفروز", source: "auto_scan" })
             });
-            loadSavedLinks();
+            await loadSavedLinks(true);
         } catch (e) {
             console.log("فشل الحفظ التلقائي", e);
-        }
-    }
-
-    async function runFastCheck() {
-        const btn = document.getElementById("btn_check_all");
-        if (btn) {
-            btn.disabled = true;
-            btn.innerText = "⏳ جاري الفحص الفائق (VPS)...";
-        }
-        try {
-            // جلب الروابط الحالية المخزنة
-            const linksRes = await fetch(`${GIST_RAW_URL}?t=${Date.now()}`);
-            const currentLinks = await linksRes.json();
-
-            // إرسالها لمحرك الفحص الدقيق على الـ VPS
-            const res = await fetch("https://actions-wallpapers-dakota-chambers.trycloudflare.com/api/links/check", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ links: currentLinks })
-            });
-            const result = await res.json();
-            const linksList = result.data || result.links || result;
-            
-            if (Array.isArray(linksList)) {
-                renderLinksList(linksList);
-                showToast("✅ اكتمل الفحص الدقيق لكافة السيرفرات!");
-            } else {
-                alert("استجابة غير صالحة من سيرفر الفحص");
-            }
-        } catch (e) {
-            alert("فشل تنفيذ الفحص: " + e.message);
-        } finally {
-            if (btn) {
-                btn.disabled = false;
-                btn.innerText = "⚡ فحص سريع للكل";
-            }
         }
     }
 
@@ -1445,27 +1496,40 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ id })
             });
-            loadSavedLinks();
+            cachedLinksList = cachedLinksList.filter(it => String(it.id) !== String(id));
+            renderLinksList(cachedLinksList);
+            const countBadge = document.getElementById("count-links");
+            if (countBadge) countBadge.innerText = cachedLinksList.length;
         } catch (e) {
             alert("فشل حذف الرابط");
         }
     }
 
     async function clearDeadLinks() {
-        if (!confirm("هل تريد حذف كافة الروابط المعطلة دفعة واحدة؟")) return;
+        const deadItems = cachedLinksList.filter(it => it.status === "dead");
+        if (deadItems.length === 0) {
+            return alert("لا توجد روابط معطلة (🔴 متوقف) لحذفها. قم بإجراء الفحص أولاً.");
+        }
+        if (!confirm(`تم تحديد (${deadItems.length}) رابط متوقف فعلياً. هل تريد حذفها نهائياً؟`)) return;
         try {
-            await fetch(`${API_BASE}/api/links`, {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ clear_dead: true })
-            });
-            loadSavedLinks();
+            for (const item of deadItems) {
+                await fetch(`${API_BASE}/api/links`, {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: item.id })
+                });
+            }
+            cachedLinksList = cachedLinksList.filter(it => it.status !== "dead");
+            saveStatusToLocal();
+            renderLinksList(cachedLinksList);
+            const countBadge = document.getElementById("count-links");
+            if (countBadge) countBadge.innerText = cachedLinksList.length;
+            showToast("🗑️ تم حذف الروابط المتوقفة فقط بنجاح!");
         } catch (e) {
             alert("فشل تنظيف الروابط");
         }
     }
 
-    
     function toggleLinksHub() {
         const sec = document.getElementById("links_view_section");
         const isOpen = sec && sec.style.display === "block";
@@ -1497,7 +1561,7 @@
             document.querySelectorAll(".portal-card").forEach(c => c.classList.remove("active"));
             const btnHub = document.getElementById("btn_hub_toggle");
             if (btnHub) btnHub.classList.add("active");
-            loadSavedLinks();
+            loadSavedLinks(false);
         } else {
             if (linksSec) linksSec.style.display = "none";
             if (packagesSec && rawData[tab] && rawData[tab].length > 0) packagesSec.style.display = "block";
@@ -1510,7 +1574,6 @@
         }
     }
 
-    
     document.getElementById("tab_live")?.addEventListener("click", () => switchMainTab("live"));
     document.getElementById("tab_movies")?.addEventListener("click", () => switchMainTab("movies"));
     document.getElementById("tab_series")?.addEventListener("click", () => switchMainTab("series"));

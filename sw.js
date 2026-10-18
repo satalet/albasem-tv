@@ -1,23 +1,12 @@
-const CACHE_NAME = 'albasem-v2';
-
-self.addEventListener('install', (e) => {
-  self.skipWaiting();
+const CACHE_NAME = 'albasem-tv-v5';
+self.addEventListener('install', e => self.skipWaiting());
+self.addEventListener('activate', e => {
+    e.waitUntil(
+        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
+        .then(() => self.clients.claim())
+    );
 });
-
-self.addEventListener('activate', (e) => {
-  e.waitUntil(clients.claim());
-});
-
-self.addEventListener('fetch', (e) => {
-  const url = e.request.url;
-
-  // استثناء البروكسي وتدفقات الفيديو وقوائم التشغيل تماماً ليتولاها المتصفح مباشرة
-  if (url.includes('/api/proxy') || url.includes('.ts') || url.includes('.m3u8')) {
+self.addEventListener('fetch', event => {
+    // عدم اعتراض أي طلبات بث فيديو أو API لمنع التقطيع والكاش الخاطئ
     return;
-  }
-
-  // تمرير الملفات العادية للموقع
-  e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
-  );
 });
