@@ -1285,6 +1285,13 @@
     }
 
     function renderLinksList(links) {
+        const savedStatus = JSON.parse(localStorage.getItem("albasem_checked_status") || "{}");
+        if (Array.isArray(links)) {
+            links.forEach(item => {
+                if (savedStatus[item.url]) item.status = savedStatus[item.url];
+            });
+            currentHubLinks = links;
+        }
         const container = document.getElementById("links_list_container");
         if (!container) return;
         if (!links || links.length === 0) {
@@ -1348,18 +1355,32 @@
         }
     }
 
+    let currentHubLinks = [];
+
     async function runFastCheck() {
         const btn = document.getElementById("btn_check_all");
         if (btn) {
             btn.disabled = true;
-            btn.innerText = "⏳ جاري الفحص السريع...";
+            btn.innerText = "⏳ جاري الفحص الدقيق (VPS)...";
         }
         try {
-            const res = await fetch(`${API_BASE}/api/links/check`, { method: "POST" });
-            const data = await res.json();
-            renderLinksList(data);
+            const linksRes = await fetch(`${GIST_RAW_URL}?t=${Date.now()}`);
+            const currentLinks = await linksRes.json();
+
+            const res = await fetch("https://actions-wallpapers-dakota-chambers.trycloudflare.com/api/links/check", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ links: currentLinks })
+            });
+            const updatedLinks = await res.json();
+            currentHubLinks = updatedLinks;
+            localStorage.setItem("albasem_checked_status", JSON.stringify(
+                updatedLinks.reduce((acc, item) => { acc[item.url] = item.status; return acc; }, {})
+            ));
+            renderLinksList(updatedLinks);
+            showToast("✅ تم الفحص الدقيق لكافة السيرفرات!");
         } catch (e) {
-            alert("فشل تنفيذ الفحص السريع");
+            alert("فشل تنفيذ الفحص: " + e.message);
         } finally {
             if (btn) {
                 btn.disabled = false;
@@ -1383,13 +1404,20 @@
     }
 
     async function clearDeadLinks() {
-        if (!confirm("هل تريد حذف كافة الروابط المعطلة دفعة واحدة؟")) return;
+        const deadItems = currentHubLinks.filter(item => item.status === "dead");
+        if (deadItems.length === 0) {
+            return alert("لا توجد روابط معطلة لحذفها (قم بإجراء الفحص السريع أولاً).");
+        }
+        if (!confirm(`تم العثور على (${deadItems.length}) رابط متوقف فعلياً. هل تريد حذفها؟`)) return;
         try {
-            await fetch(`${API_BASE}/api/links`, {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ clear_dead: true })
-            });
+            for (const item of deadItems) {
+                await fetch(`${API_BASE}/api/links`, {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: item.id })
+                });
+            }
+            showToast("🗑️ تم تنظيف الروابط المعطلة بنجاح");
             loadSavedLinks();
         } catch (e) {
             alert("فشل تنظيف الروابط");
