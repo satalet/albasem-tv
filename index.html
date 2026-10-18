@@ -1405,14 +1405,30 @@
         const btn = document.getElementById("btn_check_all");
         if (btn) {
             btn.disabled = true;
-            btn.innerText = "⏳ جاري الفحص السريع...";
+            btn.innerText = "⏳ جاري الفحص الفائق (VPS)...";
         }
         try {
-            const res = await fetch("https://actions-wallpapers-dakota-chambers.trycloudflare.com/api/links/check", { method: "POST" });
-            const data = await res.json();
-            renderLinksList(data);
+            // جلب الروابط الحالية المخزنة
+            const linksRes = await fetch(`${GIST_RAW_URL}?t=${Date.now()}`);
+            const currentLinks = await linksRes.json();
+
+            // إرسالها لمحرك الفحص الدقيق على الـ VPS
+            const res = await fetch("https://actions-wallpapers-dakota-chambers.trycloudflare.com/api/links/check", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ links: currentLinks })
+            });
+            const result = await res.json();
+            const linksList = result.data || result.links || result;
+            
+            if (Array.isArray(linksList)) {
+                renderLinksList(linksList);
+                showToast("✅ اكتمل الفحص الدقيق لكافة السيرفرات!");
+            } else {
+                alert("استجابة غير صالحة من سيرفر الفحص");
+            }
         } catch (e) {
-            alert("فشل تنفيذ الفحص السريع");
+            alert("فشل تنفيذ الفحص: " + e.message);
         } finally {
             if (btn) {
                 btn.disabled = false;
