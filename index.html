@@ -1165,17 +1165,35 @@
         window.art.play();
     }
 
-    function onSubTrackChange(subIdx) {
+    async function onSubTrackChange(subIdx) {
         if (!window.art) return;
         if (subIdx === "off") {
             window.art.subtitle.show = false;
             showToast("💬 تم إيقاف الترجمة");
             return;
         }
-        showToast("💬 جاري سحب الترجمة المدمجة من الفيلم...");
-        const subUrl = "https://actions-wallpapers-dakota-chambers.trycloudflare.com/api/extract_sub?sub=" + subIdx + "&url=" + encodeURIComponent(currentRawStreamUrl);
-        window.art.subtitle.switch(subUrl, { name: "Embedded Subtitle" });
-        window.art.subtitle.show = true;
+        showToast("⏳ جاري سحب وتركيب الترجمة المدمجة...");
+        try {
+            const subApiUrl = "https://actions-wallpapers-dakota-chambers.trycloudflare.com/api/extract_sub?sub=" + subIdx + "&url=" + encodeURIComponent(currentRawStreamUrl);
+            const res = await fetch(subApiUrl);
+            const vttText = await res.text();
+
+            if (!vttText || vttText.trim().length < 15) {
+                showToast("⚠️ مسار الترجمة هذا فارغ أو قيد التحميل");
+                return;
+            }
+
+            // تحويل النص إلى Blob URL محلي لتجاوز حظر المتصفح (blocked:origin) نهائياً
+            const blob = new Blob([vttText], { type: "text/vtt;charset=utf-8" });
+            const localSubUrl = URL.createObjectURL(blob);
+
+            window.art.subtitle.url = localSubUrl;
+            window.art.subtitle.switch(localSubUrl, { name: "Embedded", type: "vtt" });
+            window.art.subtitle.show = true;
+            showToast("✅ تم تفعيل الترجمة على الفيلم بنجاح!");
+        } catch (e) {
+            showToast("❌ تعذر تحميل الترجمة");
+        }
     }
 
     async function probeEmbeddedTracks(rawUrl, isLive) {
