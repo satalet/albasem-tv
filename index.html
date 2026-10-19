@@ -1278,6 +1278,42 @@
         }
     }
 
+    
+    // ==========================================
+    // ⚡ محرك تقليب المحطات والحلقات (Zapper)
+    // ==========================================
+    window.activePlaylist = [];
+    window.activePlayIndex = -1;
+
+    function playStepChannel(step) {
+        if (!Array.isArray(window.activePlaylist) || window.activePlaylist.length === 0) {
+            const visible = typeof getVisibleItems === "function" ? getVisibleItems(currentTab) : [];
+            if (typeof currentGroup !== "undefined" && currentGroup !== "all") {
+                window.activePlaylist = visible.filter(i => (i.group || "عام") === currentGroup).map(i => ({ url: i.url, name: i.name || "" }));
+            } else {
+                window.activePlaylist = visible.map(i => ({ url: i.url, name: i.name || "" }));
+            }
+            window.activePlayIndex = window.activePlaylist.findIndex(i => i.url === currentRawStreamUrl);
+        }
+
+        const total = window.activePlaylist.length;
+        if (total === 0) {
+            showToast("⚠️ لا توجد قائمة قنوات للتقليب");
+            return;
+        }
+
+        let nextIdx = window.activePlayIndex + step;
+        if (nextIdx >= total) nextIdx = 0;
+        if (nextIdx < 0) nextIdx = total - 1;
+
+        window.activePlayIndex = nextIdx;
+        const nextItem = window.activePlaylist[nextIdx];
+        if (nextItem && nextItem.url) {
+            showToast(`${step > 0 ? "⏭️ التالي:" : "⏮️ السابق:"} ${nextItem.name}`);
+            openWebPlayer(nextItem.url, nextItem.name);
+        }
+    }
+
     function openWebPlayer(rawUrl, title) {
         currentRawStreamUrl = rawUrl;
         currentStreamTitle = title;
