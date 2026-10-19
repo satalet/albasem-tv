@@ -1010,6 +1010,10 @@
             btn.style.cssText = "padding:10px; font-size:12px; border-radius:8px; cursor:pointer; background:#1E293B; border:1px solid #334155;";
             btn.innerText = "▶ " + (ep.title || "الحلقة " + ep.episode_num);
             btn.onclick = () => {
+                window.activePlaylist = eps.map(e => ({
+                    url: e.url,
+                    name: `${seriesTitle} - S${sNum} E${e.episode_num}`
+                }));
                 closeSeriesModal();
                 openWebPlayer(ep.url, `${seriesTitle} - S${sNum} E${ep.episode_num}`);
             };
@@ -1061,6 +1065,7 @@
                     if (currentTab === "series") {
                         openSeriesModal(st);
                     } else {
+                        window.activePlaylist = list.map(it => ({ url: it.url, name: it.name || "" }));
                         openWebPlayer(st.url, st.name || "");
                     }
                 };
@@ -1128,17 +1133,21 @@
     <!-- نافذة المشغل المنبثقة -->
     <div id="player_modal" class="player-modal">
         <div class="player-content">
-                        <div class="player-header" style="flex-wrap: wrap; gap: 8px;">
-                <span id="player_title" style="flex:1; min-width:180px;">مشغل الفيديو</span>
-                <div id="media_tracks_controls" style="display:none; align-items:center; gap:6px; flex-wrap:wrap;">
-                    <select id="audio_track_select" onchange="onAudioTrackChange(this.value)" style="background:#0B0E14; color:#38BDF8; border:1px solid #334155; border-radius:6px; padding:4px 8px; font-size:11px; font-weight:bold; outline:none; cursor:pointer;">
-                        <option value="">🔊 الصوت الأصلي</option>
+                                    <div class="player-header" id="player_header_bar" style="display:flex; flex-direction:column; gap:8px; padding:10px 12px; align-items:stretch; user-select:none;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; width:100%;">
+                    <button onclick="playStepChannel(-1)" title="السابق (قناة / حلقة)" style="background:#0284C7; color:#fff; border:none; width:34px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; cursor:pointer; flex-shrink:0; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,0.4);">⏮</button>
+                    <span id="player_title" style="font-size:12px; font-weight:700; color:#f8fafc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; text-align:center; direction:rtl;">مشغل الفيديو</span>
+                    <button onclick="playStepChannel(1)" title="التالي (قناة / حلقة)" style="background:#0284C7; color:#fff; border:none; width:34px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; cursor:pointer; flex-shrink:0; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,0.4);">⏭</button>
+                    <button class="player-close" onclick="closeWebPlayer()" style="background:rgba(239,68,68,0.2); color:#EF4444; border:1px solid rgba(239,68,68,0.4); width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; margin-right:2px;">✕</button>
+                </div>
+                <div id="media_tracks_controls" style="display:none; grid-template-columns:1fr 1fr; gap:8px; width:100%;">
+                    <select id="audio_track_select" onchange="onAudioTrackChange(this.value)" style="width:100%; background:#0B0E14; color:#38BDF8; border:1px solid #334155; border-radius:6px; padding:5px 8px; font-size:11px; font-weight:bold; outline:none; cursor:pointer; text-overflow:ellipsis;">
+                        <option value="default">🔊 الصوت الافتراضي (سريع)</option>
                     </select>
-                    <select id="sub_track_select" onchange="onSubTrackChange(this.value)" style="background:#0B0E14; color:#10B981; border:1px solid #334155; border-radius:6px; padding:4px 8px; font-size:11px; font-weight:bold; outline:none; cursor:pointer;">
+                    <select id="sub_track_select" onchange="onSubTrackChange(this.value)" style="width:100%; background:#0B0E14; color:#10B981; border:1px solid #334155; border-radius:6px; padding:5px 8px; font-size:11px; font-weight:bold; outline:none; cursor:pointer; text-overflow:ellipsis;">
                         <option value="off">💬 بدون ترجمة</option>
                     </select>
                 </div>
-                <button class="player-close" onclick="closeWebPlayer()">✕</button>
             </div>
             <div id="artplayer-container"></div>
         </div>
@@ -1159,7 +1168,17 @@
 
     function onAudioTrackChange(audIdx) {
         if (!currentRawStreamUrl || !window.art || audIdx === "") return;
-        showToast("🔊 جاري تبديل مسار الصوت المدمج وتصحيح الكودك...");
+        if (audIdx === "default") {
+            showToast("⚡ العودة للصوت الافتراضي المباشر (تحكم كامل بالوقت)...");
+            let origUrl = currentRawStreamUrl;
+            if (origUrl.startsWith("http://")) {
+                origUrl = "https://actions-wallpapers-dakota-chambers.trycloudflare.com/proxy?url=" + encodeURIComponent(origUrl);
+            }
+            window.art.switchUrl(origUrl);
+            window.art.play();
+            return;
+        }
+        showToast("🔊 جاري تحويل مسار الصوت عبر السيرفر...");
         const fixedUrl = "https://actions-wallpapers-dakota-chambers.trycloudflare.com/proxy_fix?aud=" + audIdx + "&url=" + encodeURIComponent(currentRawStreamUrl);
         window.art.switchUrl(fixedUrl);
         window.art.play();
@@ -1207,7 +1226,7 @@
             return;
         }
 
-        ctrlBox.style.display = "flex";
+        ctrlBox.style.display = "grid";
         audSel.innerHTML = '<option value="">⏳ فحص الصوت...</option>';
         subSel.innerHTML = '<option value="off">⏳ فحص الترجمة...</option>';
 
@@ -1220,7 +1239,7 @@
             const d = await res.json();
 
             // 1. تعبئة مسارات الصوت المدمجة
-            audSel.innerHTML = '<option value="">🔊 الصوت الافتراضي</option>';
+            audSel.innerHTML = '<option value="default">🔊 الصوت الافتراضي (سريع)</option>';
             if (d.audio && d.audio.length > 0) {
                 d.audio.forEach(a => {
                     const opt = document.createElement("option");
@@ -1228,12 +1247,8 @@
                     opt.innerText = `🔊 ${a.label}`;
                     audSel.appendChild(opt);
                 });
-                // إذا كان مسار الصوت الأول AC3 أو EAC3 أو DTS (غير مدعوم بالمتصفح)، نقوم بتشغيل مصحح الصوت تلقائياً!
-                const firstCodec = (d.audio[0].codec || "").toLowerCase();
-                if (["ac3", "eac3", "dts", "truehd"].includes(firstCodec)) {
-                    audSel.value = "0";
-                    onAudioTrackChange("0");
-                }
+                // ترك الصوت على الوضع الافتراضي دائماً لمنع البافرينج
+                audSel.value = "default";
             }
 
             // 2. تعبئة مسارات الترجمة المدمجة
