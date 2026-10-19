@@ -1289,23 +1289,7 @@
     // ==========================================
     // 🎮 دعم أزرار الريموت والكيبورد (التقليب بالمحطات)
     // ==========================================
-    window.addEventListener("keydown", function(e) {
-        const playerModal = document.getElementById("player_modal");
-        if (!playerModal || playerModal.style.display !== "flex") return;
-
-        // السهم الأيمن أو الأسفل أو زر Channel+ يقلب للقناة التالية (⏭)
-        if (["ArrowRight", "ArrowDown", "PageDown", "MediaTrackNext"].includes(e.key)) {
-            e.preventDefault();
-            playStepChannel(1);
-        }
-        // السهم الأيسر أو الأعلى أو زر Channel- يقلب للقناة السابقة (⏮)
-        if (["ArrowLeft", "ArrowUp", "PageUp", "MediaTrackPrevious"].includes(e.key)) {
-            e.preventDefault();
-            playStepChannel(-1);
-        }
-    });
-
-    function playStepChannel(step) {
+function playStepChannel(step) {
         if (!Array.isArray(window.activePlaylist) || window.activePlaylist.length === 0) {
             const visible = typeof getVisibleItems === "function" ? getVisibleItems(currentTab) : [];
             if (typeof currentGroup !== "undefined" && currentGroup !== "all") {
@@ -1802,6 +1786,132 @@
             </div>
         </div>
     </div>
+
+
+    <script>
+    // ==========================================
+    // 🎮 1. أزرار الريموت والكيبورد (فوق/تحت = صوت، يمين/يسار = تقليب)
+    // ==========================================
+    window.addEventListener("keydown", function(e) {
+        const playerModal = document.getElementById("player_modal");
+        if (!playerModal || playerModal.style.display !== "flex") return;
+
+        // يمين / يسار = تقليب المحطات أو الحلقات (Channel +/-)
+        if (["ArrowRight", "MediaTrackNext"].includes(e.key)) {
+            e.preventDefault();
+            playStepChannel(1);
+        }
+        if (["ArrowLeft", "MediaTrackPrevious"].includes(e.key)) {
+            e.preventDefault();
+            playStepChannel(-1);
+        }
+
+        // فوق / تحت = رفع وخفض الصوت (Volume +/-)
+        if (["ArrowUp", "AudioVolumeUp"].includes(e.key)) {
+            e.preventDefault();
+            if (window.art) {
+                window.art.volume = Math.min(1, window.art.volume + 0.1);
+                showToast(`🔊 الصوت: ${Math.round(window.art.volume * 100)}%`);
+            }
+        }
+        if (["ArrowDown", "AudioVolumeDown"].includes(e.key)) {
+            e.preventDefault();
+            if (window.art) {
+                window.art.volume = Math.max(0, window.art.volume - 0.1);
+                showToast(`🔉 الصوت: ${Math.round(window.art.volume * 100)}%`);
+            }
+        }
+    });
+
+    // ==========================================
+    // 🔙 2. نظام الرجوع الصارم للجوال (يمنع الخروج العشوائي تماماً)
+    // ==========================================
+    (function() {
+        let lastExitPress = 0;
+
+        // حقن حالات وهمية في تاريخ المتصفح لمنع الخروج الفوري
+        function ensureHistoryBuffer() {
+            try {
+                if (window.history.length < 20) {
+                    for (let i = 0; i < 10; i++) {
+                        window.history.pushState({ albasem: i }, "", window.location.href);
+                    }
+                }
+            } catch (err) {}
+        }
+
+        window.addEventListener("load", ensureHistoryBuffer);
+        document.addEventListener("click", ensureHistoryBuffer, true);
+
+        window.addEventListener("popstate", function(e) {
+            ensureHistoryBuffer();
+
+            const playerModal = document.getElementById("player_modal");
+            const seriesModal = document.getElementById("series_modal");
+            const scannerModal = document.getElementById("scanner_modal");
+            const linksSec = document.getElementById("links_view_section");
+            const searchInput = document.getElementById("search_input");
+
+            // 1. إذا كان المشغل مفتوحاً -> أغلقه
+            if (playerModal && playerModal.style.display === "flex") {
+                closeWebPlayer();
+                return;
+            }
+
+            // 2. إذا كانت نافذة المسلسلات مفتوحة -> أغلقها
+            if (seriesModal && seriesModal.style.display === "flex") {
+                closeSeriesModal();
+                return;
+            }
+
+            // 3. إذا كان فاحص الشاشة مفتوحاً -> أغلقه
+            if (scannerModal && scannerModal.style.display === "flex") {
+                closeScannerModal();
+                return;
+            }
+
+            // 4. إذا كان في صفحة سيرفراتي -> ارجع للقائمة الرئيسية
+            if (linksSec && linksSec.style.display === "block") {
+                switchMainTab(currentTab || "live");
+                return;
+            }
+
+            // 5. إذا كان هناك بحث -> امسحه
+            if (searchInput && searchInput.value.trim() !== "") {
+                searchInput.value = "";
+                renderItems();
+                return;
+            }
+
+            // 6. إذا كان داخل باقة فرعية -> ارجع للكل
+            if (typeof currentGroup !== "undefined" && currentGroup !== "all") {
+                currentGroup = "all";
+                buildPackagesBar();
+                renderItems();
+                showToast("🔙 العودة لعرض كافة الباقات");
+                return;
+            }
+
+            // 7. إذا كان بأفلام أو مسلسلات -> ارجع للمحطات
+            if (typeof currentTab !== "undefined" && currentTab !== "live") {
+                switchSection("live");
+                switchMainTab("live");
+                showToast("🔙 العودة لقسم المحطات الرئيسي");
+                return;
+            }
+
+            // 8. حماية نهائية للخروج (ضطرتين متلاحقتين)
+            const now = Date.now();
+            if (now - lastExitPress < 2000) {
+                // السماح بالخروج الفعلي عبر الرجوع للخلف كثيراً
+                window.history.go(-50);
+            } else {
+                lastExitPress = now;
+                showToast("⚠️ اضغط زر الرجوع مرة أخرى للخروج من التطبيق");
+            }
+        });
+    })();
+    </script>
 
 </body>
 </html>
