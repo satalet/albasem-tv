@@ -1285,6 +1285,26 @@
     window.activePlaylist = [];
     window.activePlayIndex = -1;
 
+    
+    // ==========================================
+    // 🎮 دعم أزرار الريموت والكيبورد (التقليب بالمحطات)
+    // ==========================================
+    window.addEventListener("keydown", function(e) {
+        const playerModal = document.getElementById("player_modal");
+        if (!playerModal || playerModal.style.display !== "flex") return;
+
+        // السهم الأيمن أو الأسفل أو زر Channel+ يقلب للقناة التالية (⏭)
+        if (["ArrowRight", "ArrowDown", "PageDown", "MediaTrackNext"].includes(e.key)) {
+            e.preventDefault();
+            playStepChannel(1);
+        }
+        // السهم الأيسر أو الأعلى أو زر Channel- يقلب للقناة السابقة (⏮)
+        if (["ArrowLeft", "ArrowUp", "PageUp", "MediaTrackPrevious"].includes(e.key)) {
+            e.preventDefault();
+            playStepChannel(-1);
+        }
+    });
+
     function playStepChannel(step) {
         if (!Array.isArray(window.activePlaylist) || window.activePlaylist.length === 0) {
             const visible = typeof getVisibleItems === "function" ? getVisibleItems(currentTab) : [];
