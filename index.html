@@ -442,7 +442,37 @@
             100% { text-shadow: 0 0 15px rgba(34, 197, 94, 0.9), 0 0 25px rgba(34, 197, 94, 0.5); }
         }
     </style>
+
+    <style id="sticky_smart_style">
+        /* تثبيت شريط الباقات والبحث عند النزول لأسفل */
+        #packages_section {
+            position: -webkit-sticky !important;
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 80 !important;
+            background: rgba(11, 14, 20, 0.94) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            padding: 10px 12px 6px 12px !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55) !important;
+            transition: all 0.2s ease-in-out;
+        }
+        .filter-bar {
+            margin-top: 6px !important;
+            margin-bottom: 2px !important;
+        }
+        #search_input {
+            border: 1px solid rgba(56, 189, 248, 0.3) !important;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.08) inset !important;
+        }
+        #search_input:focus {
+            border-color: #38BDF8 !important;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.3) !important;
+        }
+    </style>
 </head>
+
 
 <body>
 
@@ -1035,6 +1065,74 @@
                 openWebPlayer(ep.url, `${seriesTitle} - S${sNum} E${ep.episode_num}`);
             };
             epList.appendChild(btn);
+        });
+    }
+
+    
+    // ==========================================
+    // 🧠 محرك البحث الذكي الذاتي (Smart Fuzzy & Aliases Search)
+    // ==========================================
+    const searchAliasesMap = {
+        "بين": ["bein", "sport"],
+        "سبورت": ["sport", "sports", "bein"],
+        "رياضه": ["sport", "sports", "bein", "ssc", "football", "كاس", "دوري", "match"],
+        "رياضة": ["sport", "sports", "bein", "ssc", "football", "كاس", "دوري", "match"],
+        "كوره": ["sport", "football", "bein", "ssc"],
+        "كرة": ["sport", "football", "bein", "ssc"],
+        "افلام": ["movie", "movies", "cinema", "action", "film"],
+        "أفلام": ["movie", "movies", "cinema", "action", "film"],
+        "اكشن": ["action"],
+        "أكشن": ["action"],
+        "رعب": ["horror"],
+        "كوميدي": ["comedy"],
+        "مسلسلات": ["series", "serie"],
+        "وثائقي": ["doc", "nat geo", "discovery", "documentary"],
+        "اطفال": ["kids", "cartoon", "disney", "space toon", "طيور"],
+        "أطفال": ["kids", "cartoon", "disney", "space toon", "طيور"],
+        "كرتون": ["kids", "cartoon", "animation", "disney"],
+        "مصر": ["egypt", "eg", "nile"],
+        "سعوديه": ["saudi", "ksa", "ssc", "rotana"],
+        "سعودية": ["saudi", "ksa", "ssc", "rotana"],
+        "المغرب": ["morocco", "maroc", "arryadia"],
+        "الجزائر": ["algeria", "algerie", "entv"],
+        "تونس": ["tunis", "tunisie"],
+        "اخبار": ["news", "aljazeera", "alarabiya", "hadath", "sky"],
+        "أخبار": ["news", "aljazeera", "alarabiya", "hadath", "sky"]
+    };
+
+    function normalizeSmartText(str) {
+        if (!str) return "";
+        return String(str).toLowerCase()
+            .replace(/[أإآ]/g, "ا")
+            .replace(/ة/g, "ه")
+            .replace(/ى/g, "ي")
+            .replace(/[ً-ٟ]/g, "") // إزالة التشكيل والتنوين
+            .replace(/[^a-z0-9؀-ۿ\s]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    function isSmartSearchMatch(targetName, searchQuery) {
+        if (!searchQuery) return true;
+        const normTarget = normalizeSmartText(targetName);
+        const normQuery = normalizeSmartText(searchQuery);
+
+        if (!normTarget || !normQuery) return false;
+
+        // 1. تطابق مباشر بعد معالجة الحروف والتشكيل
+        if (normTarget.includes(normQuery)) return true;
+
+        // 2. تقسيم استعلام البحث لكلمات متعددة
+        const queryWords = normQuery.split(" ").filter(Boolean);
+
+        // 3. فحص تطابق الكلمات أو مرادفاتها الذكية
+        return queryWords.every(word => {
+            // هل الكلمة بحد ذاتها موجودة؟
+            if (normTarget.includes(word)) return true;
+
+            // هل هناك مرادفات للكلمة في قاموس الذكاء؟
+            const aliases = searchAliasesMap[word] || [];
+            return aliases.some(alias => normTarget.includes(normalizeSmartText(alias)));
         });
     }
 
