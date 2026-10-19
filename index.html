@@ -769,7 +769,54 @@
 
             document.getElementById("btn_parse_trigger").addEventListener("click", loadAndParse);
             document.getElementById("m3u_file").addEventListener("change", handleFileSelect);
-            document.getElementById("search_input").addEventListener("input", renderItems);
+            const searchInput = document.getElementById("search_input");
+            const statusBox = document.getElementById("ai_search_status");
+            const statusText = document.getElementById("ai_status_text");
+            let aiDebounceTimer = null;
+            let currentAiQuery = "";
+            window.aiSearchKeywords = [];
+
+            searchInput.addEventListener("input", (e) => {
+                const val = (e.target.value || "").trim();
+                renderItems();
+
+                clearTimeout(aiDebounceTimer);
+                if (val.length < 2) {
+                    window.aiSearchKeywords = [];
+                    currentAiQuery = "";
+                    if (statusBox) statusBox.style.display = "none";
+                    renderItems();
+                    return;
+                }
+
+                if (val === currentAiQuery) return;
+
+                if (statusBox && statusText) {
+                    statusBox.style.display = "block";
+                    statusText.innerHTML = "جاري التحليل واستنتاج القنوات بذكاء <b>Gemini</b>... ⏳";
+                }
+
+                aiDebounceTimer = setTimeout(async () => {
+                    currentAiQuery = val;
+                    try {
+                        const res = await fetch("https://actions-wallpapers-dakota-chambers.trycloudflare.com/api/ai_search?q=" + encodeURIComponent(val));
+                        const data = await res.json();
+                        if (data && Array.isArray(data.keywords) && data.keywords.length > 0) {
+                            window.aiSearchKeywords = data.keywords;
+                            if (statusBox && statusText) {
+                                statusBox.style.display = "block";
+                                statusText.innerHTML = "✨ فهم الذكاء نيتك: <b>" + data.keywords.slice(0, 5).join(" | ") + "</b>";
+                            }
+                            renderItems();
+                        } else {
+                            if (statusBox) statusBox.style.display = "none";
+                        }
+                    } catch (err) {
+                        console.log("AI Search Error:", err);
+                        if (statusBox) statusBox.style.display = "none";
+                    }
+                }, 400);
+            });
 
             document.getElementById("tab_live").addEventListener("click", () => switchSection("live"));
             document.getElementById("tab_movies").addEventListener("click", () => switchSection("movies"));
@@ -1154,7 +1201,19 @@
             }
 
             if (q) {
-                list = list.filter(item => item.name && item.name.toLowerCase().includes(q));
+                list = list.filter(item => {
+                    const name = item.name || "";
+                    if (name.toLowerCase().includes(q)) return true;
+                    if (typeof isSmartSearchMatch === "function" && isSmartSearchMatch(name, q)) return true;
+                    if (Array.isArray(window.aiSearchKeywords) && window.aiSearchKeywords.length > 0) {
+                        const normName = normalizeSmartText(name);
+                        return window.aiSearchKeywords.some(kw => {
+                            const normKw = normalizeSmartText(kw);
+                            return normKw && normName.includes(normKw);
+                        });
+                    }
+                    return false;
+                });
             }
 
             const displayList = list.slice(0, 150);
