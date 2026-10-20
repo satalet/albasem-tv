@@ -1558,6 +1558,7 @@ function playStepChannel(step) {
             isLive: isLive,
             autoplay: true,
             pip: true,
+            fastForward: false,
             fullscreen: true,
             fullscreenWeb: false,
             setting: true,
@@ -1621,63 +1622,46 @@ function playStepChannel(step) {
             },
         });
     
-        // ==========================================
-        // 🛡️ الحارس الذكي للأفلام (تثبيت التقديم + إنعاش كبسة Play)
-        // ==========================================
+        // حماية الأفلام من التقطيع والانهيار
         if (!isLive && window.art) {
-            let savedVodTime = 0;
-            let isRecovering = false;
-            let seekTimer = null;
-
-            window.art.on("seek", (time) => {
-                savedVodTime = time;
-                clearTimeout(seekTimer);
-                seekTimer = setTimeout(() => {
-                    if (window.art && Math.abs(window.art.currentTime - time) > 1) {
-                        window.art.currentTime = time;
-                    }
-                }, 200);
-            });
+            let lastValidTime = 0;
+            let isHealing = false;
 
             window.art.on("video:timeupdate", () => {
-                const ct = window.art.currentTime;
-                if (ct > 3 && !isRecovering) {
-                    savedVodTime = ct;
+                if (window.art.currentTime > 2 && !isHealing) {
+                    lastValidTime = window.art.currentTime;
                 }
             });
 
-            function healVodStream(reason) {
-                if (isRecovering || !window.art) return;
-                isRecovering = true;
-                const resumeAt = savedVodTime;
-                showToast("⚡ جاري إنعاش البث واستكمال الفيلم من نفس اللحظة...");
-
+            function resumePlayback() {
+                if (isHealing || !window.art) return;
+                isHealing = true;
+                const targetTime = lastValidTime;
+                showToast("⚡ جاري استئناف الفيلم بطلب نظيف...");
+                
                 const v = window.art.video;
-                const sep = playerUrl.includes("?") ? "&" : "?";
-                const freshUrl = playerUrl + sep + "_retry=" + Date.now();
-
-                v.src = freshUrl;
+                v.src = playerUrl + (playerUrl.includes("?") ? "&" : "?") + "_t=" + Date.now();
                 v.load();
-
-                const onLoaded = () => {
-                    v.removeEventListener("loadedmetadata", onLoaded);
-                    if (resumeAt > 3) {
-                        v.currentTime = resumeAt;
+                
+                const handler = () => {
+                    v.removeEventListener("canplay", handler);
+                    if (targetTime > 3) {
+                        v.currentTime = targetTime;
                     }
-                    v.play().catch(() => {});
-                    setTimeout(() => { isRecovering = false; }, 1200);
+                    v.play().catch(()=>{});
+                    setTimeout(() => { isHealing = false; }, 800);
                 };
-                v.addEventListener("loadedmetadata", onLoaded);
+                v.addEventListener("canplay", handler);
             }
 
-            window.art.on("error", () => healVodStream("Error Drop"));
+            window.art.on("error", resumePlayback);
 
             const container = document.getElementById("artplayer-container");
             if (container) {
                 container.addEventListener("click", () => {
                     const v = window.art ? window.art.video : null;
-                    if (v && (v.error || v.networkState === 3 || v.readyState === 0)) {
-                        healVodStream("Click to Resume");
+                    if (v && (v.error || v.readyState === 0)) {
+                        resumePlayback();
                     }
                 }, true);
             }
