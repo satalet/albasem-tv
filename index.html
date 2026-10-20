@@ -572,7 +572,7 @@
     <div id="toast"></div>
 
     <script>
-        const BACKEND_URL = "https://prague-enables-bow-important.trycloudflare.com";
+        const BACKEND_URL = "https://albasem-tv.duckdns.org";
         let currentTab = "live";
         let currentGroup = "all";
         let rawData = { live: [], movies: [], series: [] };
@@ -799,7 +799,7 @@
                 aiDebounceTimer = setTimeout(async () => {
                     currentAiQuery = val;
                     try {
-                        const res = await fetch("https://prague-enables-bow-important.trycloudflare.com/api/ai_search?q=" + encodeURIComponent(val));
+                        const res = await fetch("https://albasem-tv.duckdns.org/api/ai_search?q=" + encodeURIComponent(val));
                         const data = await res.json();
                         if (data && Array.isArray(data.keywords) && data.keywords.length > 0) {
                             window.aiSearchKeywords = data.keywords;
@@ -839,7 +839,7 @@
             rawData = { live: [], movies: [], series: [] };
 
             try {
-                const res = await fetch("https://prague-enables-bow-important.trycloudflare.com/api/parse", {
+                const res = await fetch("https://albasem-tv.duckdns.org/api/parse", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ url: url })
@@ -1057,7 +1057,7 @@
         let mainUrl = document.getElementById("iptv_url").value.trim() || localStorage.getItem("albasem_url");
 
         try {
-            const res = await fetch("https://prague-enables-bow-important.trycloudflare.com/api/series_info", {
+            const res = await fetch("https://albasem-tv.duckdns.org/api/series_info", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ url: mainUrl, series_id: item.series_id })
@@ -1352,14 +1352,14 @@
             showToast("⚡ العودة للصوت الافتراضي المباشر (تحكم كامل بالوقت)...");
             let origUrl = currentRawStreamUrl;
             if (origUrl.startsWith("http://")) {
-                origUrl = "https://prague-enables-bow-important.trycloudflare.com/proxy?url=" + encodeURIComponent(origUrl);
+                origUrl = "https://albasem-tv.duckdns.org/proxy?url=" + encodeURIComponent(origUrl);
             }
             window.art.switchUrl(origUrl);
             window.art.play();
             return;
         }
         showToast("🔊 جاري تحويل مسار الصوت عبر السيرفر...");
-        const fixedUrl = "https://prague-enables-bow-important.trycloudflare.com/proxy_fix?aud=" + audIdx + "&url=" + encodeURIComponent(currentRawStreamUrl);
+        const fixedUrl = "https://albasem-tv.duckdns.org/proxy_fix?aud=" + audIdx + "&url=" + encodeURIComponent(currentRawStreamUrl);
         window.art.switchUrl(fixedUrl);
         window.art.play();
     }
@@ -1373,7 +1373,7 @@
         }
         showToast("⏳ جاري سحب وتركيب الترجمة المدمجة...");
         try {
-            const subApiUrl = "https://prague-enables-bow-important.trycloudflare.com/api/extract_sub?sub=" + subIdx + "&url=" + encodeURIComponent(currentRawStreamUrl);
+            const subApiUrl = "https://albasem-tv.duckdns.org/api/extract_sub?sub=" + subIdx + "&url=" + encodeURIComponent(currentRawStreamUrl);
             const res = await fetch(subApiUrl);
             const vttText = await res.text();
 
@@ -1411,7 +1411,7 @@
         subSel.innerHTML = '<option value="off">⏳ فحص الترجمة...</option>';
 
         try {
-            const res = await fetch("https://prague-enables-bow-important.trycloudflare.com/api/media_tracks", {
+            const res = await fetch("https://albasem-tv.duckdns.org/api/media_tracks", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ url: rawUrl })
@@ -1508,7 +1508,7 @@ function playStepChannel(step) {
             if (playTarget && playTarget.includes(".ts")) {
                 playTarget = playTarget.replace(/\.ts(\?|$)/, ".m3u8$1");
             }
-            url = "https://prague-enables-bow-important.trycloudflare.com/proxy?url=" + encodeURIComponent(playTarget);
+            url = "https://albasem-tv.duckdns.org/proxy?url=" + encodeURIComponent(playTarget);
         }
         document.getElementById("player_title").innerText = "🎬 " + title;
         document.getElementById("player_modal").style.display = "flex";
@@ -1532,7 +1532,7 @@ function playStepChannel(step) {
             if (playTarget2 && playTarget2.includes(".ts")) {
                 playTarget2 = playTarget2.replace(/\.ts(\?|$)/, ".m3u8$1");
             }
-            playerUrl = "https://prague-enables-bow-important.trycloudflare.com/proxy?url=" + encodeURIComponent(playTarget2);
+            playerUrl = "https://albasem-tv.duckdns.org/proxy?url=" + encodeURIComponent(playTarget2);
         }
 
         let streamType = "auto";
@@ -1746,7 +1746,7 @@ hls.loadSource(url);
     // 🔗 إدارة مستودع السيرفرات والروابط (Links Hub)
     // ==========================================
     const API_BASE = "https://scan-ip-tv.onrender.com";
-    const VPS_BASE = "https://prague-enables-bow-important.trycloudflare.com";
+    const VPS_BASE = "https://albasem-tv.duckdns.org";
     const GIST_RAW_URL = "https://gist.githubusercontent.com/satalet/221a7afceec9f215c9eb61421eab0715/raw/links.json";
 
     let cachedLinksList = [];
