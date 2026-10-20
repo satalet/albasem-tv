@@ -1521,7 +1521,6 @@ function playStepChannel(step) {
         const isLive = rawUrl.includes("/live/");
         let streamUrl = rawUrl;
         
-        // تحويل روابط البث المباشر للتدفق الصافي .ts لتجاوز توكنات m3u8
         if (isLive && streamUrl.endsWith(".m3u8")) {
             streamUrl = streamUrl.replace(".m3u8", ".ts");
         }
@@ -1546,10 +1545,10 @@ function playStepChannel(step) {
         window.art = new Artplayer({
             subtitle: {
                 style: {
-                    color: '#ffffff',
-                    fontSize: '22px',
-                    fontWeight: 'bold',
-                    textShadow: '0 2px 4px rgba(0,0,0,0.9)'
+                    color: "#ffffff",
+                    fontSize: "22px",
+                    fontWeight: "bold",
+                    textShadow: "0 2px 4px rgba(0,0,0,0.9)"
                 }
             },
             container: "#artplayer-container",
@@ -1568,8 +1567,7 @@ function playStepChannel(step) {
                 m3u8: function(video, url, art) {
                     if (Hls.isSupported()) {
                         const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
-
-hls.loadSource(url);
+                        hls.loadSource(url);
                         hls.attachMedia(video);
                         art.hls = hls;
                     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
@@ -1631,8 +1629,7 @@ hls.loadSource(url);
             let isRecovering = false;
             let seekTimer = null;
 
-            // 1. تثبيت طلب التقديم حتى يستقر سحب المؤشر نهائياً (Debounce)
-            window.art.on('seek', (time) => {
+            window.art.on("seek", (time) => {
                 savedVodTime = time;
                 clearTimeout(seekTimer);
                 seekTimer = setTimeout(() => {
@@ -1642,7 +1639,7 @@ hls.loadSource(url);
                 }, 200);
             });
 
-            window.art.on('video:timeupdate', () => {
+            window.art.on("video:timeupdate", () => {
                 const ct = window.art.currentTime;
                 if (ct > 3 && !isRecovering) {
                     savedVodTime = ct;
@@ -1673,9 +1670,8 @@ hls.loadSource(url);
                 v.addEventListener("loadedmetadata", onLoaded);
             }
 
-            window.art.on('error', () => healVodStream("Error Drop"));
+            window.art.on("error", () => healVodStream("Error Drop"));
 
-            // 2. تفعيل الشاشة وزر Play لإعادة الإنعاش فوراً عند النقر
             const container = document.getElementById("artplayer-container");
             if (container) {
                 container.addEventListener("click", () => {
@@ -1685,6 +1681,7 @@ hls.loadSource(url);
                     }
                 }, true);
             }
+        }
     }
 
     function closeWebPlayer() {
