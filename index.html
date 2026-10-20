@@ -1624,26 +1624,27 @@ hls.loadSource(url);
         });
     
         // ==========================================
-        // 🛡️ الحارس الذكي للأفلام (منع الرجوع للصفر + إنعاش كبسة Play)
+        // 🛡️ الحارس الذكي للأفلام (تثبيت التقديم + إنعاش كبسة Play)
         // ==========================================
         if (!isLive && window.art) {
             let savedVodTime = 0;
             let isRecovering = false;
-            let userSeekingToStart = false;
+            let seekTimer = null;
 
+            // 1. تثبيت طلب التقديم حتى يستقر سحب المؤشر نهائياً (Debounce)
             window.art.on('seek', (time) => {
-                userSeekingToStart = (time < 5);
                 savedVodTime = time;
+                clearTimeout(seekTimer);
+                seekTimer = setTimeout(() => {
+                    if (window.art && Math.abs(window.art.currentTime - time) > 1) {
+                        window.art.currentTime = time;
+                    }
+                }, 200);
             });
 
             window.art.on('video:timeupdate', () => {
                 const ct = window.art.currentTime;
-                if (ct < 3 && savedVodTime > 15 && !userSeekingToStart && !isRecovering) {
-                    console.warn("🛡️ منع تصفير الفيلم! استرجاع الوقت إلى:", savedVodTime);
-                    window.art.currentTime = savedVodTime;
-                    return;
-                }
-                if (ct > 5 && !isRecovering) {
+                if (ct > 3 && !isRecovering) {
                     savedVodTime = ct;
                 }
             });
@@ -1652,8 +1653,7 @@ hls.loadSource(url);
                 if (isRecovering || !window.art) return;
                 isRecovering = true;
                 const resumeAt = savedVodTime;
-                console.warn(`🔄 إنعاش البث (${reason}) والعودة للثانية:`, resumeAt);
-                showToast("⚡ جاري تثبيت البث واستكمال الفيلم من نفس اللحظة...");
+                showToast("⚡ جاري إنعاش البث واستكمال الفيلم من نفس اللحظة...");
 
                 const v = window.art.video;
                 const sep = playerUrl.includes("?") ? "&" : "?";
@@ -1664,37 +1664,27 @@ hls.loadSource(url);
 
                 const onLoaded = () => {
                     v.removeEventListener("loadedmetadata", onLoaded);
-                    if (resumeAt > 5) {
+                    if (resumeAt > 3) {
                         v.currentTime = resumeAt;
                     }
                     v.play().catch(() => {});
-                    setTimeout(() => { isRecovering = false; }, 1500);
+                    setTimeout(() => { isRecovering = false; }, 1200);
                 };
                 v.addEventListener("loadedmetadata", onLoaded);
             }
 
-            window.art.on('error', () => healVodStream("Network/HTTP2 Drop"));
-            window.art.video.addEventListener('error', () => healVodStream("Video Element Error"));
+            window.art.on('error', () => healVodStream("Error Drop"));
 
-            window.art.video.addEventListener('play', () => {
-                const v = window.art.video;
-                if (v.error || v.networkState === 3 || v.readyState === 0) {
-                    healVodStream("Manual Play Click");
-                }
-            });
-
-            setTimeout(() => {
-                const playBtns = document.querySelectorAll("#artplayer-container .art-state, #artplayer-container .art-control-playAndPause");
-                playBtns.forEach(btn => {
-                    btn.addEventListener("click", () => {
-                        const v = window.art ? window.art.video : null;
-                        if (v && (v.error || v.networkState === 3 || v.readyState === 0)) {
-                            healVodStream("UI Play Button");
-                        }
-                    });
-                });
-            }, 600);
-        }
+            // 2. تفعيل الشاشة وزر Play لإعادة الإنعاش فوراً عند النقر
+            const container = document.getElementById("artplayer-container");
+            if (container) {
+                container.addEventListener("click", () => {
+                    const v = window.art ? window.art.video : null;
+                    if (v && (v.error || v.networkState === 3 || v.readyState === 0)) {
+                        healVodStream("Click to Resume");
+                    }
+                }, true);
+            }
     }
 
     function closeWebPlayer() {
