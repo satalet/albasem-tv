@@ -528,7 +528,16 @@
     </div>
 
 
-        <div id="loader" style="display:none; text-align:center; padding:20px; color:#38BDF8;">⏳ جاري فحص الرابط وسحب الباقات من السيرفر...</div>
+        <div id="loader" style="display:none; text-align:center; padding:18px; color:#38BDF8; background:rgba(15,23,42,0.85); border:1px solid rgba(56,189,248,0.3); border-radius:12px; max-width:500px; margin:15px auto; backdrop-filter:blur(8px);">
+    <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; margin-bottom:8px;">
+        <span id="loader_step_text">⏳ جاري الاتصال بالسيرفر وسحب البيانات...</span>
+        <span id="loader_timer" style="color:#FFB703;">0.0s</span>
+    </div>
+    <div style="width:100%; background:#1E293B; border-radius:8px; height:10px; overflow:hidden; border:1px solid #334155;">
+        <div id="loader_bar" style="width:5%; background:linear-gradient(90deg, #00F5D4, #38BDF8); height:100%; transition:width 0.4s ease;"></div>
+    </div>
+    <div id="loader_stats" style="font-size:11px; color:#94A3B8; margin-top:6px;">جاري الفحص المبدئي...</div>
+</div>
         <div class="items-grid" id="items_container"></div>
     </div>
 
@@ -832,11 +841,33 @@
             localStorage.setItem("albasem_url", url);
             const btn = document.getElementById("btn_parse_trigger");
             const loader = document.getElementById("loader");
+            const stepText = document.getElementById("loader_step_text");
+            const loaderBar = document.getElementById("loader_bar");
+            const loaderTimer = document.getElementById("loader_timer");
+            const loaderStats = document.getElementById("loader_stats");
 
             btn.disabled = true;
             loader.style.display = "block";
             document.getElementById("items_container").innerHTML = "";
             rawData = { live: [], movies: [], series: [] };
+
+            let startTime = Date.now();
+            let timerInterval = setInterval(() => {
+                let elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                loaderTimer.innerText = elapsed + "s";
+            }, 100);
+
+            let progressInterval = setInterval(async () => {
+                try {
+                    let pRes = await fetch("https://albasem-tv.duckdns.org/api/parse_progress?url=" + encodeURIComponent(url));
+                    let pData = await pRes.json();
+                    if (pData) {
+                        stepText.innerText = pData.step || "جاري جلب البيانات...";
+                        loaderBar.style.width = (pData.percent || 10) + "%";
+                        loaderStats.innerText = `📺 قنوات: ${pData.live || 0} | 🎬 أفلام: ${pData.vod || 0} | 🍿 مسلسلات: ${pData.series || 0}`;
+                    }
+                } catch(e) {}
+            }, 600);
 
             try {
                 const res = await fetch("https://albasem-tv.duckdns.org/api/parse", {
@@ -844,6 +875,9 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ url: url })
                 });
+
+                clearInterval(progressInterval);
+                clearInterval(timerInterval);
 
                 let jsonRes;
                 try {
@@ -856,6 +890,9 @@
                     const msg = (jsonRes && jsonRes.message) ? jsonRes.message : "تعذر الاتصال بالسيرفر أو انتهت المهلة.";
                     throw new Error(msg);
                 }
+
+                loaderBar.style.width = "100%";
+                stepText.innerText = "✨ تمت العملية بنجاح! جاري العرض...";
 
                 const data = jsonRes.data;
                 ["live", "movies", "series"].forEach(tab => {
