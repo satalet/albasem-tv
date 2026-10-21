@@ -1306,6 +1306,7 @@
                 info.className = "item-info";
                 info.innerHTML = `
                     <div class="item-title" title="${st.name}">${st.name}</div>
+                    <div style="font-size: 11px; color: #38BDF8; cursor: pointer; margin: 3px 0; text-decoration: underline; opacity: 0.9;" onclick="filterByGroup('${st.group || "عام"}')" title="انقر لعرض كل قنوات هذا القسم">📁 ${st.group || "عام"}</div>
                     <a class="btn-system-play" href="${androidIntent}">تشغيل مباشر بالجوال 📱⚡</a>
                     <button class="btn-mpv" onclick="copyMPV('${streamUrl}')">أمر MPV لكالي 📋</button>
                 `;
