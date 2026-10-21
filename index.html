@@ -1322,6 +1322,12 @@
     if (typeof buildPackagesBar === "function") buildPackagesBar();
     if (typeof renderItems === "function") renderItems();
     window.scrollTo({ top: 0, behavior: "smooth" });
+    setTimeout(() => {
+        const activeChip = document.querySelector(".pkg-chip.active");
+        if (activeChip) {
+            activeChip.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+        }
+    }, 100);
 }
 
 function copyMPV(url) {
