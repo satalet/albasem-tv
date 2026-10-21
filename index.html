@@ -491,6 +491,20 @@
             <input type="file" id="m3u_file" accept=".m3u,.m3u8,.txt" style="display:none;">
         </div>
 
+        <!-- شريط تحديد أقسام السحب السريع -->
+        <div class="fetch-filter-bar" style="display: flex; justify-content: center; align-items: center; gap: 12px; margin: 12px auto 16px; flex-wrap: wrap;">
+            <span style="font-size: 13px; color: #94A3B8; font-weight: bold;">⚡ سحب محتوى:</span>
+            <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); font-size: 13px; color: #E2E8F0; user-select: none;">
+                <input type="checkbox" id="chk_fetch_live" checked onchange="saveFetchSettings()"> 📺 المحطات
+            </label>
+            <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); font-size: 13px; color: #E2E8F0; user-select: none;">
+                <input type="checkbox" id="chk_fetch_movies" checked onchange="saveFetchSettings()"> 🎬 الأفلام
+            </label>
+            <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); font-size: 13px; color: #E2E8F0; user-select: none;">
+                <input type="checkbox" id="chk_fetch_series" checked onchange="saveFetchSettings()"> 🍿 المسلسلات
+            </label>
+        </div>
+
         <div class="portal-grid">
             <div class="portal-card card-live active" id="tab_live">
                 <div class="icon">📺</div>
@@ -870,10 +884,28 @@
             }, 600);
 
             try {
+                const fLive = document.getElementById("chk_fetch_live") ? document.getElementById("chk_fetch_live").checked : true;
+                const fMovies = document.getElementById("chk_fetch_movies") ? document.getElementById("chk_fetch_movies").checked : true;
+                const fSeries = document.getElementById("chk_fetch_series") ? document.getElementById("chk_fetch_series").checked : true;
+
+                if (!fLive && !fMovies && !fSeries) {
+                    alert("يرجى تحديد قسم واحد على الأقل للسحب (محطات، أفلام، أو مسلسلات)!");
+                    btn.disabled = false;
+                    loader.style.display = "none";
+                    clearInterval(progressInterval);
+                    clearInterval(timerInterval);
+                    return;
+                }
+
                 const res = await fetch("https://albasem-tv.duckdns.org/api/parse", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ url: url })
+                    body: JSON.stringify({
+                        url: url,
+                        fetch_live: fLive,
+                        fetch_movies: fMovies,
+                        fetch_series: fSeries
+                    })
                 });
 
                 clearInterval(progressInterval);
@@ -2188,7 +2220,30 @@ function playStepChannel(step) {
             }
         });
     })();
-    </script>
+    
+function saveFetchSettings() {
+    const s = {
+        live: document.getElementById("chk_fetch_live") ? document.getElementById("chk_fetch_live").checked : true,
+        movies: document.getElementById("chk_fetch_movies") ? document.getElementById("chk_fetch_movies").checked : true,
+        series: document.getElementById("chk_fetch_series") ? document.getElementById("chk_fetch_series").checked : true
+    };
+    localStorage.setItem("albasem_fetch_settings", JSON.stringify(s));
+}
+
+function loadFetchSettings() {
+    try {
+        const raw = localStorage.getItem("albasem_fetch_settings");
+        if (raw) {
+            const s = JSON.parse(raw);
+            if (document.getElementById("chk_fetch_live") && s.live !== undefined) document.getElementById("chk_fetch_live").checked = s.live;
+            if (document.getElementById("chk_fetch_movies") && s.movies !== undefined) document.getElementById("chk_fetch_movies").checked = s.movies;
+            if (document.getElementById("chk_fetch_series") && s.series !== undefined) document.getElementById("chk_fetch_series").checked = s.series;
+        }
+    } catch(e) {}
+}
+window.addEventListener("DOMContentLoaded", loadFetchSettings);
+
+</script>
 
 </body>
 </html>
