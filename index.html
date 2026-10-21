@@ -1306,7 +1306,7 @@
                 info.className = "item-info";
                 info.innerHTML = `
                     <div class="item-title" title="${st.name}">${st.name}</div>
-                    <div style="font-size: 11px; color: #38BDF8; cursor: pointer; margin: 3px 0; text-decoration: underline; opacity: 0.9;" onclick="filterByGroup('${st.group || "عام"}')" title="انقر لعرض كل قنوات هذا القسم">📁 ${st.group || "عام"}</div>
+                    <div style="font-size: 11px; color: #38BDF8; cursor: pointer; margin: 4px 0; font-weight: 500;" onclick="filterByCardGroup('${st.group || "عام"}')" title="انقر لعرض كل قنوات القسم">📁 ${st.group || "عام"}</div>
                     <a class="btn-system-play" href="${androidIntent}">تشغيل مباشر بالجوال 📱⚡</a>
                     <button class="btn-mpv" onclick="copyMPV('${streamUrl}')">أمر MPV لكالي 📋</button>
                 `;
@@ -1317,7 +1317,14 @@
             });
         }
 
-        function copyMPV(url) {
+        function filterByCardGroup(grp) {
+    currentGroup = grp;
+    if (typeof buildPackagesBar === "function") buildPackagesBar();
+    if (typeof renderItems === "function") renderItems();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function copyMPV(url) {
             const cmd = `mpv --no-ytdl --user-agent="IPTVSmartersPro" "${url}"`;
             navigator.clipboard.writeText(cmd).then(() => {
                 showToast("تم نسخ أمر MPV! الصقه بتيرمنال كالي 📋");
