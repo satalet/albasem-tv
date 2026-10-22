@@ -498,10 +498,10 @@
                 <input type="checkbox" id="chk_fetch_live" checked onchange="saveFetchSettings()"> 📺 المحطات
             </label>
             <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); font-size: 13px; color: #E2E8F0; user-select: none;">
-                <input type="checkbox" id="chk_fetch_movies" checked onchange="saveFetchSettings()"> 🎬 الأفلام
+                <input type="checkbox" id="chk_fetch_movies" onchange="saveFetchSettings()"> 🎬 الأفلام
             </label>
             <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); font-size: 13px; color: #E2E8F0; user-select: none;">
-                <input type="checkbox" id="chk_fetch_series" checked onchange="saveFetchSettings()"> 🍿 المسلسلات
+                <input type="checkbox" id="chk_fetch_series" onchange="saveFetchSettings()"> 🍿 المسلسلات
             </label>
         </div>
 
@@ -845,6 +845,8 @@
             document.getElementById("tab_movies").addEventListener("click", () => switchSection("movies"));
             document.getElementById("tab_series").addEventListener("click", () => switchSection("series"));
 
+            loadFetchSettings();
+            loadFetchSettings();
             if (saved) loadAndParse();
         });
 
@@ -864,6 +866,14 @@
             loader.style.display = "block";
             document.getElementById("items_container").innerHTML = "";
             rawData = { live: [], movies: [], series: [] };
+            ["live", "movies", "series"].forEach(k => {
+                const el = document.getElementById("count-" + k);
+                if (el) el.innerText = "0";
+            });
+            ["live", "movies", "series"].forEach(k => {
+                const el = document.getElementById("count-" + k);
+                if (el) el.innerText = "0";
+            });
 
             let startTime = Date.now();
             let timerInterval = setInterval(() => {

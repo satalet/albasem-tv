@@ -846,6 +846,7 @@
             document.getElementById("tab_series").addEventListener("click", () => switchSection("series"));
 
             loadFetchSettings();
+            loadFetchSettings();
             if (saved) loadAndParse();
         });
 
@@ -865,6 +866,10 @@
             loader.style.display = "block";
             document.getElementById("items_container").innerHTML = "";
             rawData = { live: [], movies: [], series: [] };
+            ["live", "movies", "series"].forEach(k => {
+                const el = document.getElementById("count-" + k);
+                if (el) el.innerText = "0";
+            });
             ["live", "movies", "series"].forEach(k => {
                 const el = document.getElementById("count-" + k);
                 if (el) el.innerText = "0";
