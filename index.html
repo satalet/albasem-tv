@@ -532,8 +532,11 @@
             <div class="packages-bar" id="packages_bar"></div>
         </div>
 
-        <div class="filter-bar">
-            <input type="text" id="search_input" placeholder="🔍 ابحث بالاسم في الباقة المحددة..." />
+        <div class="filter-bar" style="display: flex; gap: 8px; align-items: center;">
+            <input type="text" id="search_input" placeholder="🔍 ابحث بالاسم في كل الأقسام أو الباقة..." style="flex: 1;" />
+            <label title="البحث في المحطات والأفلام والمسلسلات معاً" style="cursor: pointer; display: flex; align-items: center; gap: 5px; background: rgba(56, 189, 248, 0.12); padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.35); font-size: 12px; color: #38BDF8; font-weight: bold; white-space: nowrap; user-select: none;">
+                <input type="checkbox" id="chk_global_search" checked onchange="renderItems()"> 🌐 شامل
+            </label>
         </div>
 
     <div id="ai_search_status" style="display:none; margin: 8px auto 14px auto; max-width: 900px; padding: 6px 14px; background: rgba(0, 255, 136, 0.08); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 20px; font-size: 13px; color: #00ff88; text-align: center; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease;">
@@ -1272,11 +1275,23 @@
             const container = document.getElementById("items_container");
             container.innerHTML = "";
             const q = (document.getElementById("search_input").value || "").trim().toLowerCase();
-            
-            let list = getVisibleItems(currentTab);
+            const isGlobal = document.getElementById("chk_global_search") ? document.getElementById("chk_global_search").checked : true;
 
-            if (currentGroup !== "all") {
-                list = list.filter(item => (item.group || "عام") === currentGroup);
+            let list = [];
+            if (q && isGlobal) {
+                ["live", "movies", "series"].forEach(t => {
+                    const secItems = getVisibleItems(t);
+                    secItems.forEach(it => {
+                        it._type = t;
+                        list.push(it);
+                    });
+                });
+            } else {
+                list = getVisibleItems(currentTab);
+                list.forEach(it => { it._type = currentTab; });
+                if (currentGroup !== "all") {
+                    list = list.filter(item => (item.group || "عام") === currentGroup);
+                }
             }
 
             if (q) {
@@ -1298,17 +1313,18 @@
             const displayList = list.slice(0, 150);
 
             if (displayList.length === 0) {
-                container.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px;color:#64748B;'>لا توجد عناصر في هذه الباقة.</div>";
+                container.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px;color:#64748B;'>لا توجد عناصر مطابقة للبحث.</div>";
                 return;
             }
 
             displayList.forEach(st => {
-                let streamUrl = st.url;
-                if (currentTab === "live" && streamUrl.includes(".m3u8")) {
+                const itemType = st._type || currentTab;
+                let streamUrl = st.url || "";
+                if (itemType === "live" && streamUrl.includes(".m3u8")) {
                     streamUrl = streamUrl.replace(/\.m3u8(\?.*)?$/, ".ts$1");
                 }
 
-                const cleanHost = streamUrl.replace(/^https?:\/\//, '');
+                const cleanHost = streamUrl.replace(/^https?:\/\//, "");
                 const scheme = streamUrl.startsWith("https://") ? "https" : "http";
 
                 const androidIntent = `intent://${cleanHost}#Intent;scheme=${scheme};type=video/*;package=org.videolan.vlc;S.title=${encodeURIComponent(st.name)};S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dorg.videolan.vlc;end`;
@@ -1321,34 +1337,60 @@
                 poster.style.position = "relative";
                 poster.style.cursor = "pointer";
                 poster.onclick = () => {
-                    if (currentTab === "series") {
+                    if (itemType === "series") {
                         openSeriesModal(st);
                     } else {
-                        window.activePlaylist = list.map(it => ({ url: it.url, name: it.name || "" }));
+                        const playableList = list.filter(it => (it._type || currentTab) !== "series");
+                        window.activePlaylist = playableList.map(it => ({ url: it.url, name: it.name || "" }));
                         openWebPlayer(st.url, st.name || "");
                     }
                 };
-                
+
                 const playBadge = document.createElement("div");
                 playBadge.className = "play-badge";
                 playBadge.innerText = "▶";
                 poster.appendChild(playBadge);
 
+                const defaultIcon = itemType === "movies" ? "🎬" : (itemType === "series" ? "🍿" : "📺");
+
                 if (st.logo) {
                     const img = document.createElement("img");
                     img.src = st.logo;
                     img.loading = "lazy";
-                    img.onerror = () => { poster.innerHTML = "<div class='no-logo'>📺</div>"; };
+                    img.onerror = () => {
+                        img.style.display = "none";
+                        const nl = document.createElement("div");
+                        nl.className = "no-logo";
+                        nl.innerText = defaultIcon;
+                        poster.appendChild(nl);
+                    };
                     poster.appendChild(img);
                 } else {
-                    poster.innerHTML = "<div class='no-logo'>📺</div>";
+                    const nl = document.createElement("div");
+                    nl.className = "no-logo";
+                    nl.innerText = defaultIcon;
+                    poster.appendChild(nl);
                 }
 
+                if (q && isGlobal) {
+                    const typeBadge = document.createElement("div");
+                    const typeMap = {
+                        live: { text: "📺 مباشر", bg: "rgba(16, 185, 129, 0.88)" },
+                        movies: { text: "🎬 فيلم", bg: "rgba(245, 158, 11, 0.88)" },
+                        series: { text: "🍿 مسلسل", bg: "rgba(139, 92, 246, 0.88)" }
+                    };
+                    const tInfo = typeMap[itemType] || typeMap.live;
+                    typeBadge.innerText = tInfo.text;
+                    typeBadge.style.cssText = `position:absolute; top:6px; right:6px; background:${tInfo.bg}; color:#fff; font-size:10px; font-weight:bold; padding:2px 7px; border-radius:6px; z-index:3; pointer-events:none; box-shadow:0 2px 6px rgba(0,0,0,0.45);`;
+                    poster.appendChild(typeBadge);
+                }
+
+                const safeGroup = (st.group || "عام").replace(/'/g, "\\'");
                 const info = document.createElement("div");
                 info.className = "item-info";
                 info.innerHTML = `
                     <div class="item-title" title="${st.name}">${st.name}</div>
-                    <div style="font-size: 11px; color: #38BDF8; cursor: pointer; margin: 4px 0; font-weight: 500;" onclick="filterByCardGroup('${st.group || "عام"}')" title="انقر لعرض كل قنوات القسم">📁 ${st.group || "عام"}</div>
+                    <div style="font-size: 11px; color: #38BDF8; cursor: pointer; margin: 4px 0; font-weight: 500;" onclick="filterByCardGroup('${safeGroup}', '${itemType}')" title="انقر لعرض كل قنوات القسم">📁 ${st.group || "عام"}</div>
                     <a class="btn-system-play" href="${androidIntent}">تشغيل مباشر بالجوال 📱⚡</a>
                     <button class="btn-mpv" onclick="copyMPV('${streamUrl}')">أمر MPV لكالي 📋</button>
                 `;
@@ -1359,18 +1401,28 @@
             });
         }
 
-        function filterByCardGroup(grp) {
-    currentGroup = grp;
-    if (typeof buildPackagesBar === "function") buildPackagesBar();
-    if (typeof renderItems === "function") renderItems();
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    setTimeout(() => {
-        const activeChip = document.querySelector(".pkg-chip.active");
-        if (activeChip) {
-            activeChip.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+        function filterByCardGroup(grp, tabType) {
+            const sInput = document.getElementById("search_input");
+            if (sInput && sInput.value) {
+                sInput.value = "";
+                window.aiSearchKeywords = [];
+                const statusBox = document.getElementById("ai_search_status");
+                if (statusBox) statusBox.style.display = "none";
+            }
+            if (tabType && tabType !== currentTab && typeof switchSection === "function") {
+                switchSection(tabType);
+            }
+            currentGroup = grp;
+            if (typeof buildPackagesBar === "function") buildPackagesBar();
+            if (typeof renderItems === "function") renderItems();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            setTimeout(() => {
+                const activeChip = document.querySelector(".pkg-chip.active");
+                if (activeChip) {
+                    activeChip.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                }
+            }, 100);
         }
-    }, 100);
-}
 
 function copyMPV(url) {
             const cmd = `mpv --no-ytdl --user-agent="IPTVSmartersPro" "${url}"`;
