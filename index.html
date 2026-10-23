@@ -546,7 +546,7 @@
         <div class="filter-bar" style="margin: 8px auto 12px; max-width: 900px; width: 100%; box-sizing: border-box;">
             <!-- كبسولة البحث الموحدة هندسياً -->
             <div class="search-capsule" style="display: flex; align-items: center; height: 44px; background: rgba(15, 23, 42, 0.85); border-radius: 25px; padding: 0 5px 0 14px; box-sizing: border-box;">
-                <input type="search" enterkeyhint="search" id="search_input" placeholder="🔍 ابحث عن قناة، فيلم، أو مسلسل..." style="flex: 1; height: 100%; border: none !important; background: transparent !important; box-shadow: none !important; outline: none !important; color: #fff; font-size: 13.5px; padding: 0 8px; min-width: 0; margin: 0;" />
+                <input type="search" enterkeyhint="search" id="search_input" placeholder="🔍 ابحث في هذا القسم أو الباقة..." style="flex: 1; height: 100%; border: none !important; background: transparent !important; box-shadow: none !important; outline: none !important; color: #fff; font-size: 13.5px; padding: 0 8px; min-width: 0; margin: 0;" />
                 <span id="btn_clear_search" onclick="clearSearch()" style="cursor: pointer; color: #94A3B8; font-size: 14px; display: none; padding: 0 10px; line-height: 1;">✖</span>
                 <button id="btn_do_search" onclick="executeSearch()" style="height: 34px; padding: 0 16px; border-radius: 20px; border: none; background: linear-gradient(135deg, #0284C7, #0369A1); color: #fff; font-size: 12.5px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; flex-shrink: 0; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35); margin: 0;">
                     بحث ⚡
@@ -555,9 +555,9 @@
 
             <!-- شريط نطاق البحث الشامل الموحد بسطر واحد -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding: 0 10px; font-size: 12px; white-space: nowrap;">
-                <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: #CBD5E1; user-select: none; font-size: 12px; font-weight: 500;">
-                    <input type="checkbox" id="chk_global_search" checked onchange="renderItems()" style="accent-color: #38BDF8; width: 14px; height: 14px; cursor: pointer; margin: 0;">
-                    🌐 بحث شامل (الكل)
+                <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: #94A3B8; user-select: none; font-size: 12px; font-weight: 500;">
+                    <input type="checkbox" id="chk_global_search" onchange="toggleGlobalSearchMode()" style="accent-color: #38BDF8; width: 14px; height: 14px; cursor: pointer; margin: 0;">
+                    <span id="txt_global_search_label" style="color: #94A3B8;">🌐 بحث شامل (الكل)</span>
                 </label>
                 <span style="color: #64748B; font-size: 11px; background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);">↵ إدخال</span>
             </div>
@@ -1271,7 +1271,7 @@
             const container = document.getElementById("items_container");
             container.innerHTML = "";
             const q = (document.getElementById("search_input").value || "").trim().toLowerCase();
-            const isGlobal = document.getElementById("chk_global_search") ? document.getElementById("chk_global_search").checked : true;
+            const isGlobal = document.getElementById("chk_global_search") ? document.getElementById("chk_global_search").checked : false;
 
             let list = [];
             if (q && isGlobal) {
@@ -2349,6 +2349,21 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
         if (clearBtn) clearBtn.style.display = "none";
         const statusBox = document.getElementById("ai_search_status");
         if (statusBox) statusBox.style.display = "none";
+        renderItems();
+    }
+
+
+    function toggleGlobalSearchMode() {
+        const chk = document.getElementById("chk_global_search");
+        const input = document.getElementById("search_input");
+        const lbl = document.getElementById("txt_global_search_label");
+        const isChecked = chk && chk.checked;
+        if (input) {
+            input.placeholder = isChecked ? "🌐 ابحث في كل الأقسام (مباشر، أفلام، مسلسلات)..." : "🔍 ابحث في هذا القسم أو الباقة...";
+        }
+        if (lbl) {
+            lbl.style.color = isChecked ? "#38BDF8" : "#94A3B8";
+        }
         renderItems();
     }
 
