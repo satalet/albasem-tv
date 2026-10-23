@@ -1252,6 +1252,21 @@
             btn.className = "btn-system-play";
             btn.style.cssText = "padding:10px; font-size:12px; border-radius:8px; cursor:pointer; background:#1E293B; border:1px solid #334155;";
             btn.innerText = "▶ " + (ep.title || "الحلقة " + ep.episode_num);
+            btn.style.flex = "1";
+
+            const shareEpBtn = document.createElement("button");
+            shareEpBtn.title = "مشاركة هذه الحلقة بالواتس";
+            shareEpBtn.innerHTML = "📲";
+            shareEpBtn.style.cssText = "background:#25D366; color:#fff; border:none; border-radius:8px; padding:0 10px; cursor:pointer; font-size:13px; font-weight:bold;";
+            shareEpBtn.onclick = (e) => {
+                e.stopPropagation();
+                shareToWhatsApp(encodeURIComponent(ep.url), encodeURIComponent(`${seriesTitle} - S${sNum} E${ep.episode_num}`));
+            };
+
+            const epRow = document.createElement("div");
+            epRow.style.cssText = "display:flex; gap:6px; width:100%;";
+            epRow.appendChild(btn);
+            epRow.appendChild(shareEpBtn);
             btn.onclick = () => {
                 window.activePlaylist = eps.map(e => ({
                     url: e.url,
@@ -1260,7 +1275,7 @@
                 closeSeriesModal();
                 openWebPlayer(ep.url, `${seriesTitle} - S${sNum} E${ep.episode_num}`);
             };
-            epList.appendChild(btn);
+            epList.appendChild(epRow);
         });
     }
 
@@ -1507,10 +1522,23 @@
 
     function shareToWhatsApp(rawUrl, rawTitle) {
         const title = decodeURIComponent(rawTitle);
+        const streamStr = decodeURIComponent(rawUrl);
+        const isLive = streamStr.includes("/live/");
+        const isSeries = streamStr.includes("/series/");
+        
+        let typeBadge = "🎬 مشاهدة فيلم";
+        if (isLive) typeBadge = "📺 بث مباشر ومفتوح";
+        else if (isSeries) typeBadge = "🍿 حلقة مسلسل";
+
         const directUrl = `${window.location.origin}${window.location.pathname}?play=${rawUrl}&title=${rawTitle}`;
-        const msg = `🎬 تفضلي احضري الفيلم مباشرة بدون أي برامج:\n*${title}*\n\n🍿 اضغطي هنا للمشاهدة:\n${directUrl}`;
+        const msg = `${typeBadge}:\n*${title}*\n\n⚡ اضغطي هنا للمشاهدة فوراً بدون أي برامج:\n${directUrl}`;
         const waLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
         window.open(waLink, '_blank');
+    }
+
+    function shareCurrentPlaying() {
+        if (!currentRawStreamUrl) return;
+        shareToWhatsApp(encodeURIComponent(currentRawStreamUrl), encodeURIComponent(currentStreamTitle || 'مشاهدة مباشرة'));
     }
 
 function copyMPV(url) {
