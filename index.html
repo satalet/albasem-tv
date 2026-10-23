@@ -560,6 +560,140 @@
         line-height: 1.1 !important;
     }
 
+
+    /* ======================================================== */
+    /* ضبط هندسة البطاقات: حل قرط الاسم وترتيب الأزرار على الجوال */
+    /* ======================================================== */
+    .stream-card, .channel-card, .card, [class*="card"] {
+        padding: 6px 5px !important;
+        box-sizing: border-box !important;
+    }
+
+    /* حجم منطقة اللوغو */
+    .card-thumb, .poster-box, .thumb-box, [class*="thumb"], [class*="poster"], [class*="card"] > div:first-child {
+        min-height: 115px !important;
+        height: 115px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin-bottom: 4px !important;
+    }
+    .card-thumb img, .poster-box img, .thumb-box img, [class*="card"] img {
+        max-height: 105px !important;
+        max-width: 95% !important;
+        object-fit: contain !important;
+    }
+
+    /* حل مشكلة قرط بداية الاسم: إجبار اتجاه LTR مع التوسيط ونقاط بالنهاية */
+    .card-title, .stream-title, [class*="title"], [class*="name"] {
+        direction: ltr !important;
+        text-align: center !important;
+        unicode-bidi: plaintext !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        font-size: 11.5px !important;
+        font-weight: bold !important;
+        margin: 3px 0 1px 0 !important;
+        line-height: 1.2 !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* سطر الباقة */
+    .card-category, .stream-group, [class*="category"], [class*="group"] {
+        direction: ltr !important;
+        text-align: center !important;
+        unicode-bidi: plaintext !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        font-size: 9.5px !important;
+        color: #38bdf8 !important;
+        opacity: 0.85 !important;
+        margin: 0 0 5px 0 !important;
+        line-height: 1.1 !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* شريط الأزرار: تقسيم متساوي ومدروس بنسبة 33.3% لكل زر */
+    .card-actions-row {
+        display: flex !important;
+        gap: 4px !important;
+        width: 100% !important;
+        margin-top: 6px !important;
+        box-sizing: border-box !important;
+        direction: ltr !important;
+    }
+    .card-mini-btn {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        height: 28px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 3px !important;
+        padding: 0 2px !important;
+        border-radius: 6px !important;
+        border: 1px solid transparent !important;
+        cursor: pointer !important;
+        text-decoration: none !important;
+        box-sizing: border-box !important;
+        transition: all 0.2s ease !important;
+        overflow: hidden !important;
+    }
+    .card-mini-btn .btn-icon {
+        font-size: 12px !important;
+        line-height: 1 !important;
+        flex-shrink: 0 !important;
+    }
+    .card-mini-btn .btn-text {
+        font-size: 10px !important;
+        font-weight: bold !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    .btn-mini-mob {
+        background: rgba(14, 165, 233, 0.15) !important;
+        border-color: rgba(14, 165, 233, 0.35) !important;
+        color: #38bdf8 !important;
+    }
+    .btn-mini-mob:hover { background: #0ea5e9 !important; color: #fff !important; }
+
+    .btn-mini-wa {
+        background: rgba(37, 211, 102, 0.15) !important;
+        border-color: rgba(37, 211, 102, 0.35) !important;
+        color: #25d366 !important;
+    }
+    .btn-mini-wa:hover { background: #25d366 !important; color: #fff !important; }
+
+    .btn-mini-mpv {
+        background: rgba(148, 163, 184, 0.12) !important;
+        border-color: rgba(148, 163, 184, 0.25) !important;
+        color: #cbd5e1 !important;
+    }
+    .btn-mini-mpv:hover { background: #64748b !important; color: #fff !important; }
+
+    /* مخصص لشاشات الجوال: إخفاء الكلمات وإظهار الأيقونات فقط بمربعات متناسقة وعريضة */
+    @media (max-width: 600px) {
+        .card-mini-btn .btn-text {
+            display: none !important;
+        }
+        .card-mini-btn {
+            height: 32px !important;
+        }
+        .card-mini-btn .btn-icon {
+            font-size: 15px !important;
+        }
+    }
+
 </style>
     <!-- مشغل ويب Artplayer و HLS -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -1630,9 +1764,9 @@
                     <div class="item-title" title="${st.name}">${st.name}</div>
                     <div style="font-size: 11px; color: #38BDF8; cursor: pointer; margin: 4px 0; font-weight: 500;" onclick="filterByCardGroup('${safeGroup}', '${itemType}')" title="انقر لعرض كل قنوات القسم">📁 ${st.group || "عام"}</div>
                     <div class="card-actions-row">
-                        <a class="card-mini-btn btn-mini-mob" href="${androidIntent}" title="تشغيل مباشر بالجوال">📱 جوال</a>
-                        <button class="card-mini-btn btn-mini-wa" onclick="shareToWhatsApp('${encodeURIComponent(streamUrl)}', '${encodeURIComponent(st.name)}')" title="مشاركة بالواتس">📲 واتس</button>
-                        <button class="card-mini-btn btn-mini-mpv" onclick="copyMPV('${streamUrl}')" title="نسخ أمر MPV">📋 كالي</button>
+                        <a class="card-mini-btn btn-mini-mob" href="${androidIntent}" title="تشغيل مباشر بالجوال"><span class="btn-icon">📱</span><span class="btn-text">جوال</span></a>
+                        <button class="card-mini-btn btn-mini-wa" onclick="shareToWhatsApp('${encodeURIComponent(streamUrl)}', '${encodeURIComponent(st.name)}')" title="مشاركة بالواتس"><span class="btn-icon">📲</span><span class="btn-text">واتس</span></button>
+                        <button class="card-mini-btn btn-mini-mpv" onclick="copyMPV('${streamUrl}')" title="نسخ أمر MPV"><span class="btn-icon">📋</span><span class="btn-text">كالي</span></button>
                     </div>
                 `;
 
