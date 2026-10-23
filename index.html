@@ -492,17 +492,21 @@
         </div>
 
         <!-- شريط تحديد أقسام السحب السريع -->
-        <div class="fetch-filter-bar" style="display: flex; justify-content: center; align-items: center; gap: 12px; margin: 12px auto 16px; flex-wrap: wrap;">
-            <span style="font-size: 13px; color: #94A3B8; font-weight: bold;">⚡ سحب محتوى:</span>
-            <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); font-size: 13px; color: #E2E8F0; user-select: none;">
-                <input type="checkbox" id="chk_fetch_live" checked onchange="saveFetchSettings()"> 📺 المحطات
-            </label>
-            <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); font-size: 13px; color: #E2E8F0; user-select: none;">
-                <input type="checkbox" id="chk_fetch_movies" onchange="saveFetchSettings()"> 🎬 الأفلام
-            </label>
-            <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); font-size: 13px; color: #E2E8F0; user-select: none;">
-                <input type="checkbox" id="chk_fetch_series" onchange="saveFetchSettings()"> 🍿 المسلسلات
-            </label>
+        <div class="fetch-filter-box" style="margin: 10px auto 14px; max-width: 500px; padding: 0 4px;">
+            <div style="font-size: 12px; color: #94A3B8; font-weight: bold; margin-bottom: 6px; text-align: center; letter-spacing: 0.3px;">
+                ⚡ تحديد أقسام السحب السريع:
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                <label style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; background: rgba(15, 23, 42, 0.7); padding: 8px 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); font-size: 12.5px; color: #E2E8F0; user-select: none; transition: 0.2s;">
+                    <input type="checkbox" id="chk_fetch_live" checked onchange="saveFetchSettings()" style="accent-color: #10B981; width: 14px; height: 14px; margin: 0;"> 📺 المحطات
+                </label>
+                <label style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; background: rgba(15, 23, 42, 0.7); padding: 8px 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); font-size: 12.5px; color: #E2E8F0; user-select: none; transition: 0.2s;">
+                    <input type="checkbox" id="chk_fetch_movies" onchange="saveFetchSettings()" style="accent-color: #F59E0B; width: 14px; height: 14px; margin: 0;"> 🎬 الأفلام
+                </label>
+                <label style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; background: rgba(15, 23, 42, 0.7); padding: 8px 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); font-size: 12.5px; color: #E2E8F0; user-select: none; transition: 0.2s;">
+                    <input type="checkbox" id="chk_fetch_series" onchange="saveFetchSettings()" style="accent-color: #8B5CF6; width: 14px; height: 14px; margin: 0;"> 🍿 المسلسلات
+                </label>
+            </div>
         </div>
 
         <div class="portal-grid">
@@ -542,13 +546,13 @@
                 </button>
             </div>
 
-            <!-- شريط نطاق البحث الشامل -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding: 0 12px; font-size: 12px;">
-                <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: #94A3B8; user-select: none;">
+            <!-- شريط نطاق البحث الشامل الموحد بسطر واحد -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding: 0 10px; font-size: 12px; white-space: nowrap;">
+                <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: #CBD5E1; user-select: none; font-size: 12px; font-weight: 500;">
                     <input type="checkbox" id="chk_global_search" checked onchange="renderItems()" style="accent-color: #38BDF8; width: 14px; height: 14px; cursor: pointer; margin: 0;">
-                    <span style="color: #CBD5E1; font-weight: 500;">🌐 بحث شامل (المحطات والأفلام والمسلسلات)</span>
+                    🌐 بحث شامل (الكل)
                 </label>
-                <span style="color: #64748B; font-size: 11px;">اضغط ↵ بالكيبورد</span>
+                <span style="color: #64748B; font-size: 11px; background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);">↵ إدخال</span>
             </div>
         </div>
 
