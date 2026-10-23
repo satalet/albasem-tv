@@ -1407,7 +1407,7 @@
 
                 let logoSrc = st.logo || "";
                 if (logoSrc && logoSrc.startsWith("http://")) {
-                    logoSrc = ;
+                    logoSrc = "https://wsrv.nl/?url=" + encodeURIComponent(logoSrc) + "&default=1";
                 }
 
                 if (logoSrc) {
