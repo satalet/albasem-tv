@@ -462,13 +462,20 @@
             margin-top: 6px !important;
             margin-bottom: 2px !important;
         }
-        #search_input {
-            border: 1px solid rgba(56, 189, 248, 0.3) !important;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.08) inset !important;
+        .search-capsule {
+            border: 1px solid rgba(56, 189, 248, 0.35) !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35) !important;
+            transition: all 0.2s ease-in-out;
         }
-        #search_input:focus {
+        .search-capsule:focus-within {
             border-color: #38BDF8 !important;
-            box-shadow: 0 0 12px rgba(56, 189, 248, 0.3) !important;
+            box-shadow: 0 0 14px rgba(56, 189, 248, 0.35) !important;
+        }
+        #search_input {
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            outline: none !important;
         }
     </style>
 </head>
@@ -492,17 +499,21 @@
         </div>
 
         <!-- شريط تحديد أقسام السحب السريع -->
-        <div class="fetch-filter-bar" style="display: flex; justify-content: center; align-items: center; gap: 12px; margin: 12px auto 16px; flex-wrap: wrap;">
-            <span style="font-size: 13px; color: #94A3B8; font-weight: bold;">⚡ سحب محتوى:</span>
-            <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); font-size: 13px; color: #E2E8F0; user-select: none;">
-                <input type="checkbox" id="chk_fetch_live" checked onchange="saveFetchSettings()"> 📺 المحطات
-            </label>
-            <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); font-size: 13px; color: #E2E8F0; user-select: none;">
-                <input type="checkbox" id="chk_fetch_movies" onchange="saveFetchSettings()"> 🎬 الأفلام
-            </label>
-            <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); font-size: 13px; color: #E2E8F0; user-select: none;">
-                <input type="checkbox" id="chk_fetch_series" onchange="saveFetchSettings()"> 🍿 المسلسلات
-            </label>
+        <div class="fetch-filter-box" style="margin: 10px auto 14px; max-width: 500px; padding: 0 4px;">
+            <div style="font-size: 12px; color: #94A3B8; font-weight: bold; margin-bottom: 6px; text-align: center; letter-spacing: 0.3px;">
+                ⚡ تحديد أقسام السحب السريع:
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                <label style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; background: rgba(15, 23, 42, 0.7); padding: 8px 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); font-size: 12.5px; color: #E2E8F0; user-select: none; transition: 0.2s;">
+                    <input type="checkbox" id="chk_fetch_live" checked onchange="saveFetchSettings()" style="accent-color: #10B981; width: 14px; height: 14px; margin: 0;"> 📺 المحطات
+                </label>
+                <label style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; background: rgba(15, 23, 42, 0.7); padding: 8px 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); font-size: 12.5px; color: #E2E8F0; user-select: none; transition: 0.2s;">
+                    <input type="checkbox" id="chk_fetch_movies" onchange="saveFetchSettings()" style="accent-color: #F59E0B; width: 14px; height: 14px; margin: 0;"> 🎬 الأفلام
+                </label>
+                <label style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; background: rgba(15, 23, 42, 0.7); padding: 8px 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); font-size: 12.5px; color: #E2E8F0; user-select: none; transition: 0.2s;">
+                    <input type="checkbox" id="chk_fetch_series" onchange="saveFetchSettings()" style="accent-color: #8B5CF6; width: 14px; height: 14px; margin: 0;"> 🍿 المسلسلات
+                </label>
+            </div>
         </div>
 
         <div class="portal-grid">
@@ -532,11 +543,27 @@
             <div class="packages-bar" id="packages_bar"></div>
         </div>
 
-        <div class="filter-bar">
-            <input type="text" id="search_input" placeholder="🔍 ابحث بالاسم في الباقة المحددة..." />
+        <div class="filter-bar" style="margin: 8px auto 12px; max-width: 900px; width: 100%; box-sizing: border-box;">
+            <!-- كبسولة البحث الموحدة هندسياً -->
+            <div class="search-capsule" style="display: flex; align-items: center; height: 44px; background: rgba(15, 23, 42, 0.85); border-radius: 25px; padding: 0 5px 0 14px; box-sizing: border-box;">
+                <input type="search" enterkeyhint="search" id="search_input" placeholder="🔍 ابحث عن قناة، فيلم، أو مسلسل..." style="flex: 1; height: 100%; border: none !important; background: transparent !important; box-shadow: none !important; outline: none !important; color: #fff; font-size: 13.5px; padding: 0 8px; min-width: 0; margin: 0;" />
+                <span id="btn_clear_search" onclick="clearSearch()" style="cursor: pointer; color: #94A3B8; font-size: 14px; display: none; padding: 0 10px; line-height: 1;">✖</span>
+                <button id="btn_do_search" onclick="executeSearch()" style="height: 34px; padding: 0 16px; border-radius: 20px; border: none; background: linear-gradient(135deg, #0284C7, #0369A1); color: #fff; font-size: 12.5px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; flex-shrink: 0; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35); margin: 0;">
+                    بحث ⚡
+                </button>
+            </div>
+
+            <!-- شريط نطاق البحث الشامل الموحد بسطر واحد -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding: 0 10px; font-size: 12px; white-space: nowrap;">
+                <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: #CBD5E1; user-select: none; font-size: 12px; font-weight: 500;">
+                    <input type="checkbox" id="chk_global_search" checked onchange="renderItems()" style="accent-color: #38BDF8; width: 14px; height: 14px; cursor: pointer; margin: 0;">
+                    🌐 بحث شامل (الكل)
+                </label>
+                <span style="color: #64748B; font-size: 11px; background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);">↵ إدخال</span>
+            </div>
         </div>
 
-    <div id="ai_search_status" style="display:none; margin: 8px auto 14px auto; max-width: 900px; padding: 6px 14px; background: rgba(0, 255, 136, 0.08); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 20px; font-size: 13px; color: #00ff88; text-align: center; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease;">
+        <div id="ai_search_status" style="display:none; margin: 8px auto 14px auto; max-width: 900px; padding: 6px 14px; background: rgba(0, 255, 136, 0.08); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 20px; font-size: 13px; color: #00ff88; text-align: center; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease;">
         <span id="ai_status_icon">🧠✨</span> 
         <span id="ai_status_text">جاري التحليل بالذكاء الاصطناعي...</span>
     </div>
@@ -793,52 +820,24 @@
             document.getElementById("btn_parse_trigger").addEventListener("click", loadAndParse);
             document.getElementById("m3u_file").addEventListener("change", handleFileSelect);
             const searchInput = document.getElementById("search_input");
-            const statusBox = document.getElementById("ai_search_status");
-            const statusText = document.getElementById("ai_status_text");
-            let aiDebounceTimer = null;
-            let currentAiQuery = "";
             window.aiSearchKeywords = [];
 
+            // مراقبة كتابة النص لإظهار زر المسح (✖) وإعادة القائمة عند التفريغ
             searchInput.addEventListener("input", (e) => {
                 const val = (e.target.value || "").trim();
-                renderItems();
-
-                clearTimeout(aiDebounceTimer);
-                if (val.length < 2) {
-                    window.aiSearchKeywords = [];
-                    currentAiQuery = "";
-                    if (statusBox) statusBox.style.display = "none";
-                    renderItems();
-                    return;
+                const clearBtn = document.getElementById("btn_clear_search");
+                if (clearBtn) clearBtn.style.display = val ? "block" : "none";
+                if (!val) {
+                    clearSearch();
                 }
+            });
 
-                if (val === currentAiQuery) return;
-
-                if (statusBox && statusText) {
-                    statusBox.style.display = "block";
-                    statusText.innerHTML = "جاري التحليل واستنتاج القنوات بذكاء <b>Gemini</b>... ⏳";
+            // تنفيذ البحث بذكاء عند الضغط على Enter في الكيبورد
+            searchInput.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    executeSearch();
                 }
-
-                aiDebounceTimer = setTimeout(async () => {
-                    currentAiQuery = val;
-                    try {
-                        const res = await fetch("https://albasem-tv.duckdns.org/api/ai_search?q=" + encodeURIComponent(val));
-                        const data = await res.json();
-                        if (data && Array.isArray(data.keywords) && data.keywords.length > 0) {
-                            window.aiSearchKeywords = data.keywords;
-                            if (statusBox && statusText) {
-                                statusBox.style.display = "block";
-                                statusText.innerHTML = "✨ فهم الذكاء نيتك: <b>" + data.keywords.slice(0, 5).join(" | ") + "</b>";
-                            }
-                            renderItems();
-                        } else {
-                            if (statusBox) statusBox.style.display = "none";
-                        }
-                    } catch (err) {
-                        console.log("AI Search Error:", err);
-                        if (statusBox) statusBox.style.display = "none";
-                    }
-                }, 400);
             });
 
             document.getElementById("tab_live").addEventListener("click", () => switchSection("live"));
@@ -1272,11 +1271,23 @@
             const container = document.getElementById("items_container");
             container.innerHTML = "";
             const q = (document.getElementById("search_input").value || "").trim().toLowerCase();
-            
-            let list = getVisibleItems(currentTab);
+            const isGlobal = document.getElementById("chk_global_search") ? document.getElementById("chk_global_search").checked : true;
 
-            if (currentGroup !== "all") {
-                list = list.filter(item => (item.group || "عام") === currentGroup);
+            let list = [];
+            if (q && isGlobal) {
+                ["live", "movies", "series"].forEach(t => {
+                    const secItems = getVisibleItems(t);
+                    secItems.forEach(it => {
+                        it._type = t;
+                        list.push(it);
+                    });
+                });
+            } else {
+                list = getVisibleItems(currentTab);
+                list.forEach(it => { it._type = currentTab; });
+                if (currentGroup !== "all") {
+                    list = list.filter(item => (item.group || "عام") === currentGroup);
+                }
             }
 
             if (q) {
@@ -1298,17 +1309,18 @@
             const displayList = list.slice(0, 150);
 
             if (displayList.length === 0) {
-                container.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px;color:#64748B;'>لا توجد عناصر في هذه الباقة.</div>";
+                container.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px;color:#64748B;'>لا توجد عناصر مطابقة للبحث.</div>";
                 return;
             }
 
             displayList.forEach(st => {
-                let streamUrl = st.url;
-                if (currentTab === "live" && streamUrl.includes(".m3u8")) {
+                const itemType = st._type || currentTab;
+                let streamUrl = st.url || "";
+                if (itemType === "live" && streamUrl.includes(".m3u8")) {
                     streamUrl = streamUrl.replace(/\.m3u8(\?.*)?$/, ".ts$1");
                 }
 
-                const cleanHost = streamUrl.replace(/^https?:\/\//, '');
+                const cleanHost = streamUrl.replace(/^https?:\/\//, "");
                 const scheme = streamUrl.startsWith("https://") ? "https" : "http";
 
                 const androidIntent = `intent://${cleanHost}#Intent;scheme=${scheme};type=video/*;package=org.videolan.vlc;S.title=${encodeURIComponent(st.name)};S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dorg.videolan.vlc;end`;
@@ -1321,34 +1333,60 @@
                 poster.style.position = "relative";
                 poster.style.cursor = "pointer";
                 poster.onclick = () => {
-                    if (currentTab === "series") {
+                    if (itemType === "series") {
                         openSeriesModal(st);
                     } else {
-                        window.activePlaylist = list.map(it => ({ url: it.url, name: it.name || "" }));
+                        const playableList = list.filter(it => (it._type || currentTab) !== "series");
+                        window.activePlaylist = playableList.map(it => ({ url: it.url, name: it.name || "" }));
                         openWebPlayer(st.url, st.name || "");
                     }
                 };
-                
+
                 const playBadge = document.createElement("div");
                 playBadge.className = "play-badge";
                 playBadge.innerText = "▶";
                 poster.appendChild(playBadge);
 
+                const defaultIcon = itemType === "movies" ? "🎬" : (itemType === "series" ? "🍿" : "📺");
+
                 if (st.logo) {
                     const img = document.createElement("img");
                     img.src = st.logo;
                     img.loading = "lazy";
-                    img.onerror = () => { poster.innerHTML = "<div class='no-logo'>📺</div>"; };
+                    img.onerror = () => {
+                        img.style.display = "none";
+                        const nl = document.createElement("div");
+                        nl.className = "no-logo";
+                        nl.innerText = defaultIcon;
+                        poster.appendChild(nl);
+                    };
                     poster.appendChild(img);
                 } else {
-                    poster.innerHTML = "<div class='no-logo'>📺</div>";
+                    const nl = document.createElement("div");
+                    nl.className = "no-logo";
+                    nl.innerText = defaultIcon;
+                    poster.appendChild(nl);
                 }
 
+                if (q && isGlobal) {
+                    const typeBadge = document.createElement("div");
+                    const typeMap = {
+                        live: { text: "📺 مباشر", bg: "rgba(16, 185, 129, 0.88)" },
+                        movies: { text: "🎬 فيلم", bg: "rgba(245, 158, 11, 0.88)" },
+                        series: { text: "🍿 مسلسل", bg: "rgba(139, 92, 246, 0.88)" }
+                    };
+                    const tInfo = typeMap[itemType] || typeMap.live;
+                    typeBadge.innerText = tInfo.text;
+                    typeBadge.style.cssText = `position:absolute; top:6px; right:6px; background:${tInfo.bg}; color:#fff; font-size:10px; font-weight:bold; padding:2px 7px; border-radius:6px; z-index:3; pointer-events:none; box-shadow:0 2px 6px rgba(0,0,0,0.45);`;
+                    poster.appendChild(typeBadge);
+                }
+
+                const safeGroup = (st.group || "عام").replace(/'/g, "\\'");
                 const info = document.createElement("div");
                 info.className = "item-info";
                 info.innerHTML = `
                     <div class="item-title" title="${st.name}">${st.name}</div>
-                    <div style="font-size: 11px; color: #38BDF8; cursor: pointer; margin: 4px 0; font-weight: 500;" onclick="filterByCardGroup('${st.group || "عام"}')" title="انقر لعرض كل قنوات القسم">📁 ${st.group || "عام"}</div>
+                    <div style="font-size: 11px; color: #38BDF8; cursor: pointer; margin: 4px 0; font-weight: 500;" onclick="filterByCardGroup('${safeGroup}', '${itemType}')" title="انقر لعرض كل قنوات القسم">📁 ${st.group || "عام"}</div>
                     <a class="btn-system-play" href="${androidIntent}">تشغيل مباشر بالجوال 📱⚡</a>
                     <button class="btn-mpv" onclick="copyMPV('${streamUrl}')">أمر MPV لكالي 📋</button>
                 `;
@@ -1359,18 +1397,28 @@
             });
         }
 
-        function filterByCardGroup(grp) {
-    currentGroup = grp;
-    if (typeof buildPackagesBar === "function") buildPackagesBar();
-    if (typeof renderItems === "function") renderItems();
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    setTimeout(() => {
-        const activeChip = document.querySelector(".pkg-chip.active");
-        if (activeChip) {
-            activeChip.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+        function filterByCardGroup(grp, tabType) {
+            const sInput = document.getElementById("search_input");
+            if (sInput && sInput.value) {
+                sInput.value = "";
+                window.aiSearchKeywords = [];
+                const statusBox = document.getElementById("ai_search_status");
+                if (statusBox) statusBox.style.display = "none";
+            }
+            if (tabType && tabType !== currentTab && typeof switchSection === "function") {
+                switchSection(tabType);
+            }
+            currentGroup = grp;
+            if (typeof buildPackagesBar === "function") buildPackagesBar();
+            if (typeof renderItems === "function") renderItems();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            setTimeout(() => {
+                const activeChip = document.querySelector(".pkg-chip.active");
+                if (activeChip) {
+                    activeChip.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                }
+            }, 100);
         }
-    }, 100);
-}
 
 function copyMPV(url) {
             const cmd = `mpv --no-ytdl --user-agent="IPTVSmartersPro" "${url}"`;
@@ -2252,6 +2300,57 @@ function loadFetchSettings() {
     } catch(e) {}
 }
 window.addEventListener("DOMContentLoaded", loadFetchSettings);
+
+
+    async function executeSearch() {
+        const input = document.getElementById("search_input");
+        const val = (input ? input.value : "").trim();
+        const statusBox = document.getElementById("ai_search_status");
+        const statusText = document.getElementById("ai_status_text");
+
+        if (!val) {
+            clearSearch();
+            return;
+        }
+
+        // عرض النتائج المباشرة فوراً
+        renderItems();
+
+        if (val.length >= 2) {
+            if (statusBox && statusText) {
+                statusBox.style.display = "block";
+                statusText.innerHTML = "جاري التحليل واستنتاج القنوات بذكاء <b>Gemini</b>... ⏳";
+            }
+            try {
+                const res = await fetch("https://albasem-tv.duckdns.org/api/ai_search?q=" + encodeURIComponent(val));
+                const data = await res.json();
+                if (data && Array.isArray(data.keywords) && data.keywords.length > 0) {
+                    window.aiSearchKeywords = data.keywords;
+                    if (statusBox && statusText) {
+                        statusBox.style.display = "block";
+                        statusText.innerHTML = "✨ فهم الذكاء نيتك: <b>" + data.keywords.slice(0, 5).join(" | ") + "</b>";
+                    }
+                    renderItems();
+                } else {
+                    if (statusBox) statusBox.style.display = "none";
+                }
+            } catch (err) {
+                console.log("AI Search Error:", err);
+                if (statusBox) statusBox.style.display = "none";
+            }
+        }
+    }
+
+    function clearSearch() {
+        const input = document.getElementById("search_input");
+        if (input) input.value = "";
+        window.aiSearchKeywords = [];
+        const clearBtn = document.getElementById("btn_clear_search");
+        if (clearBtn) clearBtn.style.display = "none";
+        const statusBox = document.getElementById("ai_search_status");
+        if (statusBox) statusBox.style.display = "none";
+        renderItems();
+    }
 
 </script>
 
