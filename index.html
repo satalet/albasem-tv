@@ -1405,9 +1405,14 @@
 
                 const defaultIcon = itemType === "movies" ? "🎬" : (itemType === "series" ? "🍿" : "📺");
 
-                if (st.logo) {
+                let logoSrc = st.logo || "";
+                if (logoSrc && logoSrc.startsWith("http://")) {
+                    logoSrc = ;
+                }
+
+                if (logoSrc) {
                     const img = document.createElement("img");
-                    img.src = st.logo;
+                    img.src = logoSrc;
                     img.loading = "lazy";
                     img.onerror = () => {
                         img.style.display = "none";
