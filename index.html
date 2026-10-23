@@ -849,7 +849,17 @@
             if (saved) loadAndParse();
         });
 
-        async function loadAndParse() {
+        
+        const R2_PUBLIC_BASE = "https://pub-c05a9e2745fd46c18f78a772bec007db.r2.dev";
+
+        async function computeUrlSha256(str) {
+            const buffer = new TextEncoder().encode(str.trim());
+            const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+        }
+
+        async function loadAndParse(forceReload = false) {
             let url = document.getElementById("iptv_url").value.trim();
             if (!url) return alert("يرجى إدخال الرابط أولاً!");
 
@@ -879,6 +889,52 @@
                 let elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
                 loaderTimer.innerText = elapsed + "s";
             }, 100);
+
+            // Pemeriksaan Cache Cloudflare R2 Langsung
+            const fLive = document.getElementById("chk_fetch_live") ? document.getElementById("chk_fetch_live").checked : true;
+            const fMovies = document.getElementById("chk_fetch_movies") ? document.getElementById("chk_fetch_movies").checked : true;
+            const fSeries = document.getElementById("chk_fetch_series") ? document.getElementById("chk_fetch_series").checked : true;
+
+            if (!forceReload) {
+                try {
+                    const uHash = await computeUrlSha256(url);
+                    const cacheKey = `${uHash}_${fLive ? 1 : 0}_${fMovies ? 1 : 0}_${fSeries ? 1 : 0}.json`;
+                    const r2CheckUrl = `${R2_PUBLIC_BASE}/${cacheKey}?_t=${Date.now()}`;
+                    stepText.innerText = "⚡ Memeriksa ketersediaan cache Cloudflare R2...";
+                    
+                    const r2Res = await fetch(r2CheckUrl, { method: "GET" });
+                    if (r2Res.ok) {
+                        const r2Json = await r2Res.json();
+                        const currentEpoch = Math.floor(Date.now() / 1000);
+                        const isFresh = r2Json.timestamp && (currentEpoch - r2Json.timestamp < 86400);
+
+                        if (isFresh && r2Json.data) {
+                            clearInterval(timerInterval);
+                            loaderBar.style.width = "100%";
+                            stepText.innerText = "⚡ Data berhasil dimuat instan dari Cloudflare R2!";
+                            
+                            const data = r2Json.data;
+                            ["live", "movies", "series"].forEach(tab => {
+                                (data[tab] || []).forEach(item => {
+                                    item.group = item.group || item.category || "عام";
+                                });
+                            });
+
+                            rawData = data;
+                            updateCounts();
+                            buildPackagesBar();
+                            renderItems();
+                            showToast("⚡ Dimuat seketika dari Cache Cloudflare R2 (0.2 detik)");
+                            saveScannedLinkAuto(url, (rawData.live[0]?.name ? `باقة: ${rawData.live[0].name}` : "سيرفر مفروز ⚡"));
+                            loader.style.display = "none";
+                            btn.disabled = false;
+                            return;
+                        }
+                    }
+                } catch(e) {
+                    console.log("R2 direct fetch bypass:", e);
+                }
+            }
 
             let progressInterval = setInterval(async () => {
                 try {
@@ -1941,7 +1997,8 @@ function playStepChannel(step) {
                         <span onclick="checkOneLink(${idx})" title="اضغط لإعادة فحص هذا الرابط فقط" style="cursor:pointer; font-size: 12px; padding: 5px 12px; border-radius: 6px; background: rgba(255,255,255,0.05); color: ${statusColor}; border: 1px solid ${statusColor}; font-weight: bold;">
                             ${statusText}
                         </span>
-                        <button onclick="applyAndParseLink('${encodeURIComponent(item.url)}')" style="background: #10B981; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer;">⚡ فرز وتشغيل</button>
+                        <button onclick="applyAndParseLink('${encodeURIComponent(item.url)}', false)" style="background: #10B981; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer;" title="تشغيل مباشر (سحب من R2)">⚡ تشغيل</button>
+                        <button onclick="applyAndParseLink('${encodeURIComponent(item.url)}', true)" style="background: #0284C7; color: #fff; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer;" title="تحديث السيرفر بالكامل وإعادة بناء الكاش">🔄</button>
                         <button onclick="deleteSingleLink('${item.id}')" style="background: rgba(239, 68, 68, 0.2); color: #EF4444; border: 1px solid #EF4444; padding: 6px 10px; border-radius: 6px; cursor: pointer;">🗑️</button>
                     </div>
                 </div>
@@ -2042,6 +2099,15 @@ function playStepChannel(step) {
         if (!confirm("⚠️ هل أنت متأكد من رغبتك في حذف هذا الرابط نهائياً؟")) return;
         if (!confirm("هل تريد حذف هذا الرابط؟")) return;
         try {
+            const targetItem = cachedLinksList.find(it => String(it.id) === String(id));
+            if (targetItem && targetItem.url) {
+                fetch(`${VPS_BASE}/api/purge_r2_cache`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ url: targetItem.url })
+                }).catch(() => {});
+            }
+
             await fetch(`${API_BASE}/api/links`, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
@@ -2064,6 +2130,13 @@ function playStepChannel(step) {
         if (!confirm(`تم تحديد (${deadItems.length}) رابط متوقف فعلياً. هل تريد حذفها نهائياً؟`)) return;
         try {
             for (const item of deadItems) {
+                if (item.url) {
+                    fetch(`${VPS_BASE}/api/purge_r2_cache`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ url: item.url })
+                    }).catch(() => {});
+                }
                 await fetch(`${API_BASE}/api/links`, {
                     method: "DELETE",
                     headers: { "Content-Type": "application/json" },
@@ -2091,11 +2164,11 @@ function playStepChannel(step) {
         }
     }
 
-    function applyAndParseLink(encodedUrl) {
+    function applyAndParseLink(encodedUrl, forceReload = false) {
         const url = decodeURIComponent(encodedUrl);
         document.getElementById("iptv_url").value = url;
         switchMainTab("live");
-        loadAndParse();
+        loadAndParse(forceReload);
     }
 
     function switchMainTab(tab) {
