@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
     <style>
         :root {
@@ -514,7 +515,7 @@
     }
 
     /* تكبير صندوق اللوغو والصورة ليكون هو الأساس */
-    .card-thumb, .poster-box, .thumb-box, [class*="thumb"], [class*="poster"], [class*="card"] > div:first-child {
+    .card-thumb, .poster-box, .thumb-box, [class*="thumb"], [class*="poster"], .item-poster {
         min-height: 125px !important;
         height: 125px !important;
         max-height: 130px !important;
@@ -571,7 +572,7 @@
     }
 
     /* حجم منطقة اللوغو */
-    .card-thumb, .poster-box, .thumb-box, [class*="thumb"], [class*="poster"], [class*="card"] > div:first-child {
+    .card-thumb, .poster-box, .thumb-box, [class*="thumb"], [class*="poster"], .item-poster {
         min-height: 115px !important;
         height: 115px !important;
         display: flex !important;
@@ -698,51 +699,38 @@
 
     
     
-    /* ستايل المربع التفاعلي لنقل وترتيب السيرفرات */
-    .server-drag-handle {
-        width: 36px !important;
-        height: 36px !important;
-        min-width: 36px !important;
-        background: rgba(56, 189, 248, 0.12) !important;
-        border: 1px solid rgba(56, 189, 248, 0.35) !important;
-        border-radius: 8px !important;
-        display: flex !important;
+    
+    /* ستايل زر السحب الأنيق داخل شريط أزرار السيرفر */
+    .server-drag-btn {
+        background: rgba(56, 189, 248, 0.15) !important;
+        border: 1px solid rgba(56, 189, 248, 0.4) !important;
+        color: #38bdf8 !important;
+        padding: 5px 10px !important;
+        border-radius: 6px !important;
+        cursor: grab !important;
+        touch-action: none !important;
+        font-size: 14px !important;
+        font-weight: bold !important;
+        display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        color: #38bdf8 !important;
-        cursor: grab !important;
-        touch-action: none !important; /* يمنع سكرول الجوال ويحول اللمس لسحب فوري */
-        user-select: none !important;
-        -webkit-user-select: none !important;
-        flex-shrink: 0 !important;
-        transition: background 0.2s, transform 0.2s, border-color 0.2s, box-shadow 0.2s !important;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
-        margin-left: 10px !important;
+        transition: all 0.2s ease !important;
+        line-height: 1 !important;
     }
-    .server-drag-handle:hover {
-        background: rgba(56, 189, 248, 0.28) !important;
-        border-color: #38bdf8 !important;
-        transform: scale(1.08) !important;
-        box-shadow: 0 0 10px rgba(56, 189, 248, 0.4) !important;
-    }
-    .server-drag-handle:active {
+    .server-drag-btn:active {
         cursor: grabbing !important;
         background: #0284c7 !important;
         color: #fff !important;
         transform: scale(0.95) !important;
     }
-    .server-drag-handle span {
-        font-size: 20px !important;
-        line-height: 1 !important;
-        pointer-events: none !important;
+    .sortable-ghost {
+        opacity: 0.25 !important;
+        border: 2px dashed #38bdf8 !important;
     }
-    .server-card-dragging {
-        opacity: 0.8 !important;
-        background: rgba(15, 23, 42, 0.98) !important;
-        box-shadow: 0 16px 32px rgba(0, 0, 0, 0.85), 0 0 18px rgba(56, 189, 248, 0.5) !important;
+    .sortable-chosen {
+        background: #1A2234 !important;
         border-color: #38bdf8 !important;
-        transform: scale(1.02) !important;
-        z-index: 9999 !important;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.7) !important;
     }
 </style>
     <!-- مشغل ويب Artplayer و HLS -->
@@ -2385,7 +2373,7 @@ function playStepChannel(step) {
         }
     }
 
-    function renderLinksList(links) {
+        function renderLinksList(links) {
         const container = document.getElementById("links_list_container");
         if (!container) return;
         if (!links || links.length === 0) {
@@ -2413,15 +2401,13 @@ function playStepChannel(step) {
             }
 
             return `
-                <div id="link_card_${idx}" class="server-card-row" style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid ${item.status === 'checking' ? '#38BDF8' : 'var(--border)'}; border-radius: 10px; padding: 12px 16px; gap: 12px; flex-wrap: wrap; transition: 0.2s;">
-                    <div class="server-drag-handle" title="اسحب لإعادة الترتيب">
-                        <span>⠿</span>
-                    </div>
-                    <div style="flex: 1; min-width: 200px;">
+                <div id="link_card_${idx}" style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid ${item.status === 'checking' ? '#38BDF8' : 'var(--border)'}; border-radius: 10px; padding: 12px 16px; gap: 12px; flex-wrap: wrap; transition: 0.2s;">
+                    <div style="flex: 1; min-width: 220px;">
                         <div style="font-weight: bold; font-size: 15px; color: #fff; margin-bottom: 4px;">${idx + 1}. ${item.title || "بدون عنوان"}</div>
                         <div style="font-size: 12px; color: var(--text-muted); word-break: break-all;">${item.url}</div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <button class="server-drag-btn" title="اسحب من هنا لإعادة الترتيب">⠿</button>
                         <span onclick="checkOneLink(${idx})" title="اضغط لإعادة فحص هذا الرابط فقط" style="cursor:pointer; font-size: 12px; padding: 5px 12px; border-radius: 6px; background: rgba(255,255,255,0.05); color: ${statusColor}; border: 1px solid ${statusColor}; font-weight: bold;">
                             ${statusText}
                         </span>
@@ -2432,6 +2418,7 @@ function playStepChannel(step) {
                 </div>
             `;
         }).join("");
+
         setTimeout(initSortableOnServers, 50);
     }
 
@@ -2442,7 +2429,7 @@ function playStepChannel(step) {
             try { container._sortableInstance.destroy(); } catch(e){}
         }
         container._sortableInstance = new Sortable(container, {
-            handle: ".server-drag-handle",
+            handle: ".server-drag-btn",
             animation: 200,
             ghostClass: "sortable-ghost",
             chosenClass: "sortable-chosen",
@@ -2451,11 +2438,11 @@ function playStepChannel(step) {
                 const moved = cachedLinksList.splice(evt.oldIndex, 1)[0];
                 cachedLinksList.splice(evt.newIndex, 0, moved);
 
-                // حفظ الترتيب المفضل للمستخدم في المتصفح
+                // حفظ الترتيب في ذاكرة المتصفح
                 const order = cachedLinksList.map(it => it.url || it.id);
                 localStorage.setItem("albasem_links_order_v2", JSON.stringify(order));
 
-                // إعادة الرسم فورياً لتحديث أرقام السيرفرات (1. ، 2. ...)
+                // إعادة الترقيم فورياً
                 renderLinksList(cachedLinksList);
             }
         });
