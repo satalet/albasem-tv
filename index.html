@@ -17,86 +17,134 @@
     }
 
 
-    // ==========================================
-    // محرك الترتيب والسحب التفاعلي التلقائي للسيرفرات
-    // ==========================================
-    function setupServersDragAndDrop() {
-        const el = document.getElementById("links_list_container");
-        if (!el || typeof Sortable === "undefined") return false;
-        
-        const cards = Array.from(el.children);
-        if (cards.length === 0) return false;
+    
 
-        // وسم الكروت بستايل المسك
-        cards.forEach(child => {
-            child.classList.add("server-drag-item");
-        });
 
-        if (el._sortableInstance) return true;
+    // ========================================================
+    // محرك المربع التفاعلي (Drag Handle) لترتيب السيرفرات
+    // ========================================================
+    function attachServerDragHandles() {
+        const container = document.getElementById("links_list_container");
+        if (!container) return;
 
-        el._sortableInstance = new Sortable(el, {
-            animation: 220,
-            delay: 150,              // للجوال: لمسة خفيفة 150ms لبدء السحب
-            delayOnTouchOnly: true,  // للماوس وكالي: السحب فوري ومباشر
-            touchStartThreshold: 5,
-            filter: "button, a, input, select, svg, path, .btn-action",
-            preventOnFilter: false,
-            ghostClass: "sortable-ghost",
-            chosenClass: "sortable-chosen",
-            onEnd: function(evt) {
-                if (evt.oldIndex === evt.newIndex) return;
+        const cards = Array.from(container.children);
+        cards.forEach((card, idx) => {
+            if (!card.id || !card.id.startsWith("link_card_")) {
+                card.id = "link_card_" + idx;
+            }
 
-                // 1. إعادة ترتيب وحفظ المصفوفة بداخل localStorage تلقائياً
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    try {
-                        const val = JSON.parse(localStorage.getItem(key));
-                        if (Array.isArray(val) && val.length >= cards.length - 1 && val.length > 0) {
-                            const moved = val.splice(evt.oldIndex, 1)[0];
-                            val.splice(evt.newIndex, 0, moved);
-                            localStorage.setItem(key, JSON.stringify(val));
+            // فحص هل المربع التفاعلي موجود مسبقاً
+            if (card.querySelector(".server-drag-handle")) return;
+
+            // إنشاء مربع السحب التفاعلي الأنيق
+            const handle = document.createElement("div");
+            handle.className = "server-drag-handle";
+            handle.title = "اضغط واسحب لتغيير ترتيب السيرفر";
+            handle.innerHTML = "<span>⠿</span>";
+
+            // إضافة المربع بأول الكرت جهة اليمين
+            card.insertBefore(handle, card.firstChild);
+
+            // تفعيل السحب الفوري بالماوس للجهاز وباللمس للجوال
+            handle.addEventListener("pointerdown", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const targetCard = card;
+                const parent = container;
+                try { handle.setPointerCapture(e.pointerId); } catch(err){}
+                targetCard.classList.add("server-card-dragging");
+
+                function onPointerMove(ev) {
+                    const clientY = ev.clientY;
+                    const siblings = Array.from(parent.children).filter(c => c !== targetCard && c.id && c.id.startsWith("link_card_"));
+
+                    for (const sib of siblings) {
+                        const box = sib.getBoundingClientRect();
+                        const middle = box.top + box.height / 2;
+                        if (clientY < middle && targetCard.offsetTop > sib.offsetTop) {
+                            parent.insertBefore(targetCard, sib);
+                            break;
+                        } else if (clientY > middle && targetCard.offsetTop < sib.offsetTop) {
+                            parent.insertBefore(targetCard, sib.nextSibling);
                             break;
                         }
-                    } catch(e){}
+                    }
                 }
 
-                // 2. تحديث أي مصفوفة بالذاكرة
-                ['savedServers', 'servers', 'links', 'customLinks', 'savedLinks'].forEach(arrName => {
-                    if (window[arrName] && Array.isArray(window[arrName])) {
-                        const m = window[arrName].splice(evt.oldIndex, 1)[0];
-                        window[arrName].splice(evt.newIndex, 0, m);
-                    }
-                });
+                function onPointerUp(ev) {
+                    try { handle.releasePointerCapture(e.pointerId); } catch(err){}
+                    handle.removeEventListener("pointermove", onPointerMove);
+                    handle.removeEventListener("pointerup", onPointerUp);
+                    handle.removeEventListener("pointercancel", onPointerUp);
 
-                // 3. تحديث الأرقام المعروضة فوراً (1. ، 2. ، 3. ...)
-                Array.from(el.children).forEach((card, idx) => {
-                    card.id = "link_card_" + idx;
-                    const allDivs = card.querySelectorAll("div");
-                    for (const d of allDivs) {
-                        if (d.children.length === 0 && d.innerText && /^\d+\s*[\.\:\-]/.test(d.innerText.trim())) {
-                            d.innerText = d.innerText.replace(/^\s*\d+\s*[\.\:\-]\s*/, (idx + 1) + ". ");
-                            break;
-                        }
-                    }
-                });
-            }
+                    targetCard.classList.remove("server-card-dragging");
+
+                    // حفظ الترتيب الجديد وتعديل الأرقام
+                    saveReorderedServers();
+                }
+
+                handle.addEventListener("pointermove", onPointerMove);
+                handle.addEventListener("pointerup", onPointerUp);
+                handle.addEventListener("pointercancel", onPointerUp);
+            });
         });
-        return true;
     }
 
-    // مراقب ذكي: يتأكد باستمرار من تفعيل السحب بمجرد ظهور كروت السيرفرات
-    setInterval(() => {
-        const el = document.getElementById("links_list_container");
-        if (!el) return;
-        const firstCard = el.firstElementChild;
-        if (firstCard && !firstCard.classList.contains("server-drag-item")) {
-            if (el._sortableInstance) {
-                try { el._sortableInstance.destroy(); } catch(e){}
-                el._sortableInstance = null;
+    function saveReorderedServers() {
+        const container = document.getElementById("links_list_container");
+        if (!container) return;
+
+        const cards = Array.from(container.children);
+        const newOrderUrls = [];
+
+        cards.forEach((card, idx) => {
+            card.id = "link_card_" + idx;
+            // تحديث رقم العنوان فورياً: (1. باقة... ، 2. باقة...)
+            const divs = card.querySelectorAll("div");
+            for (const d of divs) {
+                if (d.children.length === 0 && d.innerText && /^\d+\s*[\.\:\-]/.test(d.innerText.trim())) {
+                    d.innerText = d.innerText.replace(/^\s*\d+\s*[\.\:\-]\s*/, (idx + 1) + ". ");
+                    break;
+                }
             }
-            setupServersDragAndDrop();
+
+            // استخراج رابط السيرفر من الكرت
+            for (const d of divs) {
+                const text = d.innerText ? d.innerText.trim() : "";
+                if (text.startsWith("http://") || text.startsWith("https://")) {
+                    newOrderUrls.push(text);
+                    break;
+                }
+            }
+        });
+
+        // حفظ المصفوفة بالترتيب الجديد داخل localStorage
+        try {
+            const raw = localStorage.getItem("albasem_servers");
+            if (raw) {
+                let list = JSON.parse(raw);
+                if (Array.isArray(list) && newOrderUrls.length > 0) {
+                    list.sort((a, b) => {
+                        const urlA = typeof a === "string" ? a : (a.url || a.link || "");
+                        const urlB = typeof b === "string" ? b : (b.url || b.link || "");
+                        const idxA = newOrderUrls.indexOf(urlA);
+                        const idxB = newOrderUrls.indexOf(urlB);
+                        return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+                    });
+                    localStorage.setItem("albasem_servers", JSON.stringify(list));
+                    if (window.savedServers && Array.isArray(window.savedServers)) {
+                        window.savedServers = list;
+                    }
+                }
+            }
+        } catch(err) {
+            console.error("خطأ حفظ ترتيب السيرفرات:", err);
         }
-    }, 300);
+    }
+
+    // مراقب مستمر يزرع المربع التفاعلي فور نزول الكروت بالشاشة
+    setInterval(attachServerDragHandles, 250);
 
 </script>
 
@@ -787,28 +835,52 @@
 
 
     
-    /* ستايل السحب والإفلات التفاعلي لبلوكات السيرفرات */
-    .server-drag-item {
+    
+    /* ستايل المربع التفاعلي لنقل وترتيب السيرفرات */
+    .server-drag-handle {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        background: rgba(56, 189, 248, 0.12) !important;
+        border: 1px solid rgba(56, 189, 248, 0.35) !important;
+        border-radius: 8px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        color: #38bdf8 !important;
         cursor: grab !important;
-        touch-action: pan-y !important;
+        touch-action: none !important; /* يمنع سكرول الجوال ويحول اللمس لسحب فوري */
         user-select: none !important;
         -webkit-user-select: none !important;
-        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease !important;
+        flex-shrink: 0 !important;
+        transition: background 0.2s, transform 0.2s, border-color 0.2s, box-shadow 0.2s !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+        margin-left: 10px !important;
     }
-    .server-drag-item:active {
+    .server-drag-handle:hover {
+        background: rgba(56, 189, 248, 0.28) !important;
+        border-color: #38bdf8 !important;
+        transform: scale(1.08) !important;
+        box-shadow: 0 0 10px rgba(56, 189, 248, 0.4) !important;
+    }
+    .server-drag-handle:active {
         cursor: grabbing !important;
+        background: #0284c7 !important;
+        color: #fff !important;
+        transform: scale(0.95) !important;
     }
-    .sortable-ghost {
-        opacity: 0.25 !important;
-        background: rgba(56, 189, 248, 0.08) !important;
-        border: 2px dashed #38bdf8 !important;
-        transform: scale(0.98) !important;
+    .server-drag-handle span {
+        font-size: 20px !important;
+        line-height: 1 !important;
+        pointer-events: none !important;
     }
-    .sortable-chosen {
+    .server-card-dragging {
+        opacity: 0.8 !important;
         background: rgba(15, 23, 42, 0.98) !important;
-        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.8), 0 0 15px rgba(56, 189, 248, 0.45) !important;
+        box-shadow: 0 16px 32px rgba(0, 0, 0, 0.85), 0 0 18px rgba(56, 189, 248, 0.5) !important;
         border-color: #38bdf8 !important;
         transform: scale(1.02) !important;
+        z-index: 9999 !important;
     }
 </style>
     <!-- مشغل ويب Artplayer و HLS -->
@@ -871,8 +943,7 @@
             outline: none !important;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-</head>
+    </head>
 
 
 <body>
