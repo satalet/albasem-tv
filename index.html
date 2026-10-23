@@ -417,7 +417,59 @@
         @media (max-width: 768px) {
             #artplayer-container { height: 260px; }
         }
-    </style>
+    
+    /* ستايل الأزرار المختصرة بسطر واحد تحت الكرت */
+    .card-actions-row {
+        display: flex;
+        gap: 5px;
+        width: 100%;
+        margin-top: 8px;
+        box-sizing: border-box;
+    }
+    .card-mini-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        padding: 6px 2px;
+        font-size: 11px;
+        font-weight: bold;
+        border-radius: 7px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+    .btn-mini-mob {
+        background: rgba(14, 165, 233, 0.15);
+        border-color: rgba(14, 165, 233, 0.35);
+        color: #38bdf8;
+    }
+    .btn-mini-mob:hover {
+        background: #0ea5e9;
+        color: #fff;
+    }
+    .btn-mini-wa {
+        background: rgba(37, 211, 102, 0.15);
+        border-color: rgba(37, 211, 102, 0.35);
+        color: #25d366;
+    }
+    .btn-mini-wa:hover {
+        background: #25d366;
+        color: #fff;
+    }
+    .btn-mini-mpv {
+        background: rgba(148, 163, 184, 0.12);
+        border-color: rgba(148, 163, 184, 0.25);
+        color: #cbd5e1;
+    }
+    .btn-mini-mpv:hover {
+        background: #64748b;
+        color: #fff;
+    }
+</style>
     <!-- مشغل ويب Artplayer و HLS -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/mpegts.js@latest/dist/mpegts.js"></script>
@@ -1251,20 +1303,21 @@
             const btn = document.createElement("button");
             btn.className = "btn-system-play";
             btn.style.cssText = "padding:10px; font-size:12px; border-radius:8px; cursor:pointer; background:#1E293B; border:1px solid #334155;";
+            const epRow = document.createElement("div");
+            epRow.style.cssText = "display:flex; align-items:center; gap:6px; min-width:140px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:3px 6px; box-sizing:border-box;";
+
             btn.innerText = "▶ " + (ep.title || "الحلقة " + ep.episode_num);
-            btn.style.flex = "1";
+            btn.style.cssText = "flex:1; background:transparent; border:none; color:#38bdf8; font-weight:bold; font-size:12px; cursor:pointer; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:6px 0;";
 
             const shareEpBtn = document.createElement("button");
-            shareEpBtn.title = "مشاركة هذه الحلقة بالواتس";
+            shareEpBtn.title = "مشاركة الحلقة بالواتس";
             shareEpBtn.innerHTML = "📲";
-            shareEpBtn.style.cssText = "background:#25D366; color:#fff; border:none; border-radius:8px; padding:0 10px; cursor:pointer; font-size:13px; font-weight:bold;";
+            shareEpBtn.style.cssText = "background:rgba(37,211,102,0.18); border:1px solid rgba(37,211,102,0.4); color:#25D366; border-radius:6px; padding:4px 6px; cursor:pointer; font-size:12px; flex-shrink:0;";
             shareEpBtn.onclick = (e) => {
                 e.stopPropagation();
                 shareToWhatsApp(encodeURIComponent(ep.url), encodeURIComponent(`${seriesTitle} - S${sNum} E${ep.episode_num}`));
             };
 
-            const epRow = document.createElement("div");
-            epRow.style.cssText = "display:flex; gap:6px; width:100%;";
             epRow.appendChild(btn);
             epRow.appendChild(shareEpBtn);
             btn.onclick = () => {
@@ -1485,9 +1538,11 @@
                 info.innerHTML = `
                     <div class="item-title" title="${st.name}">${st.name}</div>
                     <div style="font-size: 11px; color: #38BDF8; cursor: pointer; margin: 4px 0; font-weight: 500;" onclick="filterByCardGroup('${safeGroup}', '${itemType}')" title="انقر لعرض كل قنوات القسم">📁 ${st.group || "عام"}</div>
-                    <a class="btn-system-play" href="${androidIntent}">تشغيل مباشر بالجوال 📱⚡</a>
-                    <button class="btn-mpv" style="background:#25D366; color:#fff; margin-bottom:4px; font-weight:bold;" onclick="shareToWhatsApp('${encodeURIComponent(streamUrl)}', '${encodeURIComponent(st.name)}')">مشاركة بالواتس 📲</button>
-                    <button class="btn-mpv" onclick="copyMPV('${streamUrl}')">أمر MPV لكالي 📋</button>
+                    <div class="card-actions-row">
+                        <a class="card-mini-btn btn-mini-mob" href="${androidIntent}" title="تشغيل مباشر بالجوال">📱 جوال</a>
+                        <button class="card-mini-btn btn-mini-wa" onclick="shareToWhatsApp('${encodeURIComponent(streamUrl)}', '${encodeURIComponent(st.name)}')" title="مشاركة بالواتس">📲 واتس</button>
+                        <button class="card-mini-btn btn-mini-mpv" onclick="copyMPV('${streamUrl}')" title="نسخ أمر MPV">📋 كالي</button>
+                    </div>
                 `;
 
                 card.appendChild(poster);
