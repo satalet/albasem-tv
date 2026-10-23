@@ -2322,8 +2322,7 @@ function playStepChannel(step) {
 
     let cachedLinksList = [];
 
-    async function loadSavedLinks(forceReload = false) {
-        // إذا كانت الروابط محملة ومفحوصة مسبقاً ولم نطلب تحديثاً قسرياً، نعرضها كما هي دون مسح نتيجة الفحص
+        async function loadSavedLinks(forceReload = false) {
         if (!forceReload && cachedLinksList.length > 0) {
             renderLinksList(cachedLinksList);
             return;
@@ -2331,7 +2330,7 @@ function playStepChannel(step) {
 
         const savedStatusMap = JSON.parse(localStorage.getItem("albasem_links_status_v2") || "{}");
 
-        // جلب الترتيب السحابي المحفوظ من الـ VPS أولاً لضمان عدم ضياعه بمسح الكوكيز
+        // جلب الترتيب السحابي الدائم من سيرفر الـ VPS أولاً لضمان عدم ضياعه بمسح الكوكيز
         let savedOrder = [];
         try {
             const ordRes = await fetch(`${VPS_BASE}/api/links_order?_t=${Date.now()}`);
@@ -2343,33 +2342,39 @@ function playStepChannel(step) {
             }
         } catch(e) {}
 
-        if (savedOrder.length === 0) {
-            savedOrder = JSON.parse(localStorage.getItem("albasem_links_order_v2") || "[]");
+        if (!savedOrder || savedOrder.length === 0) {
+            try {
+                savedOrder = JSON.parse(localStorage.getItem("albasem_links_order_v2") || "[]");
+            } catch(e) {}
+        }
+
+        function applyOrder(arr) {
+            if (savedOrder && savedOrder.length > 0) {
+                arr.sort((a, b) => {
+                    const kA = a.url || a.id;
+                    const kB = b.url || b.id;
+                    const iA = savedOrder.indexOf(kA);
+                    const iB = savedOrder.indexOf(kB);
+                    return (iA === -1 ? 9999 : iA) - (iB === -1 ? 9999 : iB);
+                });
+            }
+            return arr;
         }
 
         try {
             const res = await fetch(`${GIST_RAW_URL}?t=${Date.now()}`);
             if (res.ok) {
-                const data = await res.json();
+                let data = await res.json();
                 data.forEach(item => {
                     if (savedStatusMap[item.url]) {
                         item.status = savedStatusMap[item.url].status;
                         item.conns = savedStatusMap[item.url].conns;
                     }
                 });
-                                if (savedOrder && savedOrder.length > 0) {
-                    data.sort((a, b) => {
-                        const keyA = a.url || a.id;
-                        const keyB = b.url || b.id;
-                        const idxA = savedOrder.indexOf(keyA);
-                        const idxB = savedOrder.indexOf(keyB);
-                        return (idxA === -1 ? 9999 : idxA) - (idxB === -1 ? 9999 : idxB);
-                    });
-                }
-                cachedLinksList = data;
+                cachedLinksList = applyOrder(data);
                 renderLinksList(cachedLinksList);
                 const countBadge = document.getElementById("count-links");
-                if (countBadge) countBadge.innerText = data.length || 0;
+                if (countBadge) countBadge.innerText = cachedLinksList.length || 0;
                 return;
             }
         } catch (e) {
@@ -2378,17 +2383,17 @@ function playStepChannel(step) {
 
         try {
             const res = await fetch(`${API_BASE}/api/links`);
-            const data = await res.json();
-            cachedLinksList = data;
+            let data = await res.json();
+            cachedLinksList = applyOrder(data);
             renderLinksList(cachedLinksList);
             const countBadge = document.getElementById("count-links");
-            if (countBadge) countBadge.innerText = data.length || 0;
+            if (countBadge) countBadge.innerText = cachedLinksList.length || 0;
         } catch (err) {
             console.error("فشل جلب الروابط", err);
         }
     }
 
-        function renderLinksList(links) {
+    function renderLinksList(links) {
         const container = document.getElementById("links_list_container");
         if (!container) return;
         if (!links || links.length === 0) {
@@ -2434,10 +2439,10 @@ function playStepChannel(step) {
             `;
         }).join("");
 
-        setTimeout(initSortableOnServers, 50);
+        setTimeout(initSortableOnServers, 60);
     }
 
-        function initSortableOnServers() {
+    function initSortableOnServers() {
         const container = document.getElementById("links_list_container");
         if (!container || typeof Sortable === "undefined") return;
         if (container._sortableInstance) {
@@ -2446,11 +2451,11 @@ function playStepChannel(step) {
         container._sortableInstance = new Sortable(container, {
             handle: ".server-drag-btn",
             animation: 200,
-            scroll: true,             // تفعيل التمرير التلقائي للصفحة
-            scrollSensitivity: 140,   // مسافة حساسية اقتراب الماوس من أعلى وأسفل الشاشة (140px)
-            scrollSpeed: 25,          // سرعة صعود وهبوط الصفحة أثناء السحب
+            scroll: true,             // تفعيل السكرول التلقائي
+            scrollSensitivity: 150,   // مسافة الإحساس بحافة الشاشة
+            scrollSpeed: 25,          // سرعة الصعود والنزول
             bubbleScroll: true,
-            forceFallback: true,      // يضمن التمرير السلس بالماوس في لينكس وكالي بدون تعليق
+            forceFallback: true,      // حل مشكلة اللينكس وكالي للسحب المتواصل لحافة الشاشة
             fallbackClass: "sortable-chosen",
             ghostClass: "sortable-ghost",
             chosenClass: "sortable-chosen",
@@ -2459,41 +2464,21 @@ function playStepChannel(step) {
                 const moved = cachedLinksList.splice(evt.oldIndex, 1)[0];
                 cachedLinksList.splice(evt.newIndex, 0, moved);
 
-                // حفظ محلي فوري وتحديث الأرقام
                 const order = cachedLinksList.map(it => it.url || it.id);
                 localStorage.setItem("albasem_links_order_v2", JSON.stringify(order));
                 renderLinksList(cachedLinksList);
 
-                // حفظ سحابي دائم على سيرفر الـ VPS للجميع
+                // حفظ الترتيب سحابياً على السيرفر
                 try {
                     await fetch(`${VPS_BASE}/api/links_order`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ order: order })
                     });
-                    showToast("☁️ تم حفظ الترتيب الدائم على السيرفر للجميع!");
+                    showToast("☁️ تم حفظ الترتيب الدائم على السيرفر!");
                 } catch(err) {
-                    console.warn("فشل حفظ الترتيب على السيرفر:", err);
+                    console.warn("فشل المزامنة:", err);
                 }
-            }
-        });
-    }
-        container._sortableInstance = new Sortable(container, {
-            handle: ".server-drag-btn",
-            animation: 200,
-            ghostClass: "sortable-ghost",
-            chosenClass: "sortable-chosen",
-            onEnd: function(evt) {
-                if (evt.oldIndex === evt.newIndex) return;
-                const moved = cachedLinksList.splice(evt.oldIndex, 1)[0];
-                cachedLinksList.splice(evt.newIndex, 0, moved);
-
-                // حفظ الترتيب في ذاكرة المتصفح
-                const order = cachedLinksList.map(it => it.url || it.id);
-                localStorage.setItem("albasem_links_order_v2", JSON.stringify(order));
-
-                // إعادة الترقيم فورياً
-                renderLinksList(cachedLinksList);
             }
         });
     }
