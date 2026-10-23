@@ -846,7 +846,16 @@
 
             loadFetchSettings();
             loadFetchSettings();
-            if (saved) loadAndParse();
+            // فحص إذا كان الرابط مرسلاً كمشاهدة فورية ومباشرة
+            const directPlay = urlParams.get('play');
+            const directTitle = urlParams.get('title') || 'مشاهدة فيلم';
+            if (directPlay) {
+                setTimeout(() => {
+                    openWebPlayer(decodeURIComponent(directPlay), decodeURIComponent(directTitle));
+                }, 300);
+            } else if (saved) {
+                loadAndParse();
+            }
         });
 
         
@@ -1462,6 +1471,7 @@
                     <div class="item-title" title="${st.name}">${st.name}</div>
                     <div style="font-size: 11px; color: #38BDF8; cursor: pointer; margin: 4px 0; font-weight: 500;" onclick="filterByCardGroup('${safeGroup}', '${itemType}')" title="انقر لعرض كل قنوات القسم">📁 ${st.group || "عام"}</div>
                     <a class="btn-system-play" href="${androidIntent}">تشغيل مباشر بالجوال 📱⚡</a>
+                    <button class="btn-mpv" style="background:#25D366; color:#fff; margin-bottom:4px; font-weight:bold;" onclick="shareToWhatsApp('${encodeURIComponent(streamUrl)}', '${encodeURIComponent(st.name)}')">مشاركة بالواتس 📲</button>
                     <button class="btn-mpv" onclick="copyMPV('${streamUrl}')">أمر MPV لكالي 📋</button>
                 `;
 
@@ -1493,6 +1503,15 @@
                 }
             }, 100);
         }
+
+
+    function shareToWhatsApp(rawUrl, rawTitle) {
+        const title = decodeURIComponent(rawTitle);
+        const directUrl = `${window.location.origin}${window.location.pathname}?play=${rawUrl}&title=${rawTitle}`;
+        const msg = `🎬 تفضلي احضري الفيلم مباشرة بدون أي برامج:\n*${title}*\n\n🍿 اضغطي هنا للمشاهدة:\n${directUrl}`;
+        const waLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+        window.open(waLink, '_blank');
+    }
 
 function copyMPV(url) {
             const cmd = `mpv --no-ytdl --user-agent="IPTVSmartersPro" "${url}"`;
