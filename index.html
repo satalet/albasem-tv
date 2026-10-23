@@ -2331,6 +2331,22 @@ function playStepChannel(step) {
 
         const savedStatusMap = JSON.parse(localStorage.getItem("albasem_links_status_v2") || "{}");
 
+        // جلب الترتيب السحابي المحفوظ من الـ VPS أولاً لضمان عدم ضياعه بمسح الكوكيز
+        let savedOrder = [];
+        try {
+            const ordRes = await fetch(`${VPS_BASE}/api/links_order?_t=${Date.now()}`);
+            if (ordRes.ok) {
+                const ordData = await ordRes.json();
+                if (ordData.success && Array.isArray(ordData.order) && ordData.order.length > 0) {
+                    savedOrder = ordData.order;
+                }
+            }
+        } catch(e) {}
+
+        if (savedOrder.length === 0) {
+            savedOrder = JSON.parse(localStorage.getItem("albasem_links_order_v2") || "[]");
+        }
+
         try {
             const res = await fetch(`${GIST_RAW_URL}?t=${Date.now()}`);
             if (res.ok) {
@@ -2341,8 +2357,7 @@ function playStepChannel(step) {
                         item.conns = savedStatusMap[item.url].conns;
                     }
                 });
-                                const savedOrder = JSON.parse(localStorage.getItem("albasem_links_order_v2") || "[]");
-                if (savedOrder.length > 0) {
+                                if (savedOrder && savedOrder.length > 0) {
                     data.sort((a, b) => {
                         const keyA = a.url || a.id;
                         const keyB = b.url || b.id;
@@ -2422,12 +2437,47 @@ function playStepChannel(step) {
         setTimeout(initSortableOnServers, 50);
     }
 
-    function initSortableOnServers() {
+        function initSortableOnServers() {
         const container = document.getElementById("links_list_container");
         if (!container || typeof Sortable === "undefined") return;
         if (container._sortableInstance) {
             try { container._sortableInstance.destroy(); } catch(e){}
         }
+        container._sortableInstance = new Sortable(container, {
+            handle: ".server-drag-btn",
+            animation: 200,
+            scroll: true,             // تفعيل التمرير التلقائي للصفحة
+            scrollSensitivity: 140,   // مسافة حساسية اقتراب الماوس من أعلى وأسفل الشاشة (140px)
+            scrollSpeed: 25,          // سرعة صعود وهبوط الصفحة أثناء السحب
+            bubbleScroll: true,
+            forceFallback: true,      // يضمن التمرير السلس بالماوس في لينكس وكالي بدون تعليق
+            fallbackClass: "sortable-chosen",
+            ghostClass: "sortable-ghost",
+            chosenClass: "sortable-chosen",
+            onEnd: async function(evt) {
+                if (evt.oldIndex === evt.newIndex) return;
+                const moved = cachedLinksList.splice(evt.oldIndex, 1)[0];
+                cachedLinksList.splice(evt.newIndex, 0, moved);
+
+                // حفظ محلي فوري وتحديث الأرقام
+                const order = cachedLinksList.map(it => it.url || it.id);
+                localStorage.setItem("albasem_links_order_v2", JSON.stringify(order));
+                renderLinksList(cachedLinksList);
+
+                // حفظ سحابي دائم على سيرفر الـ VPS للجميع
+                try {
+                    await fetch(`${VPS_BASE}/api/links_order`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ order: order })
+                    });
+                    showToast("☁️ تم حفظ الترتيب الدائم على السيرفر للجميع!");
+                } catch(err) {
+                    console.warn("فشل حفظ الترتيب على السيرفر:", err);
+                }
+            }
+        });
+    }
         container._sortableInstance = new Sortable(container, {
             handle: ".server-drag-btn",
             animation: 200,
