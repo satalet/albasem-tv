@@ -462,13 +462,20 @@
             margin-top: 6px !important;
             margin-bottom: 2px !important;
         }
-        #search_input {
-            border: 1px solid rgba(56, 189, 248, 0.3) !important;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.08) inset !important;
+        .search-capsule {
+            border: 1px solid rgba(56, 189, 248, 0.35) !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35) !important;
+            transition: all 0.2s ease-in-out;
         }
-        #search_input:focus {
+        .search-capsule:focus-within {
             border-color: #38BDF8 !important;
-            box-shadow: 0 0 12px rgba(56, 189, 248, 0.3) !important;
+            box-shadow: 0 0 14px rgba(56, 189, 248, 0.35) !important;
+        }
+        #search_input {
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            outline: none !important;
         }
     </style>
 </head>
@@ -537,11 +544,11 @@
         </div>
 
         <div class="filter-bar" style="margin: 8px auto 12px; max-width: 900px; width: 100%; box-sizing: border-box;">
-            <!-- كبسولة البحث الموحدة والأنيقة المتناسقة مع الهيدر -->
-            <div style="display: flex; align-items: center; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 30px; padding: 4px 6px 4px 14px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);">
-                <input type="search" enterkeyhint="search" id="search_input" placeholder="🔍 ابحث عن قناة، فيلم، أو مسلسل..." style="flex: 1; border: none; background: transparent; color: #fff; font-size: 13.5px; outline: none; padding: 6px 8px; min-width: 0;" />
-                <span id="btn_clear_search" onclick="clearSearch()" style="cursor: pointer; color: #94A3B8; font-size: 14px; display: none; padding: 0 8px; line-height: 1;">✖</span>
-                <button id="btn_do_search" onclick="executeSearch()" style="height: 34px; padding: 0 16px; border-radius: 20px; background: linear-gradient(135deg, #0284C7, #0369A1); border: 1px solid rgba(56, 189, 248, 0.5); color: #fff; font-size: 12.5px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap; flex-shrink: 0; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);">
+            <!-- كبسولة البحث الموحدة هندسياً -->
+            <div class="search-capsule" style="display: flex; align-items: center; height: 44px; background: rgba(15, 23, 42, 0.85); border-radius: 25px; padding: 0 5px 0 14px; box-sizing: border-box;">
+                <input type="search" enterkeyhint="search" id="search_input" placeholder="🔍 ابحث عن قناة، فيلم، أو مسلسل..." style="flex: 1; height: 100%; border: none !important; background: transparent !important; box-shadow: none !important; outline: none !important; color: #fff; font-size: 13.5px; padding: 0 8px; min-width: 0; margin: 0;" />
+                <span id="btn_clear_search" onclick="clearSearch()" style="cursor: pointer; color: #94A3B8; font-size: 14px; display: none; padding: 0 10px; line-height: 1;">✖</span>
+                <button id="btn_do_search" onclick="executeSearch()" style="height: 34px; padding: 0 16px; border-radius: 20px; border: none; background: linear-gradient(135deg, #0284C7, #0369A1); color: #fff; font-size: 12.5px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; flex-shrink: 0; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35); margin: 0;">
                     بحث ⚡
                 </button>
             </div>
