@@ -7,7 +7,59 @@
     
     <meta name="theme-color" content="#0B0E14">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">
+    // ==========================================
+    // محرك الترتيب والسحب التفاعلي للسيرفرات
+    // ==========================================
+    function initServersSortable() {
+        const el = document.getElementById("links_list_container");
+        if (!el || !window.Sortable) return;
+        if (el._sortableInstance) el._sortableInstance.destroy();
+
+        Array.from(el.children).forEach(child => {
+            child.classList.add("server-drag-item");
+        });
+
+        el._sortableInstance = new Sortable(el, {
+            animation: 200,
+            delay: 180,              // ضغطة مطولة خفيفة للجوال 180ms عشان ما تخرب السكرول
+            delayOnTouchOnly: true,  // على الكمبيوتر وكالي السحب فوري بالماوس
+            touchStartThreshold: 5,
+            ghostClass: "sortable-ghost",
+            chosenClass: "sortable-chosen",
+            onEnd: function(evt) {
+                if (evt.oldIndex === evt.newIndex) return;
+                try {
+                    const sKey = "albasem_servers";
+                    let list = JSON.parse(localStorage.getItem(sKey) || "[]");
+                    if (list.length > 0) {
+                        const moved = list.splice(evt.oldIndex, 1)[0];
+                        list.splice(evt.newIndex, 0, moved);
+                        localStorage.setItem(sKey, JSON.stringify(list));
+                    }
+                    if (typeof savedServers !== "undefined" && Array.isArray(savedServers)) {
+                        const m = savedServers.splice(evt.oldIndex, 1)[0];
+                        savedServers.splice(evt.newIndex, 0, m);
+                    }
+                    if (typeof servers !== "undefined" && Array.isArray(servers)) {
+                        const m = servers.splice(evt.oldIndex, 1)[0];
+                        servers.splice(evt.newIndex, 0, m);
+                    }
+                    // تحديث ترقيم العناوين فورياً (1. ، 2. ، 3. ...)
+                    Array.from(el.children).forEach((card, idx) => {
+                        const titleEl = card.querySelector("h3, h4, .server-title, b, span");
+                        if (titleEl && titleEl.innerText) {
+                            titleEl.innerText = titleEl.innerText.replace(/^\d+\s*\.?\s*/, (idx + 1) + ". ");
+                        }
+                    });
+                } catch(err) {
+                    console.error("خطأ في حفظ ترتيب السيرفرات:", err);
+                }
+            }
+        });
+    }
+
+</script>
 
     <style>
         :root {
@@ -694,6 +746,31 @@
         }
     }
 
+
+    /* ستايل السحب والإفلات التفاعلي لبلوكات السيرفرات */
+    .server-drag-item {
+        cursor: grab !important;
+        touch-action: pan-y !important;
+        user-select: none !important;
+        -webkit-user-select: none !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease !important;
+    }
+    .server-drag-item:active {
+        cursor: grabbing !important;
+    }
+    .sortable-ghost {
+        opacity: 0.25 !important;
+        background: rgba(56, 189, 248, 0.08) !important;
+        border: 2px dashed #38bdf8 !important;
+        transform: scale(0.98) !important;
+    }
+    .sortable-chosen {
+        background: rgba(15, 23, 42, 0.95) !important;
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.7), 0 0 15px rgba(56, 189, 248, 0.35) !important;
+        border-color: #38bdf8 !important;
+        transform: scale(1.015) !important;
+    }
+
 </style>
     <!-- مشغل ويب Artplayer و HLS -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -755,6 +832,7 @@
             outline: none !important;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 </head>
 
 
@@ -1027,7 +1105,7 @@
                     document.getElementById("btn_apply_link").onclick = () => {
                         document.getElementById("iptv_url").value = d.url;
                         closeScannerModal();
-                        loadAndParse();
+                        loadAndParse(); setTimeout(initServersSortable, 500);
                     };
                 } else {
                     st.style.color = "#EF4444";
