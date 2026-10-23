@@ -503,6 +503,63 @@
         opacity: 0.85 !important;
     }
 
+
+    /* ================================================= */
+    /* تنسيق الكرت فائق الرشاقة: تكبير اللوغو ولملمة النصوص */
+    /* ================================================= */
+    .stream-card, .channel-card, .card, [class*="card"] {
+        padding: 6px 5px !important;
+        box-sizing: border-box !important;
+    }
+
+    /* تكبير صندوق اللوغو والصورة ليكون هو الأساس */
+    .card-thumb, .poster-box, .thumb-box, [class*="thumb"], [class*="poster"], [class*="card"] > div:first-child {
+        min-height: 125px !important;
+        height: 125px !important;
+        max-height: 130px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin-bottom: 3px !important;
+    }
+
+    .card-thumb img, .poster-box img, .thumb-box img, [class*="card"] img {
+        max-height: 115px !important;
+        max-width: 92% !important;
+        object-fit: contain !important;
+    }
+
+    /* إجبار أي نص أو عنوان بالكرت على سطر واحد قطعي بنقاط (...) وبدون نزول سطر */
+    [class*="card"] h3, [class*="card"] h4, [class*="card"] p,
+    .card-title, .stream-title, [class*="title"], [class*="name"],
+    [class*="card"] > div:not(.card-actions-row):not([class*="thumb"]):not([class*="poster"]) {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        text-align: center !important;
+    }
+
+    /* عنوان المحطة: خط أنيق وملموم بسطر واحد */
+    .card-title, .stream-title, [class*="title"], [class*="name"] {
+        font-size: 11.5px !important;
+        font-weight: bold !important;
+        margin: 2px 0 1px 0 !important;
+        line-height: 1.2 !important;
+    }
+
+    /* تصنيف الباقة والفولدر: ناعم جداً وهوامش خفيفة */
+    .card-category, .stream-group, [class*="category"], [class*="group"] {
+        font-size: 9.5px !important;
+        color: #38bdf8 !important;
+        opacity: 0.8 !important;
+        margin: 0 0 4px 0 !important;
+        line-height: 1.1 !important;
+    }
+
 </style>
     <!-- مشغل ويب Artplayer و HLS -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
