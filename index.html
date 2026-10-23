@@ -900,7 +900,7 @@
                     const uHash = await computeUrlSha256(url);
                     const cacheKey = `${uHash}_${fLive ? 1 : 0}_${fMovies ? 1 : 0}_${fSeries ? 1 : 0}.json`;
                     const r2CheckUrl = `${R2_PUBLIC_BASE}/${cacheKey}?_t=${Date.now()}`;
-                    stepText.innerText = "⚡ Memeriksa ketersediaan cache Cloudflare R2...";
+                    stepText.innerText = "⚡ جاري فحص الكاش السحابي السريع (Cloudflare R2)...";
                     
                     const r2Res = await fetch(r2CheckUrl, { method: "GET" });
                     if (r2Res.ok) {
@@ -911,7 +911,7 @@
                         if (isFresh && r2Json.data) {
                             clearInterval(timerInterval);
                             loaderBar.style.width = "100%";
-                            stepText.innerText = "⚡ Data berhasil dimuat instan dari Cloudflare R2!";
+                            stepText.innerText = "⚡ تم سحب البيانات فورياً من كاش Cloudflare R2 ⚡";
                             
                             const data = r2Json.data;
                             ["live", "movies", "series"].forEach(tab => {
@@ -924,7 +924,7 @@
                             updateCounts();
                             buildPackagesBar();
                             renderItems();
-                            showToast("⚡ Dimuat seketika dari Cache Cloudflare R2 (0.2 detik)");
+                            showToast("⚡ تم الفتح الفوري من الكاش السحابي R2 (0.2 ثانية) ⚡");
                             saveScannedLinkAuto(url, (rawData.live[0]?.name ? `باقة: ${rawData.live[0].name}` : "سيرفر مفروز ⚡"));
                             loader.style.display = "none";
                             btn.disabled = false;
