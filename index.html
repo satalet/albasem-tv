@@ -7,146 +7,8 @@
     
     <meta name="theme-color" content="#0B0E14">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">
-    );
-                } catch(err) {
-                    console.error("خطأ في حفظ ترتيب السيرفرات:", err);
-                }
-            }
-        });
-    }
-
-
-    
-
-
-    // ========================================================
-    // محرك المربع التفاعلي (Drag Handle) لترتيب السيرفرات
-    // ========================================================
-    function attachServerDragHandles() {
-        const container = document.getElementById("links_list_container");
-        if (!container) return;
-
-        const cards = Array.from(container.children);
-        cards.forEach((card, idx) => {
-            if (!card.id || !card.id.startsWith("link_card_")) {
-                card.id = "link_card_" + idx;
-            }
-
-            // فحص هل المربع التفاعلي موجود مسبقاً
-            if (card.querySelector(".server-drag-handle")) return;
-
-            // إنشاء مربع السحب التفاعلي الأنيق
-            const handle = document.createElement("div");
-            handle.className = "server-drag-handle";
-            handle.title = "اضغط واسحب لتغيير ترتيب السيرفر";
-            handle.innerHTML = "<span>⠿</span>";
-
-            // إضافة المربع بأول الكرت جهة اليمين
-            card.insertBefore(handle, card.firstChild);
-
-            // تفعيل السحب الفوري بالماوس للجهاز وباللمس للجوال
-            handle.addEventListener("pointerdown", function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-
-                const targetCard = card;
-                const parent = container;
-                try { handle.setPointerCapture(e.pointerId); } catch(err){}
-                targetCard.classList.add("server-card-dragging");
-
-                function onPointerMove(ev) {
-                    const clientY = ev.clientY;
-                    const siblings = Array.from(parent.children).filter(c => c !== targetCard && c.id && c.id.startsWith("link_card_"));
-
-                    for (const sib of siblings) {
-                        const box = sib.getBoundingClientRect();
-                        const middle = box.top + box.height / 2;
-                        if (clientY < middle && targetCard.offsetTop > sib.offsetTop) {
-                            parent.insertBefore(targetCard, sib);
-                            break;
-                        } else if (clientY > middle && targetCard.offsetTop < sib.offsetTop) {
-                            parent.insertBefore(targetCard, sib.nextSibling);
-                            break;
-                        }
-                    }
-                }
-
-                function onPointerUp(ev) {
-                    try { handle.releasePointerCapture(e.pointerId); } catch(err){}
-                    handle.removeEventListener("pointermove", onPointerMove);
-                    handle.removeEventListener("pointerup", onPointerUp);
-                    handle.removeEventListener("pointercancel", onPointerUp);
-
-                    targetCard.classList.remove("server-card-dragging");
-
-                    // حفظ الترتيب الجديد وتعديل الأرقام
-                    saveReorderedServers();
-                }
-
-                handle.addEventListener("pointermove", onPointerMove);
-                handle.addEventListener("pointerup", onPointerUp);
-                handle.addEventListener("pointercancel", onPointerUp);
-            });
-        });
-    }
-
-    function saveReorderedServers() {
-        const container = document.getElementById("links_list_container");
-        if (!container) return;
-
-        const cards = Array.from(container.children);
-        const newOrderUrls = [];
-
-        cards.forEach((card, idx) => {
-            card.id = "link_card_" + idx;
-            // تحديث رقم العنوان فورياً: (1. باقة... ، 2. باقة...)
-            const divs = card.querySelectorAll("div");
-            for (const d of divs) {
-                if (d.children.length === 0 && d.innerText && /^\d+\s*[\.\:\-]/.test(d.innerText.trim())) {
-                    d.innerText = d.innerText.replace(/^\s*\d+\s*[\.\:\-]\s*/, (idx + 1) + ". ");
-                    break;
-                }
-            }
-
-            // استخراج رابط السيرفر من الكرت
-            for (const d of divs) {
-                const text = d.innerText ? d.innerText.trim() : "";
-                if (text.startsWith("http://") || text.startsWith("https://")) {
-                    newOrderUrls.push(text);
-                    break;
-                }
-            }
-        });
-
-        // حفظ المصفوفة بالترتيب الجديد داخل localStorage
-        try {
-            const raw = localStorage.getItem("albasem_servers");
-            if (raw) {
-                let list = JSON.parse(raw);
-                if (Array.isArray(list) && newOrderUrls.length > 0) {
-                    list.sort((a, b) => {
-                        const urlA = typeof a === "string" ? a : (a.url || a.link || "");
-                        const urlB = typeof b === "string" ? b : (b.url || b.link || "");
-                        const idxA = newOrderUrls.indexOf(urlA);
-                        const idxB = newOrderUrls.indexOf(urlB);
-                        return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
-                    });
-                    localStorage.setItem("albasem_servers", JSON.stringify(list));
-                    if (window.savedServers && Array.isArray(window.savedServers)) {
-                        window.savedServers = list;
-                    }
-                }
-            }
-        } catch(err) {
-            console.error("خطأ حفظ ترتيب السيرفرات:", err);
-        }
-    }
-
-    // مراقب مستمر يزرع المربع التفاعلي فور نزول الكروت بالشاشة
-    setInterval(attachServerDragHandles, 250);
-
-</script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
     <style>
         :root {
@@ -2491,6 +2353,16 @@ function playStepChannel(step) {
                         item.conns = savedStatusMap[item.url].conns;
                     }
                 });
+                                const savedOrder = JSON.parse(localStorage.getItem("albasem_links_order_v2") || "[]");
+                if (savedOrder.length > 0) {
+                    data.sort((a, b) => {
+                        const keyA = a.url || a.id;
+                        const keyB = b.url || b.id;
+                        const idxA = savedOrder.indexOf(keyA);
+                        const idxB = savedOrder.indexOf(keyB);
+                        return (idxA === -1 ? 9999 : idxA) - (idxB === -1 ? 9999 : idxB);
+                    });
+                }
                 cachedLinksList = data;
                 renderLinksList(cachedLinksList);
                 const countBadge = document.getElementById("count-links");
@@ -2541,8 +2413,11 @@ function playStepChannel(step) {
             }
 
             return `
-                <div id="link_card_${idx}" style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid ${item.status === 'checking' ? '#38BDF8' : 'var(--border)'}; border-radius: 10px; padding: 12px 16px; gap: 12px; flex-wrap: wrap; transition: 0.2s;">
-                    <div style="flex: 1; min-width: 220px;">
+                <div id="link_card_${idx}" class="server-card-row" style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid ${item.status === 'checking' ? '#38BDF8' : 'var(--border)'}; border-radius: 10px; padding: 12px 16px; gap: 12px; flex-wrap: wrap; transition: 0.2s;">
+                    <div class="server-drag-handle" title="اسحب لإعادة الترتيب">
+                        <span>⠿</span>
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
                         <div style="font-weight: bold; font-size: 15px; color: #fff; margin-bottom: 4px;">${idx + 1}. ${item.title || "بدون عنوان"}</div>
                         <div style="font-size: 12px; color: var(--text-muted); word-break: break-all;">${item.url}</div>
                     </div>
@@ -2557,6 +2432,33 @@ function playStepChannel(step) {
                 </div>
             `;
         }).join("");
+        setTimeout(initSortableOnServers, 50);
+    }
+
+    function initSortableOnServers() {
+        const container = document.getElementById("links_list_container");
+        if (!container || typeof Sortable === "undefined") return;
+        if (container._sortableInstance) {
+            try { container._sortableInstance.destroy(); } catch(e){}
+        }
+        container._sortableInstance = new Sortable(container, {
+            handle: ".server-drag-handle",
+            animation: 200,
+            ghostClass: "sortable-ghost",
+            chosenClass: "sortable-chosen",
+            onEnd: function(evt) {
+                if (evt.oldIndex === evt.newIndex) return;
+                const moved = cachedLinksList.splice(evt.oldIndex, 1)[0];
+                cachedLinksList.splice(evt.newIndex, 0, moved);
+
+                // حفظ الترتيب المفضل للمستخدم في المتصفح
+                const order = cachedLinksList.map(it => it.url || it.id);
+                localStorage.setItem("albasem_links_order_v2", JSON.stringify(order));
+
+                // إعادة الرسم فورياً لتحديث أرقام السيرفرات (1. ، 2. ...)
+                renderLinksList(cachedLinksList);
+            }
+        });
     }
 
     function saveStatusToLocal() {
