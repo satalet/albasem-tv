@@ -533,19 +533,17 @@
         </div>
 
         <div class="filter-bar" style="margin: 8px auto 12px; max-width: 900px; width: 100%; box-sizing: border-box;">
-            <!-- السطر الأول: حقل بحث فسيح مع زر التشغيل المباشر -->
-            <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
-                <div style="position: relative; flex: 1; display: flex; align-items: center;">
-                    <input type="search" enterkeyhint="search" id="search_input" placeholder="🔍 اكتب اسم القناة، الفيلم، أو المسلسل..." style="width: 100%; height: 42px; padding: 0 14px 0 34px; box-sizing: border-box; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.35); background: rgba(15, 23, 42, 0.85); color: #fff; font-size: 13.5px; outline: none; box-shadow: 0 2px 8px rgba(0,0,0,0.25);" />
-                    <span id="btn_clear_search" onclick="clearSearch()" style="position: absolute; left: 10px; cursor: pointer; color: #94A3B8; font-size: 14px; display: none; padding: 4px; line-height: 1;">✖</span>
-                </div>
-                <button id="btn_do_search" onclick="executeSearch()" style="height: 42px; padding: 0 16px; border-radius: 10px; background: linear-gradient(135deg, #0284C7, #0369A1); border: 1px solid #38BDF8; color: #fff; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap; flex-shrink: 0; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);">
+            <!-- كبسولة البحث الموحدة والأنيقة المتناسقة مع الهيدر -->
+            <div style="display: flex; align-items: center; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 30px; padding: 4px 6px 4px 14px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);">
+                <input type="search" enterkeyhint="search" id="search_input" placeholder="🔍 ابحث عن قناة، فيلم، أو مسلسل..." style="flex: 1; border: none; background: transparent; color: #fff; font-size: 13.5px; outline: none; padding: 6px 8px; min-width: 0;" />
+                <span id="btn_clear_search" onclick="clearSearch()" style="cursor: pointer; color: #94A3B8; font-size: 14px; display: none; padding: 0 8px; line-height: 1;">✖</span>
+                <button id="btn_do_search" onclick="executeSearch()" style="height: 34px; padding: 0 16px; border-radius: 20px; background: linear-gradient(135deg, #0284C7, #0369A1); border: 1px solid rgba(56, 189, 248, 0.5); color: #fff; font-size: 12.5px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap; flex-shrink: 0; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);">
                     بحث ⚡
                 </button>
             </div>
 
-            <!-- السطر الثاني: نطاق البحث الشامل براحة تامة -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding: 0 4px; font-size: 12px;">
+            <!-- شريط نطاق البحث الشامل -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding: 0 12px; font-size: 12px;">
                 <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: #94A3B8; user-select: none;">
                     <input type="checkbox" id="chk_global_search" checked onchange="renderItems()" style="accent-color: #38BDF8; width: 14px; height: 14px; cursor: pointer; margin: 0;">
                     <span style="color: #CBD5E1; font-weight: 500;">🌐 بحث شامل (المحطات والأفلام والمسلسلات)</span>
@@ -554,7 +552,7 @@
             </div>
         </div>
 
-    <div id="ai_search_status" style="display:none; margin: 8px auto 14px auto; max-width: 900px; padding: 6px 14px; background: rgba(0, 255, 136, 0.08); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 20px; font-size: 13px; color: #00ff88; text-align: center; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease;">
+        <div id="ai_search_status" style="display:none; margin: 8px auto 14px auto; max-width: 900px; padding: 6px 14px; background: rgba(0, 255, 136, 0.08); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 20px; font-size: 13px; color: #00ff88; text-align: center; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease;">
         <span id="ai_status_icon">🧠✨</span> 
         <span id="ai_status_text">جاري التحليل بالذكاء الاصطناعي...</span>
     </div>
