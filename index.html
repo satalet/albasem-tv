@@ -469,6 +469,40 @@
         background: #64748b;
         color: #fff;
     }
+
+    /* تكبير مساحة الصورة واللوغو ولملمة النصوص */
+    .card-thumb, .poster-box {
+        min-height: 115px !important;
+        height: 115px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    .card-thumb img, .poster-box img {
+        max-height: 105px !important;
+        object-fit: contain !important;
+    }
+    .card-title, .stream-title {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        font-size: 12px !important;
+        font-weight: bold !important;
+        margin: 4px 0 2px 0 !important;
+        padding: 0 4px !important;
+        line-height: 1.2 !important;
+    }
+    .card-category, .stream-group {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        font-size: 10px !important;
+        color: #94a3b8 !important;
+        margin: 0 0 6px 0 !important;
+        padding: 0 4px !important;
+        opacity: 0.85 !important;
+    }
+
 </style>
     <!-- مشغل ويب Artplayer و HLS -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -1575,7 +1609,7 @@
         }
 
 
-    function shareToWhatsApp(rawUrl, rawTitle) {
+    async function shareToWhatsApp(rawUrl, rawTitle) {
         const title = decodeURIComponent(rawTitle);
         const streamStr = decodeURIComponent(rawUrl);
         const isLive = streamStr.includes("/live/");
@@ -1585,8 +1619,28 @@
         if (isLive) typeBadge = "📺 بث مباشر ومفتوح";
         else if (isSeries) typeBadge = "🍿 حلقة مسلسل";
 
-        const directUrl = `${window.location.origin}${window.location.pathname}?play=${rawUrl}&title=${rawTitle}`;
-        const msg = `${typeBadge}:\n*${title}*\n\n⚡ اضغطي هنا للمشاهدة فوراً بدون أي برامج:\n${directUrl}`;
+        let finalUrl = `${window.location.origin}${window.location.pathname}?play=${rawUrl}&title=${rawTitle}`;
+        
+        // جلب الرابط المختصر الأنيق من سيرفر الباسم
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
+            const res = await fetch("https://albasem-tv.duckdns.org/api/shorten", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: streamStr, title: title }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.short_url) finalUrl = data.short_url;
+            }
+        } catch (e) {
+            console.warn("استخدام الرابط المباشر كبديل:", e);
+        }
+
+        const msg = `${typeBadge}:\n*${title}*\n\n⚡ اضغطي هنا للمشاهدة فوراً:\n${finalUrl}`;
         const waLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
         window.open(waLink, '_blank');
     }
