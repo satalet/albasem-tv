@@ -3395,7 +3395,7 @@ function playStepChannel(step) {
             <div class="modal-close" onclick="closeSeriesModal()">&times;</div>
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; padding-left:30px;">
                 <h3 id="series_modal_title" style="color:#FFB703; margin:0;">🎬 حلقات المسلسل</h3>
-                <button id="btn_modal_share_series" onclick="shareCurrentModalSeries()" style="background:rgba(37,211,102,0.18); border:1px solid #25D366; color:#25D366; border-radius:8px; padding:4px 10px; font-size:11px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 8px rgba(37,211,102,0.25);">
+                <button id="btn_modal_share_series" onclick="window.shareCurrentModalSeries()" style="background:rgba(37,211,102,0.18); border:1px solid #25D366; color:#25D366; border-radius:8px; padding:4px 10px; font-size:11px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 8px rgba(37,211,102,0.25);">
                     <span>📲</span> <span>مشاركة المسلسل كاملاً بالواتس</span>
                 </button>
             </div>
@@ -4050,6 +4050,98 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
             if (window.updatePackageShareButton) window.updatePackageShareButton();
         }, 600);
     });
+</script>
+
+
+<script id="series_share_engine">
+    // ========================================================
+    // محرك مشاركة المسلسلات الكاملة بكافة الحلقات والمواسم
+    // ========================================================
+    window.currentViewingSeries = null;
+
+    window.shareCurrentModalSeries = function() {
+        if (window.currentViewingSeries) {
+            const s = window.currentViewingSeries;
+            window.shareSeriesDirect(s.series_id || "", encodeURIComponent(s.name || ""), encodeURIComponent(s.group || ""));
+            return;
+        }
+        const titleEl = document.getElementById("series_modal_title");
+        const fallbackTitle = titleEl ? titleEl.innerText.replace("🎬", "").trim() : "مسلسل";
+        window.shareSeriesDirect("", encodeURIComponent(fallbackTitle), "");
+    };
+
+    window.openSeriesModalByCard = function(seriesId, encTitle) {
+        const title = decodeURIComponent(encTitle);
+        const sList = (rawData && rawData.series) ? rawData.series : [];
+        let found = null;
+        if (seriesId) {
+            found = sList.find(s => String(s.series_id) === String(seriesId));
+        }
+        if (!found && title) {
+            found = sList.find(s => s.name === title || (s.name && s.name.trim() === title.trim()));
+        }
+        if (found) {
+            openSeriesModal(found);
+        } else {
+            openSeriesModal({ series_id: seriesId, name: title });
+        }
+    };
+
+    window.copySeriesTitle = function(encTitle) {
+        const title = decodeURIComponent(encTitle);
+        navigator.clipboard.writeText(title).then(() => {
+            if (typeof showToast === "function") showToast("تم نسخ اسم المسلسل: " + title);
+        });
+    };
+
+    window.shareSeriesDirect = async function(seriesId, encTitle, encGroup) {
+        const inputUrl = document.getElementById("iptv_url") ? document.getElementById("iptv_url").value.trim() : "";
+        const serverUrl = inputUrl || localStorage.getItem("albasem_url") || "";
+        if (!serverUrl) {
+            alert("يرجى تشغيل سيرفر أولاً لتتمكن من مشاركة المسلسل!");
+            return;
+        }
+
+        const title = decodeURIComponent(encTitle || "مسلسل");
+        const group = decodeURIComponent(encGroup || "مسلسلات");
+        const sId = decodeURIComponent(seriesId || "");
+
+        const origin = window.location.origin;
+        const pathname = window.location.pathname;
+        const fullSeriesUrl = `${origin}${pathname}?url=${encodeURIComponent(serverUrl)}&tab=series&series_id=${encodeURIComponent(sId)}&series_name=${encodeURIComponent(title)}`;
+
+        // فتح نافذة مسبقة فوراً لحماية الرابط من حظر المتصفحات (Popup Blocker)
+        const waWin = window.open("about:blank", "_blank");
+        let finalUrl = fullSeriesUrl;
+        if (typeof showToast === "function") showToast("⏳ جاري تجهيز واختصار رابط المسلسل للواتساب...");
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2500);
+            const res = await fetch("https://albasem-tv.duckdns.org/api/shorten", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: fullSeriesUrl, title: `مسلسل ${title}` }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.short_url) finalUrl = data.short_url;
+            }
+        } catch(e) {
+            console.warn("استخدام الرابط المباشر للمسلسل:", e);
+        }
+
+        const msg = `🍿 *تم تجهيز مسلسل كامل لك على الباسم سات* 👑\n\n🎬 *المسلسل:* ${title}\n📁 *الباقة:* ${group}\n📂 *القسم:* 🍿 مكتبة المسلسلات (كافة المواسم والحلقات)\n\n⚡ *اضغط هنا لتصفح واختيار الحلقات فوراً:*\n${finalUrl}`;
+        const waLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+
+        if (waWin) {
+            waWin.location.href = waLink;
+        } else {
+            window.location.href = waLink;
+        }
+    };
 </script>
 
 </body>
