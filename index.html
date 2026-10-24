@@ -1320,16 +1320,19 @@
                     // ========================================================
         // فك الروابط وتوجيه الباقات المشتركة بالواتساب تلقائياً
         // ========================================================
+        
         const urlParams = new URLSearchParams(window.location.search);
-        targetSeriesParam = urlParams.get('series');
-        if (targetSeriesParam) {
-            window.targetStartupSeries = decodeURIComponent(targetSeriesParam);
+        const targetSeriesId = urlParams.get('series_id');
+        const targetSeriesName = urlParams.get('series_name') || urlParams.get('series');
+
+        if (targetSeriesId || targetSeriesName) {
+            window.targetStartupSeriesId = targetSeriesId ? decodeURIComponent(targetSeriesId) : null;
+            window.targetStartupSeriesName = targetSeriesName ? decodeURIComponent(targetSeriesName) : null;
             currentTab = 'series';
             const chkSeries = document.getElementById("chk_fetch_series");
             if (chkSeries) chkSeries.checked = true;
         }
-
-        let targetTab = null, targetGroup = null;
+let targetTab = null, targetGroup = null;
         const playParam = urlParams.get('play');
 
         // إذا كان الرابط في play هو رابط منصة/باقة بالخطأ: فكّه فوراً والتحويل له
@@ -1489,6 +1492,34 @@
                 buildPackagesBar();
                 renderItems();
 
+                if (window.targetStartupSeriesId || window.targetStartupSeriesName) {
+                    const tId = window.targetStartupSeriesId;
+                    const tName = (window.targetStartupSeriesName || "").trim().toLowerCase();
+                    
+                    if (typeof switchSection === "function") switchSection("series");
+                    if (typeof switchMainTab === "function") switchMainTab("series");
+
+                    setTimeout(() => {
+                        const sList = (rawData && rawData.series) ? rawData.series : [];
+                        let found = null;
+                        if (tId) {
+                            found = sList.find(s => String(s.series_id) === String(tId));
+                        }
+                        if (!found && tName) {
+                            found = sList.find(s => (s.name && s.name.trim().toLowerCase() === tName) || (s.name && s.name.toLowerCase().includes(tName)));
+                        }
+                        if (found && typeof openSeriesModal === "function") {
+                            openSeriesModal(found);
+                            if (typeof showToast === "function") showToast(`🍿 تم فتح حلقات مسلسل: ${found.name} ⚡`);
+                        } else if (tId && typeof openSeriesModal === "function") {
+                            openSeriesModal({ series_id: tId, name: window.targetStartupSeriesName || "مسلسل" });
+                        }
+                        window.targetStartupSeriesId = null;
+                        window.targetStartupSeriesName = null;
+                    }, 450);
+                }
+
+
                 if (window.targetStartupSeries && currentTab === "series") {
                     const reqSeries = window.targetStartupSeries;
                     setTimeout(() => {
@@ -1614,6 +1645,34 @@
                 buildPackagesBar();
                 renderItems();
 
+                if (window.targetStartupSeriesId || window.targetStartupSeriesName) {
+                    const tId = window.targetStartupSeriesId;
+                    const tName = (window.targetStartupSeriesName || "").trim().toLowerCase();
+                    
+                    if (typeof switchSection === "function") switchSection("series");
+                    if (typeof switchMainTab === "function") switchMainTab("series");
+
+                    setTimeout(() => {
+                        const sList = (rawData && rawData.series) ? rawData.series : [];
+                        let found = null;
+                        if (tId) {
+                            found = sList.find(s => String(s.series_id) === String(tId));
+                        }
+                        if (!found && tName) {
+                            found = sList.find(s => (s.name && s.name.trim().toLowerCase() === tName) || (s.name && s.name.toLowerCase().includes(tName)));
+                        }
+                        if (found && typeof openSeriesModal === "function") {
+                            openSeriesModal(found);
+                            if (typeof showToast === "function") showToast(`🍿 تم فتح حلقات مسلسل: ${found.name} ⚡`);
+                        } else if (tId && typeof openSeriesModal === "function") {
+                            openSeriesModal({ series_id: tId, name: window.targetStartupSeriesName || "مسلسل" });
+                        }
+                        window.targetStartupSeriesId = null;
+                        window.targetStartupSeriesName = null;
+                    }, 450);
+                }
+
+
                 if (window.targetStartupGroup) {
                     const savedPkgName = window.targetStartupGroup;
                     showToast(`🎁 تم فتح باقة: ${savedPkgName} ⚡`);
@@ -1671,6 +1730,34 @@
                 }
                 buildPackagesBar();
                 renderItems();
+
+                if (window.targetStartupSeriesId || window.targetStartupSeriesName) {
+                    const tId = window.targetStartupSeriesId;
+                    const tName = (window.targetStartupSeriesName || "").trim().toLowerCase();
+                    
+                    if (typeof switchSection === "function") switchSection("series");
+                    if (typeof switchMainTab === "function") switchMainTab("series");
+
+                    setTimeout(() => {
+                        const sList = (rawData && rawData.series) ? rawData.series : [];
+                        let found = null;
+                        if (tId) {
+                            found = sList.find(s => String(s.series_id) === String(tId));
+                        }
+                        if (!found && tName) {
+                            found = sList.find(s => (s.name && s.name.trim().toLowerCase() === tName) || (s.name && s.name.toLowerCase().includes(tName)));
+                        }
+                        if (found && typeof openSeriesModal === "function") {
+                            openSeriesModal(found);
+                            if (typeof showToast === "function") showToast(`🍿 تم فتح حلقات مسلسل: ${found.name} ⚡`);
+                        } else if (tId && typeof openSeriesModal === "function") {
+                            openSeriesModal({ series_id: tId, name: window.targetStartupSeriesName || "مسلسل" });
+                        }
+                        window.targetStartupSeriesId = null;
+                        window.targetStartupSeriesName = null;
+                    }, 450);
+                }
+
 
                 if (window.targetStartupGroup) {
                     const savedPkgName = window.targetStartupGroup;
@@ -1773,6 +1860,34 @@
                 buildPackagesBar();
                 renderItems();
 
+                if (window.targetStartupSeriesId || window.targetStartupSeriesName) {
+                    const tId = window.targetStartupSeriesId;
+                    const tName = (window.targetStartupSeriesName || "").trim().toLowerCase();
+                    
+                    if (typeof switchSection === "function") switchSection("series");
+                    if (typeof switchMainTab === "function") switchMainTab("series");
+
+                    setTimeout(() => {
+                        const sList = (rawData && rawData.series) ? rawData.series : [];
+                        let found = null;
+                        if (tId) {
+                            found = sList.find(s => String(s.series_id) === String(tId));
+                        }
+                        if (!found && tName) {
+                            found = sList.find(s => (s.name && s.name.trim().toLowerCase() === tName) || (s.name && s.name.toLowerCase().includes(tName)));
+                        }
+                        if (found && typeof openSeriesModal === "function") {
+                            openSeriesModal(found);
+                            if (typeof showToast === "function") showToast(`🍿 تم فتح حلقات مسلسل: ${found.name} ⚡`);
+                        } else if (tId && typeof openSeriesModal === "function") {
+                            openSeriesModal({ series_id: tId, name: window.targetStartupSeriesName || "مسلسل" });
+                        }
+                        window.targetStartupSeriesId = null;
+                        window.targetStartupSeriesName = null;
+                    }, 450);
+                }
+
+
                 if (window.targetStartupGroup) {
                     const savedPkgName = window.targetStartupGroup;
                     showToast(`🎁 تم فتح باقة: ${savedPkgName} ⚡`);
@@ -1818,6 +1933,34 @@
                 }
                 buildPackagesBar();
                 renderItems();
+
+                if (window.targetStartupSeriesId || window.targetStartupSeriesName) {
+                    const tId = window.targetStartupSeriesId;
+                    const tName = (window.targetStartupSeriesName || "").trim().toLowerCase();
+                    
+                    if (typeof switchSection === "function") switchSection("series");
+                    if (typeof switchMainTab === "function") switchMainTab("series");
+
+                    setTimeout(() => {
+                        const sList = (rawData && rawData.series) ? rawData.series : [];
+                        let found = null;
+                        if (tId) {
+                            found = sList.find(s => String(s.series_id) === String(tId));
+                        }
+                        if (!found && tName) {
+                            found = sList.find(s => (s.name && s.name.trim().toLowerCase() === tName) || (s.name && s.name.toLowerCase().includes(tName)));
+                        }
+                        if (found && typeof openSeriesModal === "function") {
+                            openSeriesModal(found);
+                            if (typeof showToast === "function") showToast(`🍿 تم فتح حلقات مسلسل: ${found.name} ⚡`);
+                        } else if (tId && typeof openSeriesModal === "function") {
+                            openSeriesModal({ series_id: tId, name: window.targetStartupSeriesName || "مسلسل" });
+                        }
+                        window.targetStartupSeriesId = null;
+                        window.targetStartupSeriesName = null;
+                    }, 450);
+                }
+
 
                 if (window.targetStartupGroup) {
                     const savedPkgName = window.targetStartupGroup;
@@ -1871,6 +2014,34 @@
                 }
                 buildPackagesBar();
                 renderItems();
+
+                if (window.targetStartupSeriesId || window.targetStartupSeriesName) {
+                    const tId = window.targetStartupSeriesId;
+                    const tName = (window.targetStartupSeriesName || "").trim().toLowerCase();
+                    
+                    if (typeof switchSection === "function") switchSection("series");
+                    if (typeof switchMainTab === "function") switchMainTab("series");
+
+                    setTimeout(() => {
+                        const sList = (rawData && rawData.series) ? rawData.series : [];
+                        let found = null;
+                        if (tId) {
+                            found = sList.find(s => String(s.series_id) === String(tId));
+                        }
+                        if (!found && tName) {
+                            found = sList.find(s => (s.name && s.name.trim().toLowerCase() === tName) || (s.name && s.name.toLowerCase().includes(tName)));
+                        }
+                        if (found && typeof openSeriesModal === "function") {
+                            openSeriesModal(found);
+                            if (typeof showToast === "function") showToast(`🍿 تم فتح حلقات مسلسل: ${found.name} ⚡`);
+                        } else if (tId && typeof openSeriesModal === "function") {
+                            openSeriesModal({ series_id: tId, name: window.targetStartupSeriesName || "مسلسل" });
+                        }
+                        window.targetStartupSeriesId = null;
+                        window.targetStartupSeriesName = null;
+                    }, 450);
+                }
+
 
                 if (window.targetStartupGroup) {
                     const savedPkgName = window.targetStartupGroup;
@@ -1950,6 +2121,7 @@
     let currentSeriesData = null;
 
     async function openSeriesModal(item) {
+        window.currentViewingSeries = item;
         const modal = document.getElementById("series_modal");
         const titleEl = document.getElementById("series_modal_title");
         const seasonsBar = document.getElementById("series_seasons_bar");
@@ -2250,9 +2422,15 @@
                     <div class="item-title" title="${st.name}">${st.name}</div>
                     <div style="font-size: 11px; color: #38BDF8; cursor: pointer; margin: 4px 0; font-weight: 500;" onclick="filterByCardGroup('${safeGroup}', '${itemType}')" title="انقر لعرض كل قنوات القسم">📁 ${st.group || "عام"}</div>
                     <div class="card-actions-row">
-                        <a class="card-mini-btn btn-mini-mob" href="${androidIntent}" title="تشغيل مباشر بالجوال"><span class="btn-icon">📱</span><span class="btn-text">جوال</span></a>
-                        <button class="card-mini-btn btn-mini-wa" onclick="shareToWhatsApp('${encodeURIComponent(streamUrl)}', '${encodeURIComponent(st.name)}')" title="مشاركة بالواتس"><span class="btn-icon">📲</span><span class="btn-text">واتس</span></button>
-                        <button class="card-mini-btn btn-mini-mpv" onclick="copyMPV('${streamUrl}')" title="نسخ أمر MPV"><span class="btn-icon">📋</span><span class="btn-text">كالي</span></button>
+                        ${itemType === "series" ? `
+                            <button class="card-mini-btn btn-mini-mob" onclick="openSeriesModalByCard('${st.series_id || ""}', '${encodeURIComponent(st.name || "")}')" title="عرض كافة الحلقات والمواسم"><span class="btn-icon">🎬</span><span class="btn-text">حلقات</span></button>
+                            <button class="card-mini-btn btn-mini-wa" onclick="window.shareSeriesDirect('${st.series_id || ""}', '${encodeURIComponent(st.name || "")}', '${encodeURIComponent(st.group || "")}')" title="مشاركة المسلسل كاملاً بكافة مواسمه بالواتس"><span class="btn-icon">📲</span><span class="btn-text">واتس</span></button>
+                            <button class="card-mini-btn btn-mini-mpv" onclick="copySeriesTitle('${encodeURIComponent(st.name || "")}')" title="نسخ اسم المسلسل"><span class="btn-icon">📋</span><span class="btn-text">نسخ</span></button>
+                        ` : `
+                            <a class="card-mini-btn btn-mini-mob" href="${androidIntent}" title="تشغيل مباشر بالجوال"><span class="btn-icon">📱</span><span class="btn-text">جوال</span></a>
+                            <button class="card-mini-btn btn-mini-wa" onclick="shareToWhatsApp('${encodeURIComponent(streamUrl)}', '${encodeURIComponent(st.name)}')" title="مشاركة بالواتس"><span class="btn-icon">📲</span><span class="btn-text">واتس</span></button>
+                            <button class="card-mini-btn btn-mini-mpv" onclick="copyMPV('${streamUrl}')" title="نسخ أمر MPV"><span class="btn-icon">📋</span><span class="btn-text">كالي</span></button>
+                        `}
                     </div>
                 `;
 
@@ -3215,7 +3393,12 @@ function playStepChannel(step) {
     <div id="series_modal" class="modal" style="display:none;">
         <div class="modal-content" style="max-width:750px; max-height:85vh; overflow-y:auto;">
             <div class="modal-close" onclick="closeSeriesModal()">&times;</div>
-            <h3 id="series_modal_title" style="color:#FFB703; margin-bottom:12px;">🎬 حلقات المسلسل</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; padding-left:30px;">
+                <h3 id="series_modal_title" style="color:#FFB703; margin:0;">🎬 حلقات المسلسل</h3>
+                <button id="btn_modal_share_series" onclick="shareCurrentModalSeries()" style="background:rgba(37,211,102,0.18); border:1px solid #25D366; color:#25D366; border-radius:8px; padding:4px 10px; font-size:11px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 8px rgba(37,211,102,0.25);">
+                    <span>📲</span> <span>مشاركة المسلسل كاملاً بالواتس</span>
+                </button>
+            </div>
             <div id="series_seasons_bar" style="display:flex; gap:8px; overflow-x:auto; margin-bottom:14px; padding-bottom:4px;"></div>
             <div id="series_episodes_list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:10px;">
                 <div style="color:#94A3B8; text-align:center; grid-column:1/-1;">⏳ جاري جلب الحلقات...</div>
@@ -3330,6 +3513,34 @@ function playStepChannel(step) {
                 }
                 buildPackagesBar();
                 renderItems();
+
+                if (window.targetStartupSeriesId || window.targetStartupSeriesName) {
+                    const tId = window.targetStartupSeriesId;
+                    const tName = (window.targetStartupSeriesName || "").trim().toLowerCase();
+                    
+                    if (typeof switchSection === "function") switchSection("series");
+                    if (typeof switchMainTab === "function") switchMainTab("series");
+
+                    setTimeout(() => {
+                        const sList = (rawData && rawData.series) ? rawData.series : [];
+                        let found = null;
+                        if (tId) {
+                            found = sList.find(s => String(s.series_id) === String(tId));
+                        }
+                        if (!found && tName) {
+                            found = sList.find(s => (s.name && s.name.trim().toLowerCase() === tName) || (s.name && s.name.toLowerCase().includes(tName)));
+                        }
+                        if (found && typeof openSeriesModal === "function") {
+                            openSeriesModal(found);
+                            if (typeof showToast === "function") showToast(`🍿 تم فتح حلقات مسلسل: ${found.name} ⚡`);
+                        } else if (tId && typeof openSeriesModal === "function") {
+                            openSeriesModal({ series_id: tId, name: window.targetStartupSeriesName || "مسلسل" });
+                        }
+                        window.targetStartupSeriesId = null;
+                        window.targetStartupSeriesName = null;
+                    }, 450);
+                }
+
 
                 if (window.targetStartupGroup) {
                     const savedPkgName = window.targetStartupGroup;
