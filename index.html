@@ -1409,7 +1409,27 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            const urlParams = new URLSearchParams(window.location.search);
+                    // ========================================================
+        // فك الروابط وتوجيه الباقات المشتركة بالواتساب تلقائياً
+        // ========================================================
+        const urlParams = new URLSearchParams(window.location.search);
+        const playParam = urlParams.get('play');
+
+        // إذا كان الرابط في play هو رابط منصة/باقة بالخطأ: فكّه فوراً والتحويل له
+        if (playParam && (playParam.includes("satalet.github.io") || playParam.includes("?url=") || playParam.includes("group="))) {
+            window.location.replace(decodeURIComponent(playParam));
+            return;
+        }
+
+        const targetGroup = urlParams.get('group');
+        const targetTab = urlParams.get('tab') || 'live';
+        if (targetGroup) {
+            window.targetStartupGroup = decodeURIComponent(targetGroup);
+        }
+        if (targetTab && ["live", "movies", "series"].includes(targetTab)) {
+            currentTab = targetTab;
+        }
+
             const queryUrl = urlParams.get('url');
             const targetTab = urlParams.get('tab');
             const targetGroup = urlParams.get('group');
@@ -1546,8 +1566,30 @@
                             if (window.targetStartupGroup) {
                     currentGroup = window.targetStartupGroup;
                 }
+                if (window.targetStartupGroup) {
+                    currentGroup = window.targetStartupGroup;
+                }
                 buildPackagesBar();
                 renderItems();
+
+                if (window.targetStartupGroup) {
+                    const savedPkgName = window.targetStartupGroup;
+                    showToast(`🎁 تم فتح باقة: ${savedPkgName} ⚡`);
+                    setTimeout(() => {
+                        const chips = document.querySelectorAll(".pkg-chip");
+                        chips.forEach(ch => {
+                            if (ch.textContent.includes(savedPkgName)) {
+                                ch.classList.add("active");
+                                ch.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                            } else {
+                                ch.classList.remove("active");
+                            }
+                        });
+                        const container = document.getElementById("items_container");
+                        if (container) container.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 400);
+                    window.targetStartupGroup = null;
+                }
                 if (window.targetStartupGroup) {
                     showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
                     setTimeout(() => {
@@ -1635,8 +1677,30 @@
                 if (window.targetStartupGroup) {
                     currentGroup = window.targetStartupGroup;
                 }
+                if (window.targetStartupGroup) {
+                    currentGroup = window.targetStartupGroup;
+                }
                 buildPackagesBar();
                 renderItems();
+
+                if (window.targetStartupGroup) {
+                    const savedPkgName = window.targetStartupGroup;
+                    showToast(`🎁 تم فتح باقة: ${savedPkgName} ⚡`);
+                    setTimeout(() => {
+                        const chips = document.querySelectorAll(".pkg-chip");
+                        chips.forEach(ch => {
+                            if (ch.textContent.includes(savedPkgName)) {
+                                ch.classList.add("active");
+                                ch.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                            } else {
+                                ch.classList.remove("active");
+                            }
+                        });
+                        const container = document.getElementById("items_container");
+                        if (container) container.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 400);
+                    window.targetStartupGroup = null;
+                }
                 if (window.targetStartupGroup) {
                     showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
                     setTimeout(() => {
@@ -1671,8 +1735,30 @@
                 if (window.targetStartupGroup) {
                     currentGroup = window.targetStartupGroup;
                 }
+                if (window.targetStartupGroup) {
+                    currentGroup = window.targetStartupGroup;
+                }
                 buildPackagesBar();
                 renderItems();
+
+                if (window.targetStartupGroup) {
+                    const savedPkgName = window.targetStartupGroup;
+                    showToast(`🎁 تم فتح باقة: ${savedPkgName} ⚡`);
+                    setTimeout(() => {
+                        const chips = document.querySelectorAll(".pkg-chip");
+                        chips.forEach(ch => {
+                            if (ch.textContent.includes(savedPkgName)) {
+                                ch.classList.add("active");
+                                ch.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                            } else {
+                                ch.classList.remove("active");
+                            }
+                        });
+                        const container = document.getElementById("items_container");
+                        if (container) container.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 400);
+                    window.targetStartupGroup = null;
+                }
                 if (window.targetStartupGroup) {
                     showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
                     setTimeout(() => {
@@ -1750,8 +1836,30 @@
                 if (window.targetStartupGroup) {
                     currentGroup = window.targetStartupGroup;
                 }
+                if (window.targetStartupGroup) {
+                    currentGroup = window.targetStartupGroup;
+                }
                 buildPackagesBar();
                 renderItems();
+
+                if (window.targetStartupGroup) {
+                    const savedPkgName = window.targetStartupGroup;
+                    showToast(`🎁 تم فتح باقة: ${savedPkgName} ⚡`);
+                    setTimeout(() => {
+                        const chips = document.querySelectorAll(".pkg-chip");
+                        chips.forEach(ch => {
+                            if (ch.textContent.includes(savedPkgName)) {
+                                ch.classList.add("active");
+                                ch.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                            } else {
+                                ch.classList.remove("active");
+                            }
+                        });
+                        const container = document.getElementById("items_container");
+                        if (container) container.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 400);
+                    window.targetStartupGroup = null;
+                }
                 if (window.targetStartupGroup) {
                     showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
                     setTimeout(() => {
@@ -1774,8 +1882,30 @@
                     if (window.targetStartupGroup) {
                     currentGroup = window.targetStartupGroup;
                 }
+                if (window.targetStartupGroup) {
+                    currentGroup = window.targetStartupGroup;
+                }
                 buildPackagesBar();
                 renderItems();
+
+                if (window.targetStartupGroup) {
+                    const savedPkgName = window.targetStartupGroup;
+                    showToast(`🎁 تم فتح باقة: ${savedPkgName} ⚡`);
+                    setTimeout(() => {
+                        const chips = document.querySelectorAll(".pkg-chip");
+                        chips.forEach(ch => {
+                            if (ch.textContent.includes(savedPkgName)) {
+                                ch.classList.add("active");
+                                ch.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                            } else {
+                                ch.classList.remove("active");
+                            }
+                        });
+                        const container = document.getElementById("items_container");
+                        if (container) container.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 400);
+                    window.targetStartupGroup = null;
+                }
                 if (window.targetStartupGroup) {
                     showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
                     setTimeout(() => {
@@ -1805,8 +1935,30 @@
             if (window.targetStartupGroup) {
                     currentGroup = window.targetStartupGroup;
                 }
+                if (window.targetStartupGroup) {
+                    currentGroup = window.targetStartupGroup;
+                }
                 buildPackagesBar();
                 renderItems();
+
+                if (window.targetStartupGroup) {
+                    const savedPkgName = window.targetStartupGroup;
+                    showToast(`🎁 تم فتح باقة: ${savedPkgName} ⚡`);
+                    setTimeout(() => {
+                        const chips = document.querySelectorAll(".pkg-chip");
+                        chips.forEach(ch => {
+                            if (ch.textContent.includes(savedPkgName)) {
+                                ch.classList.add("active");
+                                ch.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                            } else {
+                                ch.classList.remove("active");
+                            }
+                        });
+                        const container = document.getElementById("items_container");
+                        if (container) container.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 400);
+                    window.targetStartupGroup = null;
+                }
                 if (window.targetStartupGroup) {
                     showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
                     setTimeout(() => {
@@ -3223,8 +3375,30 @@ function playStepChannel(step) {
                 if (window.targetStartupGroup) {
                     currentGroup = window.targetStartupGroup;
                 }
+                if (window.targetStartupGroup) {
+                    currentGroup = window.targetStartupGroup;
+                }
                 buildPackagesBar();
                 renderItems();
+
+                if (window.targetStartupGroup) {
+                    const savedPkgName = window.targetStartupGroup;
+                    showToast(`🎁 تم فتح باقة: ${savedPkgName} ⚡`);
+                    setTimeout(() => {
+                        const chips = document.querySelectorAll(".pkg-chip");
+                        chips.forEach(ch => {
+                            if (ch.textContent.includes(savedPkgName)) {
+                                ch.classList.add("active");
+                                ch.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                            } else {
+                                ch.classList.remove("active");
+                            }
+                        });
+                        const container = document.getElementById("items_container");
+                        if (container) container.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 400);
+                    window.targetStartupGroup = null;
+                }
                 if (window.targetStartupGroup) {
                     showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
                     setTimeout(() => {
