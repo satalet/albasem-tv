@@ -1463,7 +1463,10 @@ let targetTab = null, targetGroup = null;
                     const r2CheckUrl = `${R2_PUBLIC_BASE}/${cacheKey}?_t=${Date.now()}`;
                     stepText.innerText = "⚡ جاري فحص الكاش السحابي السريع (Cloudflare R2)...";
                     
-                    const r2Res = await fetch(r2CheckUrl, { method: "GET" });
+                    const r2Controller = new AbortController();
+                    const r2Timeout = setTimeout(() => r2Controller.abort(), 2500);
+                    const r2Res = await fetch(r2CheckUrl, { method: "GET", signal: r2Controller.signal });
+                    clearTimeout(r2Timeout);
                     if (r2Res.ok) {
                         const r2Json = await r2Res.json();
                         const currentEpoch = Math.floor(Date.now() / 1000);
@@ -1492,31 +1495,7 @@ let targetTab = null, targetGroup = null;
                 buildPackagesBar();
                 renderItems();
 
-                if (window.targetStartupSeriesId || window.targetStartupSeriesName) {
-                    const tId = window.targetStartupSeriesId;
-                    const tName = (window.targetStartupSeriesName || "").trim().toLowerCase();
-                    
-                    if (typeof switchSection === "function") switchSection("series");
-                    if (typeof switchMainTab === "function") switchMainTab("series");
-
-                    setTimeout(() => {
-                        const sList = (rawData && rawData.series) ? rawData.series : [];
-                        let found = null;
-                        if (tId) {
-                            found = sList.find(s => String(s.series_id) === String(tId));
-                        }
-                        if (!found && tName) {
-                            found = sList.find(s => (s.name && s.name.trim().toLowerCase() === tName) || (s.name && s.name.toLowerCase().includes(tName)));
-                        }
-                        if (found && typeof openSeriesModal === "function") {
-                            openSeriesModal(found);
-                            if (typeof showToast === "function") showToast(`🍿 تم فتح حلقات مسلسل: ${found.name} ⚡`);
-                        } else if (tId && typeof openSeriesModal === "function") {
-                            openSeriesModal({ series_id: tId, name: window.targetStartupSeriesName || "مسلسل" });
-                        }
-                        window.targetStartupSeriesId = null;
-                        window.targetStartupSeriesName = null;
-                    }, 450);
+                , 450);
                 }
 
 
@@ -1561,6 +1540,7 @@ let targetTab = null, targetGroup = null;
                     window.targetStartupGroup = null;
                 }
                             showToast("⚡ تم الفتح الفوري من الكاش السحابي R2 (0.2 ثانية) ⚡");
+                if (typeof window.triggerTargetSeriesOnce === "function") window.triggerTargetSeriesOnce();
                             saveScannedLinkAuto(url, (rawData.live[0]?.name ? `باقة: ${rawData.live[0].name}` : "سيرفر مفروز ⚡"));
                             loader.style.display = "none";
                             btn.disabled = false;
@@ -1645,31 +1625,7 @@ let targetTab = null, targetGroup = null;
                 buildPackagesBar();
                 renderItems();
 
-                if (window.targetStartupSeriesId || window.targetStartupSeriesName) {
-                    const tId = window.targetStartupSeriesId;
-                    const tName = (window.targetStartupSeriesName || "").trim().toLowerCase();
-                    
-                    if (typeof switchSection === "function") switchSection("series");
-                    if (typeof switchMainTab === "function") switchMainTab("series");
-
-                    setTimeout(() => {
-                        const sList = (rawData && rawData.series) ? rawData.series : [];
-                        let found = null;
-                        if (tId) {
-                            found = sList.find(s => String(s.series_id) === String(tId));
-                        }
-                        if (!found && tName) {
-                            found = sList.find(s => (s.name && s.name.trim().toLowerCase() === tName) || (s.name && s.name.toLowerCase().includes(tName)));
-                        }
-                        if (found && typeof openSeriesModal === "function") {
-                            openSeriesModal(found);
-                            if (typeof showToast === "function") showToast(`🍿 تم فتح حلقات مسلسل: ${found.name} ⚡`);
-                        } else if (tId && typeof openSeriesModal === "function") {
-                            openSeriesModal({ series_id: tId, name: window.targetStartupSeriesName || "مسلسل" });
-                        }
-                        window.targetStartupSeriesId = null;
-                        window.targetStartupSeriesName = null;
-                    }, 450);
+                , 450);
                 }
 
 
@@ -1700,6 +1656,7 @@ let targetTab = null, targetGroup = null;
                     window.targetStartupGroup = null;
                 }
                 showToast("تم الفرز الخارق عبر محرك الـ VPS ⚡");
+                if (typeof window.triggerTargetSeriesOnce === "function") window.triggerTargetSeriesOnce();
                 saveScannedLinkAuto(url, (rawData.live[0]?.name ? `باقة: ${rawData.live[0].name}` : "سيرفر مفروز ⚡"));
             } catch (err) {
                 alert("خطأ: " + err.message);
@@ -1731,31 +1688,7 @@ let targetTab = null, targetGroup = null;
                 buildPackagesBar();
                 renderItems();
 
-                if (window.targetStartupSeriesId || window.targetStartupSeriesName) {
-                    const tId = window.targetStartupSeriesId;
-                    const tName = (window.targetStartupSeriesName || "").trim().toLowerCase();
-                    
-                    if (typeof switchSection === "function") switchSection("series");
-                    if (typeof switchMainTab === "function") switchMainTab("series");
-
-                    setTimeout(() => {
-                        const sList = (rawData && rawData.series) ? rawData.series : [];
-                        let found = null;
-                        if (tId) {
-                            found = sList.find(s => String(s.series_id) === String(tId));
-                        }
-                        if (!found && tName) {
-                            found = sList.find(s => (s.name && s.name.trim().toLowerCase() === tName) || (s.name && s.name.toLowerCase().includes(tName)));
-                        }
-                        if (found && typeof openSeriesModal === "function") {
-                            openSeriesModal(found);
-                            if (typeof showToast === "function") showToast(`🍿 تم فتح حلقات مسلسل: ${found.name} ⚡`);
-                        } else if (tId && typeof openSeriesModal === "function") {
-                            openSeriesModal({ series_id: tId, name: window.targetStartupSeriesName || "مسلسل" });
-                        }
-                        window.targetStartupSeriesId = null;
-                        window.targetStartupSeriesName = null;
-                    }, 450);
+                , 450);
                 }
 
 
@@ -1860,31 +1793,7 @@ let targetTab = null, targetGroup = null;
                 buildPackagesBar();
                 renderItems();
 
-                if (window.targetStartupSeriesId || window.targetStartupSeriesName) {
-                    const tId = window.targetStartupSeriesId;
-                    const tName = (window.targetStartupSeriesName || "").trim().toLowerCase();
-                    
-                    if (typeof switchSection === "function") switchSection("series");
-                    if (typeof switchMainTab === "function") switchMainTab("series");
-
-                    setTimeout(() => {
-                        const sList = (rawData && rawData.series) ? rawData.series : [];
-                        let found = null;
-                        if (tId) {
-                            found = sList.find(s => String(s.series_id) === String(tId));
-                        }
-                        if (!found && tName) {
-                            found = sList.find(s => (s.name && s.name.trim().toLowerCase() === tName) || (s.name && s.name.toLowerCase().includes(tName)));
-                        }
-                        if (found && typeof openSeriesModal === "function") {
-                            openSeriesModal(found);
-                            if (typeof showToast === "function") showToast(`🍿 تم فتح حلقات مسلسل: ${found.name} ⚡`);
-                        } else if (tId && typeof openSeriesModal === "function") {
-                            openSeriesModal({ series_id: tId, name: window.targetStartupSeriesName || "مسلسل" });
-                        }
-                        window.targetStartupSeriesId = null;
-                        window.targetStartupSeriesName = null;
-                    }, 450);
+                , 450);
                 }
 
 
@@ -1934,31 +1843,7 @@ let targetTab = null, targetGroup = null;
                 buildPackagesBar();
                 renderItems();
 
-                if (window.targetStartupSeriesId || window.targetStartupSeriesName) {
-                    const tId = window.targetStartupSeriesId;
-                    const tName = (window.targetStartupSeriesName || "").trim().toLowerCase();
-                    
-                    if (typeof switchSection === "function") switchSection("series");
-                    if (typeof switchMainTab === "function") switchMainTab("series");
-
-                    setTimeout(() => {
-                        const sList = (rawData && rawData.series) ? rawData.series : [];
-                        let found = null;
-                        if (tId) {
-                            found = sList.find(s => String(s.series_id) === String(tId));
-                        }
-                        if (!found && tName) {
-                            found = sList.find(s => (s.name && s.name.trim().toLowerCase() === tName) || (s.name && s.name.toLowerCase().includes(tName)));
-                        }
-                        if (found && typeof openSeriesModal === "function") {
-                            openSeriesModal(found);
-                            if (typeof showToast === "function") showToast(`🍿 تم فتح حلقات مسلسل: ${found.name} ⚡`);
-                        } else if (tId && typeof openSeriesModal === "function") {
-                            openSeriesModal({ series_id: tId, name: window.targetStartupSeriesName || "مسلسل" });
-                        }
-                        window.targetStartupSeriesId = null;
-                        window.targetStartupSeriesName = null;
-                    }, 450);
+                , 450);
                 }
 
 
@@ -2015,31 +1900,7 @@ let targetTab = null, targetGroup = null;
                 buildPackagesBar();
                 renderItems();
 
-                if (window.targetStartupSeriesId || window.targetStartupSeriesName) {
-                    const tId = window.targetStartupSeriesId;
-                    const tName = (window.targetStartupSeriesName || "").trim().toLowerCase();
-                    
-                    if (typeof switchSection === "function") switchSection("series");
-                    if (typeof switchMainTab === "function") switchMainTab("series");
-
-                    setTimeout(() => {
-                        const sList = (rawData && rawData.series) ? rawData.series : [];
-                        let found = null;
-                        if (tId) {
-                            found = sList.find(s => String(s.series_id) === String(tId));
-                        }
-                        if (!found && tName) {
-                            found = sList.find(s => (s.name && s.name.trim().toLowerCase() === tName) || (s.name && s.name.toLowerCase().includes(tName)));
-                        }
-                        if (found && typeof openSeriesModal === "function") {
-                            openSeriesModal(found);
-                            if (typeof showToast === "function") showToast(`🍿 تم فتح حلقات مسلسل: ${found.name} ⚡`);
-                        } else if (tId && typeof openSeriesModal === "function") {
-                            openSeriesModal({ series_id: tId, name: window.targetStartupSeriesName || "مسلسل" });
-                        }
-                        window.targetStartupSeriesId = null;
-                        window.targetStartupSeriesName = null;
-                    }, 450);
+                , 450);
                 }
 
 
@@ -3514,31 +3375,7 @@ function playStepChannel(step) {
                 buildPackagesBar();
                 renderItems();
 
-                if (window.targetStartupSeriesId || window.targetStartupSeriesName) {
-                    const tId = window.targetStartupSeriesId;
-                    const tName = (window.targetStartupSeriesName || "").trim().toLowerCase();
-                    
-                    if (typeof switchSection === "function") switchSection("series");
-                    if (typeof switchMainTab === "function") switchMainTab("series");
-
-                    setTimeout(() => {
-                        const sList = (rawData && rawData.series) ? rawData.series : [];
-                        let found = null;
-                        if (tId) {
-                            found = sList.find(s => String(s.series_id) === String(tId));
-                        }
-                        if (!found && tName) {
-                            found = sList.find(s => (s.name && s.name.trim().toLowerCase() === tName) || (s.name && s.name.toLowerCase().includes(tName)));
-                        }
-                        if (found && typeof openSeriesModal === "function") {
-                            openSeriesModal(found);
-                            if (typeof showToast === "function") showToast(`🍿 تم فتح حلقات مسلسل: ${found.name} ⚡`);
-                        } else if (tId && typeof openSeriesModal === "function") {
-                            openSeriesModal({ series_id: tId, name: window.targetStartupSeriesName || "مسلسل" });
-                        }
-                        window.targetStartupSeriesId = null;
-                        window.targetStartupSeriesName = null;
-                    }, 450);
+                , 450);
                 }
 
 
