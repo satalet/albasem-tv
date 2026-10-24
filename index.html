@@ -1413,6 +1413,7 @@
         // فك الروابط وتوجيه الباقات المشتركة بالواتساب تلقائياً
         // ========================================================
         const urlParams = new URLSearchParams(window.location.search);
+        let targetTab = null, targetGroup = null;
         const playParam = urlParams.get('play');
 
         // إذا كان الرابط في play هو رابط منصة/باقة بالخطأ: فكّه فوراً والتحويل له
@@ -1421,8 +1422,8 @@
             return;
         }
 
-        const targetGroup = urlParams.get('group');
-        const targetTab = urlParams.get('tab') || 'live';
+        targetGroup = urlParams.get('group');
+        targetTab = urlParams.get('tab') || 'live';
         if (targetGroup) {
             window.targetStartupGroup = decodeURIComponent(targetGroup);
         }
@@ -1431,8 +1432,8 @@
         }
 
             const queryUrl = urlParams.get('url');
-            const targetTab = urlParams.get('tab');
-            const targetGroup = urlParams.get('group');
+            targetTab = urlParams.get('tab');
+            targetGroup = urlParams.get('group');
 
             if (targetGroup) {
                 window.targetStartupGroup = decodeURIComponent(targetGroup);
