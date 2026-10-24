@@ -100,7 +100,7 @@
 
 
     // ========================================================
-    // محرك مشاركة المسلسل كاملاً بكافة حلقاته ومواسمه بالواتساب
+    // محرك مشاركة المسلسلات الكاملة بكافة الحلقات والمواسم
     // ========================================================
     window.shareSeriesToWhatsApp = async function(st) {
         if (!st) return;
@@ -1465,7 +1465,16 @@
         // فك الروابط وتوجيه الباقات المشتركة بالواتساب تلقائياً
         // ========================================================
         const urlParams = new URLSearchParams(window.location.search);
-        let targetTab = null, targetGroup = null, targetSeries = null;
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetSeriesParam = urlParams.get('series');
+        if (targetSeriesParam) {
+            window.targetStartupSeries = decodeURIComponent(targetSeriesParam);
+            currentTab = 'series';
+            const chkSeries = document.getElementById("chk_fetch_series");
+            if (chkSeries) chkSeries.checked = true;
+        }
+
+        let targetTab = null, targetGroup = null;
         const playParam = urlParams.get('play');
 
         // إذا كان الرابط في play هو رابط منصة/باقة بالخطأ: فكّه فوراً والتحويل له
@@ -1484,16 +1493,8 @@
         }
 
             const queryUrl = urlParams.get('url');
-                    targetTab = urlParams.get('tab') || 'live';
-        targetGroup = urlParams.get('group');
-        targetSeries = urlParams.get('series');
-
-        if (targetSeries) {
-            window.targetStartupSeries = decodeURIComponent(targetSeries);
-            targetTab = 'series';
-            const chkSeries = document.getElementById("chk_fetch_series");
-            if (chkSeries) chkSeries.checked = true;
-        }
+            targetTab = urlParams.get('tab');
+            targetGroup = urlParams.get('group');
 
             if (targetGroup) {
                 window.targetStartupGroup = decodeURIComponent(targetGroup);
@@ -1624,7 +1625,15 @@
 
                             rawData = data;
                             updateCounts();
-                            
+                            if (window.targetStartupGroup) {
+                    currentGroup = window.targetStartupGroup;
+                }
+                if (window.targetStartupGroup) {
+                    currentGroup = window.targetStartupGroup;
+                }
+                buildPackagesBar();
+                renderItems();
+
                 if (window.targetStartupSeries && currentTab === "series") {
                     const reqSeries = window.targetStartupSeries;
                     setTimeout(() => {
@@ -1638,14 +1647,6 @@
                     }, 500);
                 }
 
-                if (window.targetStartupGroup) {
-                    currentGroup = window.targetStartupGroup;
-                }
-                if (window.targetStartupGroup) {
-                    currentGroup = window.targetStartupGroup;
-                }
-                buildPackagesBar();
-                renderItems();
 
                 if (window.targetStartupGroup) {
                     const savedPkgName = window.targetStartupGroup;
@@ -2170,7 +2171,7 @@
             shareEpBtn.style.cssText = "background:rgba(37,211,102,0.18); border:1px solid rgba(37,211,102,0.4); color:#25D366; border-radius:6px; padding:4px 6px; cursor:pointer; font-size:12px; flex-shrink:0;";
             shareEpBtn.onclick = (e) => {
                 e.stopPropagation();
-                (itemType === "series" ? window.shareSeriesToWhatsApp(st) : shareToWhatsApp(encodeURIComponent(ep.url)), encodeURIComponent(`${seriesTitle} - S${sNum} E${ep.episode_num}`));
+                shareToWhatsApp(encodeURIComponent(ep.url), encodeURIComponent(`${seriesTitle} - S${sNum} E${ep.episode_num}`));
             };
 
             epRow.appendChild(btn);
@@ -2395,7 +2396,7 @@
                     <div style="font-size: 11px; color: #38BDF8; cursor: pointer; margin: 4px 0; font-weight: 500;" onclick="filterByCardGroup('${safeGroup}', '${itemType}')" title="انقر لعرض كل قنوات القسم">📁 ${st.group || "عام"}</div>
                     <div class="card-actions-row">
                         <a class="card-mini-btn btn-mini-mob" href="${androidIntent}" title="تشغيل مباشر بالجوال"><span class="btn-icon">📱</span><span class="btn-text">جوال</span></a>
-                        <button class="card-mini-btn btn-mini-wa" onclick="(itemType === "series" ? window.shareSeriesToWhatsApp(st) : shareToWhatsApp('${encodeURIComponent(streamUrl))}', '${encodeURIComponent(st.name)}')" title="مشاركة بالواتس"><span class="btn-icon">📲</span><span class="btn-text">واتس</span></button>
+                        <button class="card-mini-btn btn-mini-wa" onclick="shareToWhatsApp('${encodeURIComponent(streamUrl)}', '${encodeURIComponent(st.name)}')" title="مشاركة بالواتس"><span class="btn-icon">📲</span><span class="btn-text">واتس</span></button>
                         <button class="card-mini-btn btn-mini-mpv" onclick="copyMPV('${streamUrl}')" title="نسخ أمر MPV"><span class="btn-icon">📋</span><span class="btn-text">كالي</span></button>
                     </div>
                 `;
@@ -2430,7 +2431,15 @@
         }
 
 
-    async function (itemType === "series" ? window.shareSeriesToWhatsApp(st) : shareToWhatsApp(rawUrl, rawTitle)) {
+    async     function shareToWhatsApp(url, title) {
+        if (typeof currentTab !== "undefined" && currentTab === "series") {
+            const sList = (rawData && rawData.series) ? rawData.series : [];
+            const found = sList.find(s => (s.name && s.name === title) || (s.url && s.url === url) || (s.episodes && s.episodes.some(ep => ep.url === url)));
+            if (found) {
+                window.shareSeriesToWhatsApp(found);
+                return;
+            }
+        }
         const title = decodeURIComponent(rawTitle);
         const streamStr = decodeURIComponent(rawUrl);
         const isLive = streamStr.includes("/live/");
@@ -2468,7 +2477,7 @@
 
     function shareCurrentPlaying() {
         if (!currentRawStreamUrl) return;
-        (itemType === "series" ? window.shareSeriesToWhatsApp(st) : shareToWhatsApp(encodeURIComponent(currentRawStreamUrl)), encodeURIComponent(currentStreamTitle || 'مشاهدة مباشرة'));
+        shareToWhatsApp(encodeURIComponent(currentRawStreamUrl), encodeURIComponent(currentStreamTitle || 'مشاهدة مباشرة'));
     }
 
 function copyMPV(url) {
