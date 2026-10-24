@@ -3248,11 +3248,12 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
 
 <script id="sat_telemetry_engine">
     // ========================================================
-    // محرك التيليميتري التفاعلي الحي: تذبذب الإشارة وكشف السكون
+    // محرك التيليميتري الصارم: يختفي بعد 4 ثوانٍ من ظهور الصورة ولا يعود إلا يدوياً أو بتغيير القناة
     // ========================================================
-    window.satOsdTimer = null;
+    window.satHideTimeout = null;
     window.satTelemetryInterval = null;
-    window.satPictureActive = false;
+    window.satChannelPictureStarted = false;
+    window.satAutoDismissDone = false;
 
     // متغيرات قياس حركة الحزم الحقيقية
     window.satLastProgressTime = 0;
@@ -3270,24 +3271,26 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
         osd.classList.remove("hidden");
         osd.classList.add("visible");
 
-        window.satPictureActive = false;
+        // تصفير حالة القناة الجديدة بالكامل
+        window.satChannelPictureStarted = false;
+        window.satAutoDismissDone = false;
         window.satLastProgressTime = Date.now();
         window.satLastBufferLen = 0;
         window.satActiveFlowSpeed = 0;
         window.satPacketCount = 0;
 
-        if (window.satOsdTimer) {
-            clearTimeout(window.satOsdTimer);
-            window.satOsdTimer = null;
+        if (window.satHideTimeout) {
+            clearTimeout(window.satHideTimeout);
+            window.satHideTimeout = null;
         }
 
         if (window.satTelemetryInterval) clearInterval(window.satTelemetryInterval);
         window.updateSatTelemetry();
         window.satTelemetryInterval = setInterval(window.updateSatTelemetry, 300);
 
+        // مراقبة حزم البيانات
         const video = (window.art && window.art.video) ? window.art.video : document.querySelector("#artplayer-container video");
         if (video) {
-            // مراقبة وصول حزم البيانات الحقيقية من السيرفر (Progress Events)
             const onPacketChunk = () => {
                 const now = Date.now();
                 const deltaT = (now - window.satLastProgressTime) / 1000;
@@ -3301,7 +3304,6 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
                 const deltaBuf = Math.max(0, currentBuf - window.satLastBufferLen);
                 window.satLastBufferLen = currentBuf;
 
-                // حساب سرعة التدفق الحقيقية للحزمة اللحظية
                 if (deltaT > 0 && deltaBuf > 0) {
                     const estBitrate = (video.videoWidth >= 1920) ? 6.5 : 3.5;
                     window.satActiveFlowSpeed = (deltaBuf * estBitrate / deltaT);
@@ -3309,29 +3311,7 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
                     window.satActiveFlowSpeed = 2.5 + (Math.random() * 3.5);
                 }
             };
-
-            video.addEventListener("progress", onPacketChunk);
-
-            // مراقبة دخول الصورة الفعلي لإخفاء الشريط بعدها بـ 3.5 ثوانٍ
-            const onPictureReady = () => {
-                if (window.satPictureActive) return;
-                if (video.currentTime > 0.1 && video.readyState >= 2 && !video.paused) {
-                    window.satPictureActive = true;
-                    window.updateSatTelemetry();
-
-                    if (window.satOsdTimer) clearTimeout(window.satOsdTimer);
-                    window.satOsdTimer = setTimeout(() => {
-                        window.hideSatSignalOsd();
-                    }, 3500);
-
-                    video.removeEventListener("timeupdate", onPictureReady);
-                    video.removeEventListener("playing", onPictureReady);
-                    video.removeEventListener("progress", onPacketChunk);
-                }
-            };
-
-            video.addEventListener("timeupdate", onPictureReady);
-            video.addEventListener("playing", onPictureReady);
+            video.addEventListener("progress", onPacketChunk, { once: false });
         }
     };
 
@@ -3352,13 +3332,19 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
         if (osd.classList.contains("visible")) {
             window.hideSatSignalOsd();
         } else {
-            window.showSatSignalOsd(window.currentStreamTitle || "بث مباشر");
-            if (window.satPictureActive) {
-                if (window.satOsdTimer) clearTimeout(window.satOsdTimer);
-                window.satOsdTimer = setTimeout(() => {
-                    window.hideSatSignalOsd();
-                }, 3500);
-            }
+            // فتح يدوي بطلب من المستخدم: يبقى ظاهراً لمدة 4 ثوانٍ ثم يختفي تلقائياً
+            osd.classList.remove("hidden");
+            osd.classList.add("visible");
+
+            if (window.satTelemetryInterval) clearInterval(window.satTelemetryInterval);
+            window.updateSatTelemetry();
+            window.satTelemetryInterval = setInterval(window.updateSatTelemetry, 300);
+
+            if (window.satHideTimeout) clearTimeout(window.satHideTimeout);
+            window.satHideTimeout = setTimeout(() => {
+                window.hideSatSignalOsd();
+                window.satHideTimeout = null;
+            }, 4000);
         }
     };
 
@@ -3378,18 +3364,32 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
 
         const readyState = video.readyState || 0;
         const isError = video.error !== null;
-        const hasPicture = (video.currentTime > 0.1 && readyState >= 2 && !video.paused);
+        
+        // التحقق الدقيق من بدء تدفق وعرض الصورة
+        const hasPicture = (video.currentTime > 0.15 && readyState >= 2 && !video.paused);
         const timeSinceLastPacket = (Date.now() - (window.satLastProgressTime || Date.now())) / 1000;
-
-        // هل هناك سكون تام وانقطاع بالحزم؟ (> 2.3 ثانية بدون أي تقدم)
         const isStagnant = (!hasPicture && timeSinceLastPacket > 2.3);
+
+        // ========================================================
+        // 🎯 ضبط العد التنازلي الحتمي: 4 ثوانٍ بعد ظهور الصورة ثم إغلاق قطعي
+        // ========================================================
+        if (hasPicture && !window.satAutoDismissDone) {
+            if (!window.satChannelPictureStarted) {
+                window.satChannelPictureStarted = true;
+                if (window.satHideTimeout) clearTimeout(window.satHideTimeout);
+                window.satHideTimeout = setTimeout(() => {
+                    window.hideSatSignalOsd();
+                    window.satAutoDismissDone = true;
+                    window.satHideTimeout = null;
+                }, 4000); // 4 ثوانٍ بالتمام والكمال
+            }
+        }
 
         // 1. حساب مستوى السلك والاتصال (LEVEL - L)
         let level = 0;
         if (hasPicture) {
             level = 98;
         } else if (!isError && readyState >= 1) {
-            // تذبذب التيونر الطبيعي أثناء محاولة القفل
             level = isStagnant ? 35 : (65 + Math.round((Math.random() * 8) - 4));
         } else if (!isError) {
             level = 35;
@@ -3428,7 +3428,7 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
             }
         }
 
-        // 2. حساب مخزون الفيديو المتراكم (Buffer)
+        // 2. حساب مخزون الفيديو (Buffer)
         let bufferSec = 0;
         if (video.buffered && video.buffered.length > 0) {
             for (let i = 0; i < video.buffered.length; i++) {
@@ -3451,7 +3451,7 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
             resBadge.innerText = tag;
         }
 
-        // 4. قياس سرعة التدفق الفعلي وتذبذبها اللحظي
+        // 4. قياس سرعة التدفق وتذبذبها
         let speedMbps = "0.0";
         if (hasPicture) {
             if (window.art && window.art.hls && window.art.hls.bandwidthEstimate) {
@@ -3461,28 +3461,24 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
                 speedMbps = (base + ((Math.random() * 0.8) - 0.4)).toFixed(1);
             }
         } else if (!isStagnant && window.satPacketCount > 0) {
-            // تذبذب حقيقي وسريع أثناء دخول الباكيتات
             const dynamicSpeed = Math.max(0.6, window.satActiveFlowSpeed || (1.5 + Math.random() * 3.5));
             speedMbps = (dynamicSpeed + ((Math.random() * 0.6) - 0.3)).toFixed(1);
         } else {
-            // سكون وتجمد كامل
             speedMbps = "0.0";
         }
         if (speedText) speedText.innerText = `⚡ التدفق: ${speedMbps} Mbps`;
 
-        // 5. حساب جودة الإشارة الحقيقية (QUALITY - Q) مع التذبذب الحي
+        // 5. حساب جودة الإشارة (QUALITY - Q)
         let quality = 0;
         if (hasPicture) {
             quality = 70 + Math.min(25, Math.round(bufferSec * 3));
-            quality += Math.round((Math.random() * 4) - 2); // تذبذب خفيف طبيعي
+            quality += Math.round((Math.random() * 4) - 2);
             if (quality > 98) quality = 98;
         } else if (!isStagnant && window.satPacketCount > 0) {
-            // تذبذب واضح يثبت للزبون أن هناك بيانات قادمة!
             const baseProg = Math.min(55, window.satPacketCount * 12);
             quality = baseProg + Math.round((Math.random() * 10) - 5);
             quality = Math.max(12, Math.min(68, quality));
         } else {
-            // حالة السكون: الإشارة تتجمد عند 0%
             quality = 0;
         }
 
@@ -3500,7 +3496,6 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
             }
         });
 
-        // 6. تشخيص الحالة النصي للزبون
         if (healthText) {
             if (hasPicture && quality >= 70) {
                 healthText.innerText = "🟢 بث مستقر (الصورة ممتازة)";
