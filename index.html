@@ -7,151 +7,7 @@
     
     <meta name="theme-color" content="#0B0E14">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">
-     else if (lFill && lText) {
-            lFill.className = "sat-l-fill off";
-            lFill.style.width = "100%";
-            lText.innerText = "0%";
-            lText.style.color = "#ef4444";
-            if (lockBadge) {
-                lockBadge.className = "sat-badge sat-badge-res";
-                lockBadge.innerText = "❌ NO SIGNAL";
-            }
-        }
-
-        // 2. حساب حجم مخزون الفيديو المتراكم (Buffer)
-        let bufferSec = 0;
-        if (video.buffered && video.buffered.length > 0) {
-            for (let i = 0; i < video.buffered.length; i++) {
-                if (video.buffered.start(i) <= video.currentTime && video.currentTime <= video.buffered.end(i)) {
-                    bufferSec = (video.buffered.end(i) - video.currentTime);
-                    break;
-                }
-            }
-        }
-        if (bufText) bufText.innerText = `⏱️ المخزون: ${bufferSec.toFixed(1)}s`;
-
-        // 3. قراءة دقة الفيديو الحقيقية (Resolution)
-        if (video.videoWidth && video.videoHeight && resBadge) {
-            const w = video.videoWidth;
-            const h = video.videoHeight;
-            let tag = "SD";
-            if (w >= 1920 || h >= 1080) tag = "FHD 1080p";
-            else if (w >= 1280 || h >= 720) tag = "HD 720p";
-            else tag = `${h}p SD`;
-            resBadge.innerText = tag;
-        }
-
-        // 4. قياس سرعة التدفق الفعلي بالـ Mbps
-        let speedMbps = "0.0";
-        if (window.art && window.art.hls && window.art.hls.bandwidthEstimate) {
-            speedMbps = (window.art.hls.bandwidthEstimate / 1000000).toFixed(1);
-        } else if (window.art && window.art.mpegts && window.art.mpegts.statisticsInfo && window.art.mpegts.statisticsInfo.speed) {
-            speedMbps = (window.art.mpegts.statisticsInfo.speed * 8 / 1024).toFixed(1);
-        } else {
-            const base = (video.videoWidth >= 1920) ? 6.2 : (video.videoWidth >= 1280 ? 3.5 : 1.8);
-            speedMbps = (base * (bufferSec > 2 ? 1.15 : 0.85)).toFixed(1);
-        }
-        if (speedText) speedText.innerText = `⚡ التدفق: ${speedMbps} Mbps`;
-
-        // 5. حساب جودة الإشارة الحقيقية (QUALITY - Q)
-        let quality = 0;
-        if (readyState >= 2 && !isError) {
-            quality = 52;
-            if (readyState >= 3) quality += 18;
-            if (readyState === 4) quality += 10;
-            quality += Math.min(18, Math.round(bufferSec * 2.8));
-            if (quality > 98) quality = 98;
-        } else if (readyState === 1) {
-            quality = 28;
-        }
-
-        if (qText) {
-            qText.innerText = quality + "%";
-            qText.style.color = quality >= 75 ? "#10b981" : (quality >= 45 ? "#f59e0b" : "#ef4444");
-        }
-
-        // إضاءة الليدات الـ 12 المقسمة
-        const litCount = Math.round((quality / 100) * 12);
-        qLeds.forEach((led, idx) => {
-            if (idx < litCount) {
-                led.classList.add("active");
-            } else {
-                led.classList.remove("active");
-            }
-        });
-
-        if (healthText) {
-            if (quality >= 75) {
-                healthText.innerText = "🟢 بث ممتاز ومستقر";
-                healthText.style.color = "#10b981";
-            } else if (quality >= 45) {
-                healthText.innerText = "🟡 جاري موازنة التدفق";
-                healthText.style.color = "#f59e0b";
-            } else {
-                healthText.innerText = "🔴 اتصال ضعيف أو بافرينج";
-                healthText.style.color = "#ef4444";
-            }
-        }
-    }
-
-
-    
-
-
-    // ========================================================
-    // محرك مشاركة المسلسلات الكاملة بكافة الحلقات والمواسم
-    // ========================================================
-    window.shareSeriesToWhatsApp = async function(st) {
-        if (!st) return;
-        const inputUrl = document.getElementById("iptv_url") ? document.getElementById("iptv_url").value.trim() : "";
-        const serverUrl = inputUrl || localStorage.getItem("albasem_url") || "";
-        if (!serverUrl) {
-            alert("يرجى تشغيل سيرفر أولاً لتتمكن من مشاركة المسلسل!");
-            return;
-        }
-
-        const seriesTitle = st.name || st.title || "مسلسل";
-        const epCount = (st.episodes && st.episodes.length) ? st.episodes.length : (st.count || "عدة");
-
-        const origin = window.location.origin;
-        const pathname = window.location.pathname;
-        const fullSeriesUrl = `${origin}${pathname}?url=${encodeURIComponent(serverUrl)}&tab=series&series=${encodeURIComponent(seriesTitle)}`;
-
-        const waWin = window.open("about:blank", "_blank");
-        let finalUrl = fullSeriesUrl;
-        if (typeof showToast === "function") showToast("⏳ جاري تجهيز واختصار رابط المسلسل للواتساب...");
-
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 2500);
-            const res = await fetch("https://albasem-tv.duckdns.org/api/shorten", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: fullSeriesUrl, title: `مسلسل ${seriesTitle}` }),
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-            if (res.ok) {
-                const data = await res.json();
-                if (data.short_url) finalUrl = data.short_url;
-            }
-        } catch(e) {
-            console.warn("استخدام الرابط المباشر للمسلسل:", e);
-        }
-
-        const msg = `🍿 *تم تجهيز مسلسل كامل لك على الباسم سات* 👑\n\n🎬 *المسلسل:* ${seriesTitle}\n📂 *القسم:* 🍿 مكتبة المسلسلات\n🔢 *عدد الحلقات:* (${epCount}) حلقة متاحة بجميع المواسم\n\n⚡ *اضغط هنا لتصفح واختيار الحلقات فوراً:*\n${finalUrl}`;
-        const waLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-
-        if (waWin) {
-            waWin.location.href = waLink;
-        } else {
-            window.location.href = waLink;
-        }
-    };
-
-</script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
     <style>
@@ -2430,17 +2286,24 @@
         }
 
 
-    async     function shareToWhatsApp(url, title) {
+        async function shareToWhatsApp(rawUrl, rawTitle) {
+        const decodedTitle = decodeURIComponent(rawTitle || "");
+        const streamStr = decodeURIComponent(rawUrl || "");
+
+        // إذا كان العنصر مسلسلاً: مشاركة المسلسل كاملاً بكافة مواسمه وحلقاته
         if (typeof currentTab !== "undefined" && currentTab === "series") {
             const sList = (rawData && rawData.series) ? rawData.series : [];
-            const found = sList.find(s => (s.name && s.name === title) || (s.url && s.url === url) || (s.episodes && s.episodes.some(ep => ep.url === url)));
-            if (found) {
+            const found = sList.find(s => 
+                (s.name && (s.name.trim() === decodedTitle.trim() || decodedTitle.includes(s.name.trim()))) || 
+                (s.url && s.url === streamStr) || 
+                (s.episodes && s.episodes.some(ep => ep.url === streamStr))
+            );
+            if (found && typeof window.shareSeriesToWhatsApp === "function") {
                 window.shareSeriesToWhatsApp(found);
                 return;
             }
         }
-        const title = decodeURIComponent(rawTitle);
-        const streamStr = decodeURIComponent(rawUrl);
+
         const isLive = streamStr.includes("/live/");
         const isSeries = streamStr.includes("/series/");
         
@@ -2450,14 +2313,14 @@
 
         let finalUrl = `${window.location.origin}${window.location.pathname}?play=${rawUrl}&title=${rawTitle}`;
         
-        // جلب الرابط المختصر الأنيق من سيرفر الباسم
+        // جلب الرابط المختصر الأنيق من سيرفر الـ VPS
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 2000);
             const res = await fetch("https://albasem-tv.duckdns.org/api/shorten", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: streamStr, title: title }),
+                body: JSON.stringify({ url: streamStr, title: decodedTitle }),
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
@@ -2469,7 +2332,11 @@
             console.warn("استخدام الرابط المباشر كبديل:", e);
         }
 
-        const msg = `${typeBadge}:\n*${title}*\n\n⚡ اضغطي هنا للمشاهدة فوراً:\n${finalUrl}`;
+        const msg = `${typeBadge}:
+*${decodedTitle}*
+
+⚡ اضغطي هنا للمشاهدة فوراً:
+${finalUrl}`;
         const waLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
         window.open(waLink, '_blank');
     }
