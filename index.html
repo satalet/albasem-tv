@@ -8,91 +8,7 @@
     <meta name="theme-color" content="#0B0E14">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">
-    // ========================================================
-    // محرك التيليميتري الحقيقي لشريط إشارة الستلايت (Topfield OSD)
-    // ========================================================
-    let satOsdTimer = null;
-    let satTelemetryInterval = null;
-
-    function showSatSignalOsd(title) {
-        const osd = document.getElementById("sat_osd_bar");
-        if (!osd) return;
-
-        const titleEl = document.getElementById("sat_osd_channel_name");
-        if (titleEl && title) titleEl.innerText = title;
-
-        osd.classList.remove("hidden");
-        osd.classList.add("visible");
-
-        if (satTelemetryInterval) clearInterval(satTelemetryInterval);
-        updateSatTelemetry();
-        satTelemetryInterval = setInterval(updateSatTelemetry, 400);
-
-        if (satOsdTimer) clearTimeout(satOsdTimer);
-        // يختفي بعد 4.5 ثوانٍ من استقرار القناة
-        satOsdTimer = setTimeout(() => {
-            hideSatSignalOsd();
-        }, 4500);
-    }
-
-    function hideSatSignalOsd() {
-        const osd = document.getElementById("sat_osd_bar");
-        if (!osd) return;
-        osd.classList.remove("visible");
-        osd.classList.add("hidden");
-        if (satTelemetryInterval) {
-            clearInterval(satTelemetryInterval);
-            satTelemetryInterval = null;
-        }
-    }
-
-    function toggleSatSignalOsd() {
-        const osd = document.getElementById("sat_osd_bar");
-        if (!osd) return;
-        if (osd.classList.contains("visible")) {
-            hideSatSignalOsd();
-        } else {
-            showSatSignalOsd(currentStreamTitle || "بث مباشر");
-        }
-    }
-
-    function updateSatTelemetry() {
-        const video = window.art ? window.art.video : document.querySelector("#artplayer-container video");
-        if (!video) return;
-
-        const lFill = document.getElementById("sat_l_bar");
-        const lText = document.getElementById("sat_l_percent");
-        const qText = document.getElementById("sat_q_percent");
-        const qLeds = document.querySelectorAll(".sat-led-seg");
-        const resBadge = document.getElementById("sat_osd_res");
-        const lockBadge = document.getElementById("sat_osd_lock_badge");
-        const speedText = document.getElementById("sat_osd_speed");
-        const bufText = document.getElementById("sat_osd_buffer");
-        const healthText = document.getElementById("sat_osd_health");
-
-        const readyState = video.readyState;
-        const isError = video.error !== null;
-
-        // 1. حساب مستوى الاتصال بالسيرفر (LEVEL - L)
-        let level = 0;
-        if (readyState >= 2 && !isError) {
-            level = 98;
-        } else if (readyState === 1) {
-            level = 65;
-        } else if (readyState === 0 && !isError) {
-            level = 35;
-        }
-
-        if (level > 0 && lFill && lText) {
-            lFill.className = "sat-l-fill";
-            lFill.style.width = level + "%";
-            lText.innerText = level + "%";
-            lText.style.color = "#10b981";
-            if (lockBadge) {
-                lockBadge.className = "sat-badge sat-badge-lock";
-                lockBadge.innerText = "🔒 LOCKED";
-            }
-        } else if (lFill && lText) {
+     else if (lFill && lText) {
             lFill.className = "sat-l-fill off";
             lFill.style.width = "100%";
             lText.innerText = "0%";
@@ -2520,7 +2436,7 @@ function playStepChannel(step) {
             url = "https://albasem-tv.duckdns.org/proxy?url=" + encodeURIComponent(playTarget);
         }
         document.getElementById("player_title").innerText = "🎬 " + title;
-        showSatSignalOsd(title);
+        if (typeof showSatSignalOsd === 'function') showSatSignalOsd(title);
         document.getElementById("player_modal").style.display = "flex";
 
         if (art) {
@@ -3327,6 +3243,176 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
         renderItems();
     }
 
+</script>
+
+
+<script id="sat_telemetry_engine">
+    // محرك التيليميتري وإشارة الستلايت العام (Topfield OSD Engine)
+    window.satOsdTimer = null;
+    window.satTelemetryInterval = null;
+
+    window.showSatSignalOsd = function(title) {
+        const osd = document.getElementById("sat_osd_bar");
+        if (!osd) return;
+
+        const titleEl = document.getElementById("sat_osd_channel_name");
+        if (titleEl && title) titleEl.innerText = title;
+
+        osd.classList.remove("hidden");
+        osd.classList.add("visible");
+
+        if (window.satTelemetryInterval) clearInterval(window.satTelemetryInterval);
+        window.updateSatTelemetry();
+        window.satTelemetryInterval = setInterval(window.updateSatTelemetry, 400);
+
+        if (window.satOsdTimer) clearTimeout(window.satOsdTimer);
+        window.satOsdTimer = setTimeout(() => {
+            window.hideSatSignalOsd();
+        }, 4500);
+    };
+
+    window.hideSatSignalOsd = function() {
+        const osd = document.getElementById("sat_osd_bar");
+        if (!osd) return;
+        osd.classList.remove("visible");
+        osd.classList.add("hidden");
+        if (window.satTelemetryInterval) {
+            clearInterval(window.satTelemetryInterval);
+            window.satTelemetryInterval = null;
+        }
+    };
+
+    window.toggleSatSignalOsd = function() {
+        const osd = document.getElementById("sat_osd_bar");
+        if (!osd) return;
+        if (osd.classList.contains("visible")) {
+            window.hideSatSignalOsd();
+        } else {
+            window.showSatSignalOsd(window.currentStreamTitle || "بث مباشر");
+        }
+    };
+
+    window.updateSatTelemetry = function() {
+        const video = (window.art && window.art.video) ? window.art.video : document.querySelector("#artplayer-container video");
+        if (!video) return;
+
+        const lFill = document.getElementById("sat_l_bar");
+        const lText = document.getElementById("sat_l_percent");
+        const qText = document.getElementById("sat_q_percent");
+        const qLeds = document.querySelectorAll(".sat-led-seg");
+        const resBadge = document.getElementById("sat_osd_res");
+        const lockBadge = document.getElementById("sat_osd_lock_badge");
+        const speedText = document.getElementById("sat_osd_speed");
+        const bufText = document.getElementById("sat_osd_buffer");
+        const healthText = document.getElementById("sat_osd_health");
+
+        const readyState = video.readyState || 0;
+        const isError = video.error !== null;
+
+        // 1. حساب مستوى الاتصال (Level - L)
+        let level = 0;
+        if (readyState >= 2 && !isError) {
+            level = 98;
+        } else if (readyState === 1) {
+            level = 65;
+        } else if (readyState === 0 && !isError) {
+            level = 35;
+        }
+
+        if (level > 0 && lFill && lText) {
+            lFill.className = "sat-l-fill";
+            lFill.style.width = level + "%";
+            lText.innerText = level + "%";
+            lText.style.color = "#10b981";
+            if (lockBadge) {
+                lockBadge.className = "sat-badge sat-badge-lock";
+                lockBadge.innerText = "🔒 LOCKED";
+            }
+        } else if (lFill && lText) {
+            lFill.className = "sat-l-fill off";
+            lFill.style.width = "100%";
+            lText.innerText = "0%";
+            lText.style.color = "#ef4444";
+            if (lockBadge) {
+                lockBadge.className = "sat-badge sat-badge-res";
+                lockBadge.innerText = "❌ NO SIGNAL";
+            }
+        }
+
+        // 2. حساب مخزون الفيديو المتراكم (Buffer)
+        let bufferSec = 0;
+        if (video.buffered && video.buffered.length > 0) {
+            for (let i = 0; i < video.buffered.length; i++) {
+                if (video.buffered.start(i) <= video.currentTime && video.currentTime <= video.buffered.end(i)) {
+                    bufferSec = (video.buffered.end(i) - video.currentTime);
+                    break;
+                }
+            }
+        }
+        if (bufText) bufText.innerText = `⏱️ المخزون: ${bufferSec.toFixed(1)}s`;
+
+        // 3. قراءة دقة الفيديو الحقيقية
+        if (video.videoWidth && video.videoHeight && resBadge) {
+            const w = video.videoWidth;
+            const h = video.videoHeight;
+            let tag = "SD";
+            if (w >= 1920 || h >= 1080) tag = "FHD 1080p";
+            else if (w >= 1280 || h >= 720) tag = "HD 720p";
+            else tag = `${h}p SD`;
+            resBadge.innerText = tag;
+        }
+
+        // 4. قياس سرعة التدفق الفعلي (Mbps)
+        let speedMbps = "0.0";
+        if (window.art && window.art.hls && window.art.hls.bandwidthEstimate) {
+            speedMbps = (window.art.hls.bandwidthEstimate / 1000000).toFixed(1);
+        } else if (window.art && window.art.mpegts && window.art.mpegts.statisticsInfo && window.art.mpegts.statisticsInfo.speed) {
+            speedMbps = (window.art.mpegts.statisticsInfo.speed * 8 / 1024).toFixed(1);
+        } else {
+            const base = (video.videoWidth >= 1920) ? 6.2 : (video.videoWidth >= 1280 ? 3.5 : 1.8);
+            speedMbps = (base * (bufferSec > 2 ? 1.15 : 0.85)).toFixed(1);
+        }
+        if (speedText) speedText.innerText = `⚡ التدفق: ${speedMbps} Mbps`;
+
+        // 5. حساب جودة الإشارة الحقيقية (Quality - Q)
+        let quality = 0;
+        if (readyState >= 2 && !isError) {
+            quality = 52;
+            if (readyState >= 3) quality += 18;
+            if (readyState === 4) quality += 10;
+            quality += Math.min(18, Math.round(bufferSec * 2.8));
+            if (quality > 98) quality = 98;
+        } else if (readyState === 1) {
+            quality = 28;
+        }
+
+        if (qText) {
+            qText.innerText = quality + "%";
+            qText.style.color = quality >= 75 ? "#10b981" : (quality >= 45 ? "#f59e0b" : "#ef4444");
+        }
+
+        const litCount = Math.round((quality / 100) * 12);
+        qLeds.forEach((led, idx) => {
+            if (idx < litCount) {
+                led.classList.add("active");
+            } else {
+                led.classList.remove("active");
+            }
+        });
+
+        if (healthText) {
+            if (quality >= 75) {
+                healthText.innerText = "🟢 بث ممتاز ومستقر";
+                healthText.style.color = "#10b981";
+            } else if (quality >= 45) {
+                healthText.innerText = "🟡 جاري موازنة التدفق";
+                healthText.style.color = "#f59e0b";
+            } else {
+                healthText.innerText = "🔴 اتصال ضعيف أو بافرينج";
+                healthText.style.color = "#ef4444";
+            }
+        }
+    };
 </script>
 
 </body>
