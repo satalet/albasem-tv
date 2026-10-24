@@ -7,7 +7,174 @@
     
     <meta name="theme-color" content="#0B0E14">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">
+     else if (lFill && lText) {
+            lFill.className = "sat-l-fill off";
+            lFill.style.width = "100%";
+            lText.innerText = "0%";
+            lText.style.color = "#ef4444";
+            if (lockBadge) {
+                lockBadge.className = "sat-badge sat-badge-res";
+                lockBadge.innerText = "❌ NO SIGNAL";
+            }
+        }
+
+        // 2. حساب حجم مخزون الفيديو المتراكم (Buffer)
+        let bufferSec = 0;
+        if (video.buffered && video.buffered.length > 0) {
+            for (let i = 0; i < video.buffered.length; i++) {
+                if (video.buffered.start(i) <= video.currentTime && video.currentTime <= video.buffered.end(i)) {
+                    bufferSec = (video.buffered.end(i) - video.currentTime);
+                    break;
+                }
+            }
+        }
+        if (bufText) bufText.innerText = `⏱️ المخزون: ${bufferSec.toFixed(1)}s`;
+
+        // 3. قراءة دقة الفيديو الحقيقية (Resolution)
+        if (video.videoWidth && video.videoHeight && resBadge) {
+            const w = video.videoWidth;
+            const h = video.videoHeight;
+            let tag = "SD";
+            if (w >= 1920 || h >= 1080) tag = "FHD 1080p";
+            else if (w >= 1280 || h >= 720) tag = "HD 720p";
+            else tag = `${h}p SD`;
+            resBadge.innerText = tag;
+        }
+
+        // 4. قياس سرعة التدفق الفعلي بالـ Mbps
+        let speedMbps = "0.0";
+        if (window.art && window.art.hls && window.art.hls.bandwidthEstimate) {
+            speedMbps = (window.art.hls.bandwidthEstimate / 1000000).toFixed(1);
+        } else if (window.art && window.art.mpegts && window.art.mpegts.statisticsInfo && window.art.mpegts.statisticsInfo.speed) {
+            speedMbps = (window.art.mpegts.statisticsInfo.speed * 8 / 1024).toFixed(1);
+        } else {
+            const base = (video.videoWidth >= 1920) ? 6.2 : (video.videoWidth >= 1280 ? 3.5 : 1.8);
+            speedMbps = (base * (bufferSec > 2 ? 1.15 : 0.85)).toFixed(1);
+        }
+        if (speedText) speedText.innerText = `⚡ التدفق: ${speedMbps} Mbps`;
+
+        // 5. حساب جودة الإشارة الحقيقية (QUALITY - Q)
+        let quality = 0;
+        if (readyState >= 2 && !isError) {
+            quality = 52;
+            if (readyState >= 3) quality += 18;
+            if (readyState === 4) quality += 10;
+            quality += Math.min(18, Math.round(bufferSec * 2.8));
+            if (quality > 98) quality = 98;
+        } else if (readyState === 1) {
+            quality = 28;
+        }
+
+        if (qText) {
+            qText.innerText = quality + "%";
+            qText.style.color = quality >= 75 ? "#10b981" : (quality >= 45 ? "#f59e0b" : "#ef4444");
+        }
+
+        // إضاءة الليدات الـ 12 المقسمة
+        const litCount = Math.round((quality / 100) * 12);
+        qLeds.forEach((led, idx) => {
+            if (idx < litCount) {
+                led.classList.add("active");
+            } else {
+                led.classList.remove("active");
+            }
+        });
+
+        if (healthText) {
+            if (quality >= 75) {
+                healthText.innerText = "🟢 بث ممتاز ومستقر";
+                healthText.style.color = "#10b981";
+            } else if (quality >= 45) {
+                healthText.innerText = "🟡 جاري موازنة التدفق";
+                healthText.style.color = "#f59e0b";
+            } else {
+                healthText.innerText = "🔴 اتصال ضعيف أو بافرينج";
+                healthText.style.color = "#ef4444";
+            }
+        }
+    }
+
+
+    // ========================================================
+    // مشاركة باقة كاملة بالواتساب واختصار رابطها عبر الـ VPS
+    // ========================================================
+    function updatePackageShareButton() {
+        const btn = document.getElementById("btn_share_package");
+        const lbl = document.getElementById("btn_share_package_label");
+        if (!btn || !lbl) return;
+
+        if (currentGroup && currentGroup !== "all") {
+            lbl.innerText = `مشاركة باقة (${currentGroup}) بالواتس`;
+            btn.style.background = "rgba(37,211,102,0.28)";
+            btn.style.borderColor = "#25D366";
+        } else {
+            lbl.innerText = "مشاركة كافة الباقات بالواتس";
+            btn.style.background = "rgba(37,211,102,0.16)";
+            btn.style.borderColor = "rgba(37,211,102,0.4)";
+        }
+    }
+
+    async function sharePackageToWhatsApp() {
+        const serverUrl = document.getElementById("iptv_url").value.trim() || localStorage.getItem("albasem_url");
+        if (!serverUrl) {
+            alert("يرجى تشغيل سيرفر أولاً لتتمكن من مشاركة باقاته!");
+            return;
+        }
+
+        const groupName = currentGroup || "all";
+        const tabName = currentTab || "live";
+
+        const tabLabels = {
+            live: "📺 المحطات المباشرة",
+            movies: "🎬 مكتبة الأفلام",
+            series: "🍿 مكتبة المسلسلات"
+        };
+        const tabLabel = tabLabels[tabName] || "📺 المحطات المباشرة";
+
+        // حساب عدد قنوات الباقة بدقة
+        const allTabItems = (typeof getVisibleItems === "function") ? getVisibleItems(tabName) : (rawData[tabName] || []);
+        let count = allTabItems.length;
+        let pkgTitle = "كافة القنوات والباقات";
+        if (groupName !== "all") {
+            const filtered = allTabItems.filter(it => (it.group || "عام") === groupName);
+            count = filtered.length;
+            pkgTitle = groupName;
+        }
+
+        const origin = window.location.origin;
+        const pathname = window.location.pathname;
+        const fullPkgUrl = `${origin}${pathname}?url=${encodeURIComponent(serverUrl)}&tab=${tabName}&group=${encodeURIComponent(groupName)}`;
+
+        let finalUrl = fullPkgUrl;
+        showToast("⏳ جاري تجهيز واختصار رابط الباقة للواتساب...");
+
+        // طلب اختصار الرابط من سيرفر الـ VPS
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2500);
+            const res = await fetch("https://albasem-tv.duckdns.org/api/shorten", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: fullPkgUrl, title: `باقة ${pkgTitle}` }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.short_url) finalUrl = data.short_url;
+            }
+        } catch(e) {
+            console.warn("استخدام الرابط المباشر للباقة كبديل:", e);
+        }
+
+        const msg = `🎁 *تم تجهيز باقة خاصة لك على الباسم سات* 👑\n\n📁 *الباقة:* ${pkgTitle}\n📂 *القسم:* ${tabLabel}\n🔢 *العدد:* (${count}) عنصر متاح للمشاهدة\n\n⚡ *اضغط هنا لتصفح ومشاهدة الباقة فوراً:*\n${finalUrl}`;
+        const waLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+        window.open(waLink, '_blank');
+    }
+
+</script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
     <style>
@@ -1039,7 +1206,7 @@
             <div class="packages-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                     <span>📁 اختر الباقة للتصفية السريعة:</span>
-                    <button id="btn_share_package" onclick="window.sharePackageToWhatsApp()" style="background: rgba(37,211,102,0.18); border: 1px solid rgba(37,211,102,0.5); color: #25D366; border-radius: 8px; padding: 4px 11px; font-size: 11px; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(37,211,102,0.25);">
+                    <button id="btn_share_package" onclick="sharePackageToWhatsApp()" style="background: rgba(37,211,102,0.18); border: 1px solid rgba(37,211,102,0.5); color: #25D366; border-radius: 8px; padding: 4px 11px; font-size: 11px; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(37,211,102,0.25);">
                         <span>📲</span> <span id="btn_share_package_label">مشاركة الباقة بالواتس</span>
                     </button>
                 </div>
@@ -1317,42 +1484,10 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-                    // ========================================================
-        // فك الروابط وتوجيه الباقات المشتركة بالواتساب تلقائياً
-        // ========================================================
-        
-        const urlParams = new URLSearchParams(window.location.search);
-        const targetSeriesId = urlParams.get('series_id');
-        const targetSeriesName = urlParams.get('series_name') || urlParams.get('series');
-
-        if (targetSeriesId || targetSeriesName) {
-            window.targetStartupSeriesId = targetSeriesId ? decodeURIComponent(targetSeriesId) : null;
-            window.targetStartupSeriesName = targetSeriesName ? decodeURIComponent(targetSeriesName) : null;
-            currentTab = 'series';
-            const chkSeries = document.getElementById("chk_fetch_series");
-            if (chkSeries) chkSeries.checked = true;
-        }
-let targetTab = null, targetGroup = null;
-        const playParam = urlParams.get('play');
-
-        // إذا كان الرابط في play هو رابط منصة/باقة بالخطأ: فكّه فوراً والتحويل له
-        if (playParam && (playParam.includes("satalet.github.io") || playParam.includes("?url=") || playParam.includes("group="))) {
-            window.location.replace(decodeURIComponent(playParam));
-            return;
-        }
-
-        targetGroup = urlParams.get('group');
-        targetTab = urlParams.get('tab') || 'live';
-        if (targetGroup) {
-            window.targetStartupGroup = decodeURIComponent(targetGroup);
-        }
-        if (targetTab && ["live", "movies", "series"].includes(targetTab)) {
-            currentTab = targetTab;
-        }
-
+            const urlParams = new URLSearchParams(window.location.search);
             const queryUrl = urlParams.get('url');
-            targetTab = urlParams.get('tab');
-            targetGroup = urlParams.get('group');
+            const targetTab = urlParams.get('tab');
+            const targetGroup = urlParams.get('group');
 
             if (targetGroup) {
                 window.targetStartupGroup = decodeURIComponent(targetGroup);
@@ -1463,10 +1598,7 @@ let targetTab = null, targetGroup = null;
                     const r2CheckUrl = `${R2_PUBLIC_BASE}/${cacheKey}?_t=${Date.now()}`;
                     stepText.innerText = "⚡ جاري فحص الكاش السحابي السريع (Cloudflare R2)...";
                     
-                    const r2Controller = new AbortController();
-                    const r2Timeout = setTimeout(() => r2Controller.abort(), 2500);
-                    const r2Res = await fetch(r2CheckUrl, { method: "GET", signal: r2Controller.signal });
-                    clearTimeout(r2Timeout);
+                    const r2Res = await fetch(r2CheckUrl, { method: "GET" });
                     if (r2Res.ok) {
                         const r2Json = await r2Res.json();
                         const currentEpoch = Math.floor(Date.now() / 1000);
@@ -1489,48 +1621,8 @@ let targetTab = null, targetGroup = null;
                             if (window.targetStartupGroup) {
                     currentGroup = window.targetStartupGroup;
                 }
-                if (window.targetStartupGroup) {
-                    currentGroup = window.targetStartupGroup;
-                }
                 buildPackagesBar();
                 renderItems();
-
-                , 450);
-                }
-
-
-                if (window.targetStartupSeries && currentTab === "series") {
-                    const reqSeries = window.targetStartupSeries;
-                    setTimeout(() => {
-                        const sList = (rawData && rawData.series) ? rawData.series : [];
-                        const found = sList.find(s => (s.name && s.name.trim() === reqSeries.trim()) || (s.name && s.name.includes(reqSeries)));
-                        if (found && typeof openSeriesModal === "function") {
-                            openSeriesModal(found);
-                            if (typeof showToast === "function") showToast(`🍿 تم فتح حلقات مسلسل: ${found.name} ⚡`);
-                        }
-                        window.targetStartupSeries = null;
-                    }, 500);
-                }
-
-
-                if (window.targetStartupGroup) {
-                    const savedPkgName = window.targetStartupGroup;
-                    showToast(`🎁 تم فتح باقة: ${savedPkgName} ⚡`);
-                    setTimeout(() => {
-                        const chips = document.querySelectorAll(".pkg-chip");
-                        chips.forEach(ch => {
-                            if (ch.textContent.includes(savedPkgName)) {
-                                ch.classList.add("active");
-                                ch.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-                            } else {
-                                ch.classList.remove("active");
-                            }
-                        });
-                        const container = document.getElementById("items_container");
-                        if (container) container.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }, 400);
-                    window.targetStartupGroup = null;
-                }
                 if (window.targetStartupGroup) {
                     showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
                     setTimeout(() => {
@@ -1540,7 +1632,7 @@ let targetTab = null, targetGroup = null;
                     window.targetStartupGroup = null;
                 }
                             showToast("⚡ تم الفتح الفوري من الكاش السحابي R2 (0.2 ثانية) ⚡");
-                if (typeof window.triggerTargetSeriesOnce === "function") window.triggerTargetSeriesOnce();
+                            if (window.checkAndApplyStartupActions) window.checkAndApplyStartupActions();
                             saveScannedLinkAuto(url, (rawData.live[0]?.name ? `باقة: ${rawData.live[0].name}` : "سيرفر مفروز ⚡"));
                             loader.style.display = "none";
                             btn.disabled = false;
@@ -1619,34 +1711,8 @@ let targetTab = null, targetGroup = null;
                 if (window.targetStartupGroup) {
                     currentGroup = window.targetStartupGroup;
                 }
-                if (window.targetStartupGroup) {
-                    currentGroup = window.targetStartupGroup;
-                }
                 buildPackagesBar();
                 renderItems();
-
-                , 450);
-                }
-
-
-                if (window.targetStartupGroup) {
-                    const savedPkgName = window.targetStartupGroup;
-                    showToast(`🎁 تم فتح باقة: ${savedPkgName} ⚡`);
-                    setTimeout(() => {
-                        const chips = document.querySelectorAll(".pkg-chip");
-                        chips.forEach(ch => {
-                            if (ch.textContent.includes(savedPkgName)) {
-                                ch.classList.add("active");
-                                ch.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-                            } else {
-                                ch.classList.remove("active");
-                            }
-                        });
-                        const container = document.getElementById("items_container");
-                        if (container) container.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }, 400);
-                    window.targetStartupGroup = null;
-                }
                 if (window.targetStartupGroup) {
                     showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
                     setTimeout(() => {
@@ -1656,7 +1722,7 @@ let targetTab = null, targetGroup = null;
                     window.targetStartupGroup = null;
                 }
                 showToast("تم الفرز الخارق عبر محرك الـ VPS ⚡");
-                if (typeof window.triggerTargetSeriesOnce === "function") window.triggerTargetSeriesOnce();
+                if (window.checkAndApplyStartupActions) window.checkAndApplyStartupActions();
                 saveScannedLinkAuto(url, (rawData.live[0]?.name ? `باقة: ${rawData.live[0].name}` : "سيرفر مفروز ⚡"));
             } catch (err) {
                 alert("خطأ: " + err.message);
@@ -1682,34 +1748,8 @@ let targetTab = null, targetGroup = null;
                 if (window.targetStartupGroup) {
                     currentGroup = window.targetStartupGroup;
                 }
-                if (window.targetStartupGroup) {
-                    currentGroup = window.targetStartupGroup;
-                }
                 buildPackagesBar();
                 renderItems();
-
-                , 450);
-                }
-
-
-                if (window.targetStartupGroup) {
-                    const savedPkgName = window.targetStartupGroup;
-                    showToast(`🎁 تم فتح باقة: ${savedPkgName} ⚡`);
-                    setTimeout(() => {
-                        const chips = document.querySelectorAll(".pkg-chip");
-                        chips.forEach(ch => {
-                            if (ch.textContent.includes(savedPkgName)) {
-                                ch.classList.add("active");
-                                ch.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-                            } else {
-                                ch.classList.remove("active");
-                            }
-                        });
-                        const container = document.getElementById("items_container");
-                        if (container) container.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }, 400);
-                    window.targetStartupGroup = null;
-                }
                 if (window.targetStartupGroup) {
                     showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
                     setTimeout(() => {
@@ -1787,34 +1827,8 @@ let targetTab = null, targetGroup = null;
                 if (window.targetStartupGroup) {
                     currentGroup = window.targetStartupGroup;
                 }
-                if (window.targetStartupGroup) {
-                    currentGroup = window.targetStartupGroup;
-                }
                 buildPackagesBar();
                 renderItems();
-
-                , 450);
-                }
-
-
-                if (window.targetStartupGroup) {
-                    const savedPkgName = window.targetStartupGroup;
-                    showToast(`🎁 تم فتح باقة: ${savedPkgName} ⚡`);
-                    setTimeout(() => {
-                        const chips = document.querySelectorAll(".pkg-chip");
-                        chips.forEach(ch => {
-                            if (ch.textContent.includes(savedPkgName)) {
-                                ch.classList.add("active");
-                                ch.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-                            } else {
-                                ch.classList.remove("active");
-                            }
-                        });
-                        const container = document.getElementById("items_container");
-                        if (container) container.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }, 400);
-                    window.targetStartupGroup = null;
-                }
                 if (window.targetStartupGroup) {
                     showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
                     setTimeout(() => {
@@ -1837,34 +1851,8 @@ let targetTab = null, targetGroup = null;
                     if (window.targetStartupGroup) {
                     currentGroup = window.targetStartupGroup;
                 }
-                if (window.targetStartupGroup) {
-                    currentGroup = window.targetStartupGroup;
-                }
                 buildPackagesBar();
                 renderItems();
-
-                , 450);
-                }
-
-
-                if (window.targetStartupGroup) {
-                    const savedPkgName = window.targetStartupGroup;
-                    showToast(`🎁 تم فتح باقة: ${savedPkgName} ⚡`);
-                    setTimeout(() => {
-                        const chips = document.querySelectorAll(".pkg-chip");
-                        chips.forEach(ch => {
-                            if (ch.textContent.includes(savedPkgName)) {
-                                ch.classList.add("active");
-                                ch.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-                            } else {
-                                ch.classList.remove("active");
-                            }
-                        });
-                        const container = document.getElementById("items_container");
-                        if (container) container.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }, 400);
-                    window.targetStartupGroup = null;
-                }
                 if (window.targetStartupGroup) {
                     showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
                     setTimeout(() => {
@@ -1894,34 +1882,8 @@ let targetTab = null, targetGroup = null;
             if (window.targetStartupGroup) {
                     currentGroup = window.targetStartupGroup;
                 }
-                if (window.targetStartupGroup) {
-                    currentGroup = window.targetStartupGroup;
-                }
                 buildPackagesBar();
                 renderItems();
-
-                , 450);
-                }
-
-
-                if (window.targetStartupGroup) {
-                    const savedPkgName = window.targetStartupGroup;
-                    showToast(`🎁 تم فتح باقة: ${savedPkgName} ⚡`);
-                    setTimeout(() => {
-                        const chips = document.querySelectorAll(".pkg-chip");
-                        chips.forEach(ch => {
-                            if (ch.textContent.includes(savedPkgName)) {
-                                ch.classList.add("active");
-                                ch.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-                            } else {
-                                ch.classList.remove("active");
-                            }
-                        });
-                        const container = document.getElementById("items_container");
-                        if (container) container.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }, 400);
-                    window.targetStartupGroup = null;
-                }
                 if (window.targetStartupGroup) {
                     showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
                     setTimeout(() => {
@@ -1961,6 +1923,7 @@ let targetTab = null, targetGroup = null;
                 renderItems();
             };
             bar.appendChild(allChip);
+            if (window.updatePackageShareBtn) window.updatePackageShareBtn();
             if (typeof updatePackageShareButton === "function") updatePackageShareButton();
 
             Object.keys(groupsMap).sort().forEach(grp => {
@@ -1975,6 +1938,7 @@ let targetTab = null, targetGroup = null;
                     renderItems();
                 };
                 bar.appendChild(chip);
+            if (window.updatePackageShareBtn) window.updatePackageShareBtn();
             });
         }
 
@@ -2285,7 +2249,7 @@ let targetTab = null, targetGroup = null;
                     <div class="card-actions-row">
                         ${itemType === "series" ? `
                             <button class="card-mini-btn btn-mini-mob" onclick="openSeriesModalByCard('${st.series_id || ""}', '${encodeURIComponent(st.name || "")}')" title="عرض كافة الحلقات والمواسم"><span class="btn-icon">🎬</span><span class="btn-text">حلقات</span></button>
-                            <button class="card-mini-btn btn-mini-wa" onclick="window.shareSeriesDirect('${st.series_id || ""}', '${encodeURIComponent(st.name || "")}', '${encodeURIComponent(st.group || "")}')" title="مشاركة المسلسل كاملاً بكافة مواسمه بالواتس"><span class="btn-icon">📲</span><span class="btn-text">واتس</span></button>
+                            <button class="card-mini-btn btn-mini-wa" onclick="window.shareSeriesDirect('${st.series_id || ""}', '${encodeURIComponent(st.name || "")}', '${encodeURIComponent(st.group || "")}')" title="مشاركة المسلسل كاملاً بالواتس"><span class="btn-icon">📲</span><span class="btn-text">واتس</span></button>
                             <button class="card-mini-btn btn-mini-mpv" onclick="copySeriesTitle('${encodeURIComponent(st.name || "")}')" title="نسخ اسم المسلسل"><span class="btn-icon">📋</span><span class="btn-text">نسخ</span></button>
                         ` : `
                             <a class="card-mini-btn btn-mini-mob" href="${androidIntent}" title="تشغيل مباشر بالجوال"><span class="btn-icon">📱</span><span class="btn-text">جوال</span></a>
@@ -2325,24 +2289,9 @@ let targetTab = null, targetGroup = null;
         }
 
 
-        async function shareToWhatsApp(rawUrl, rawTitle) {
-        const decodedTitle = decodeURIComponent(rawTitle || "");
-        const streamStr = decodeURIComponent(rawUrl || "");
-
-        // إذا كان العنصر مسلسلاً: مشاركة المسلسل كاملاً بكافة مواسمه وحلقاته
-        if (typeof currentTab !== "undefined" && currentTab === "series") {
-            const sList = (rawData && rawData.series) ? rawData.series : [];
-            const found = sList.find(s => 
-                (s.name && (s.name.trim() === decodedTitle.trim() || decodedTitle.includes(s.name.trim()))) || 
-                (s.url && s.url === streamStr) || 
-                (s.episodes && s.episodes.some(ep => ep.url === streamStr))
-            );
-            if (found && typeof window.shareSeriesToWhatsApp === "function") {
-                window.shareSeriesToWhatsApp(found);
-                return;
-            }
-        }
-
+    async function shareToWhatsApp(rawUrl, rawTitle) {
+        const title = decodeURIComponent(rawTitle);
+        const streamStr = decodeURIComponent(rawUrl);
         const isLive = streamStr.includes("/live/");
         const isSeries = streamStr.includes("/series/");
         
@@ -2352,14 +2301,14 @@ let targetTab = null, targetGroup = null;
 
         let finalUrl = `${window.location.origin}${window.location.pathname}?play=${rawUrl}&title=${rawTitle}`;
         
-        // جلب الرابط المختصر الأنيق من سيرفر الـ VPS
+        // جلب الرابط المختصر الأنيق من سيرفر الباسم
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 2000);
             const res = await fetch("https://albasem-tv.duckdns.org/api/shorten", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: streamStr, title: decodedTitle }),
+                body: JSON.stringify({ url: streamStr, title: title }),
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
@@ -2371,11 +2320,7 @@ let targetTab = null, targetGroup = null;
             console.warn("استخدام الرابط المباشر كبديل:", e);
         }
 
-        const msg = `${typeBadge}:
-*${decodedTitle}*
-
-⚡ اضغطي هنا للمشاهدة فوراً:
-${finalUrl}`;
+        const msg = `${typeBadge}:\n*${title}*\n\n⚡ اضغطي هنا للمشاهدة فوراً:\n${finalUrl}`;
         const waLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
         window.open(waLink, '_blank');
     }
@@ -3369,34 +3314,8 @@ function playStepChannel(step) {
                 if (window.targetStartupGroup) {
                     currentGroup = window.targetStartupGroup;
                 }
-                if (window.targetStartupGroup) {
-                    currentGroup = window.targetStartupGroup;
-                }
                 buildPackagesBar();
                 renderItems();
-
-                , 450);
-                }
-
-
-                if (window.targetStartupGroup) {
-                    const savedPkgName = window.targetStartupGroup;
-                    showToast(`🎁 تم فتح باقة: ${savedPkgName} ⚡`);
-                    setTimeout(() => {
-                        const chips = document.querySelectorAll(".pkg-chip");
-                        chips.forEach(ch => {
-                            if (ch.textContent.includes(savedPkgName)) {
-                                ch.classList.add("active");
-                                ch.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-                            } else {
-                                ch.classList.remove("active");
-                            }
-                        });
-                        const container = document.getElementById("items_container");
-                        if (container) container.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }, 400);
-                    window.targetStartupGroup = null;
-                }
                 if (window.targetStartupGroup) {
                     showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
                     setTimeout(() => {
@@ -3789,11 +3708,13 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
 </script>
 
 
-<script id="package_share_engine">
+<script id="clean_sharing_engine">
     // ========================================================
-    // محرك مشاركة باقات السيرفر بالواتساب (Package WhatsApp Share)
+    // محرك الباسم لمشاركة الباقات والمسلسلات الكاملة بالواتساب
     // ========================================================
-    window.updatePackageShareButton = function() {
+    window.currentViewingSeries = null;
+
+    window.updatePackageShareBtn = function() {
         const btn = document.getElementById("btn_share_package");
         const lbl = document.getElementById("btn_share_package_label");
         if (!btn || !lbl) return;
@@ -3803,40 +3724,27 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
             lbl.innerText = `مشاركة باقة (${curGrp}) بالواتس`;
             btn.style.background = "rgba(37,211,102,0.28)";
             btn.style.borderColor = "#25D366";
-            btn.style.color = "#25D366";
         } else {
             lbl.innerText = "مشاركة كافة الباقات بالواتس";
             btn.style.background = "rgba(37,211,102,0.16)";
             btn.style.borderColor = "rgba(37,211,102,0.4)";
-            btn.style.color = "#25D366";
         }
     };
 
-    window.sharePackageToWhatsApp = async function() {
-        const inputUrl = document.getElementById("iptv_url") ? document.getElementById("iptv_url").value.trim() : "";
-        const serverUrl = inputUrl || localStorage.getItem("albasem_url") || "";
-        if (!serverUrl) {
-            alert("يرجى تشغيل سيرفر أولاً لتتمكن من مشاركة باقاته!");
-            return;
-        }
+    window.sharePackageWhatsApp = async function() {
+        const serverUrl = document.getElementById("iptv_url")?.value.trim() || localStorage.getItem("albasem_url") || "";
+        if (!serverUrl) return alert("يرجى تشغيل سيرفر أولاً لتتمكن من مشاركة باقاته!");
 
         const grp = (typeof currentGroup !== "undefined") ? currentGroup : "all";
         const tab = (typeof currentTab !== "undefined") ? currentTab : "live";
-
-        const tabLabels = {
-            live: "📺 المحطات المباشرة",
-            movies: "🎬 مكتبة الأفلام",
-            series: "🍿 مكتبة المسلسلات"
-        };
-        const tabLabel = tabLabels[tab] || "📺 المحطات المباشرة";
+        const tabNames = { live: "📺 المحطات المباشرة", movies: "🎬 مكتبة الأفلام", series: "🍿 مكتبة المسلسلات" };
 
         let count = 0;
         let pkgTitle = "كافة القنوات والباقات";
         try {
-            const allItems = (typeof getVisibleItems === "function") ? getVisibleItems(tab) : ((rawData && rawData[tab]) ? rawData[tab] : []);
+            const allItems = (typeof getVisibleItems === "function") ? getVisibleItems(tab) : (rawData[tab] || []);
             if (grp !== "all") {
-                const filtered = allItems.filter(it => (it.group || "عام") === grp);
-                count = filtered.length;
+                count = allItems.filter(it => (it.group || "عام") === grp).length;
                 pkgTitle = grp;
             } else {
                 count = allItems.length;
@@ -3847,9 +3755,7 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
         const pathname = window.location.pathname;
         const fullPkgUrl = `${origin}${pathname}?url=${encodeURIComponent(serverUrl)}&tab=${tab}&group=${encodeURIComponent(grp)}`;
 
-        // فتح نافذة مسبقة فوراً لحماية الرابط من حظر المتصفحات (Popup Blocker)
         const waWin = window.open("about:blank", "_blank");
-
         let finalUrl = fullPkgUrl;
         if (typeof showToast === "function") showToast("⏳ جاري تجهيز واختصار رابط الباقة للواتساب...");
 
@@ -3867,61 +3773,21 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
                 const data = await res.json();
                 if (data.short_url) finalUrl = data.short_url;
             }
-        } catch(e) {
-            console.warn("استخدام الرابط المباشر للباقة:", e);
-        }
+        } catch(e) {}
 
-        const msg = `🎁 *تم تجهيز باقة خاصة لك على الباسم سات* 👑\n\n📁 *الباقة:* ${pkgTitle}\n📂 *القسم:* ${tabLabel}\n🔢 *العدد:* (${count}) عنصر متاح للمشاهدة\n\n⚡ *اضغط هنا لتصفح ومشاهدة الباقة فوراً:*\n${finalUrl}`;
+        const msg = `🎁 *تم تجهيز باقة خاصة لك على الباسم سات* 👑\n\n📁 *الباقة:* ${pkgTitle}\n📂 *القسم:* ${tabNames[tab] || "المحطات"}\n🔢 *العدد:* (${count}) عنصر متاح للمشاهدة\n\n⚡ *اضغط هنا لتصفح ومشاهدة الباقة فوراً:*\n${finalUrl}`;
         const waLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-
-        if (waWin) {
-            waWin.location.href = waLink;
-        } else {
-            window.location.href = waLink;
-        }
-    };
-
-    // تشغيل تحديث اسم الزر بعد تحميل الصفحة
-    window.addEventListener("DOMContentLoaded", () => {
-        setTimeout(() => {
-            if (window.updatePackageShareButton) window.updatePackageShareButton();
-        }, 600);
-    });
-</script>
-
-
-<script id="series_share_engine">
-    // ========================================================
-    // محرك مشاركة المسلسلات الكاملة بكافة الحلقات والمواسم
-    // ========================================================
-    window.currentViewingSeries = null;
-
-    window.shareCurrentModalSeries = function() {
-        if (window.currentViewingSeries) {
-            const s = window.currentViewingSeries;
-            window.shareSeriesDirect(s.series_id || "", encodeURIComponent(s.name || ""), encodeURIComponent(s.group || ""));
-            return;
-        }
-        const titleEl = document.getElementById("series_modal_title");
-        const fallbackTitle = titleEl ? titleEl.innerText.replace("🎬", "").trim() : "مسلسل";
-        window.shareSeriesDirect("", encodeURIComponent(fallbackTitle), "");
+        if (waWin) waWin.location.href = waLink;
+        else window.location.href = waLink;
     };
 
     window.openSeriesModalByCard = function(seriesId, encTitle) {
         const title = decodeURIComponent(encTitle);
         const sList = (rawData && rawData.series) ? rawData.series : [];
-        let found = null;
-        if (seriesId) {
-            found = sList.find(s => String(s.series_id) === String(seriesId));
-        }
-        if (!found && title) {
-            found = sList.find(s => s.name === title || (s.name && s.name.trim() === title.trim()));
-        }
-        if (found) {
-            openSeriesModal(found);
-        } else {
-            openSeriesModal({ series_id: seriesId, name: title });
-        }
+        let found = seriesId ? sList.find(s => String(s.series_id) === String(seriesId)) : null;
+        if (!found && title) found = sList.find(s => s.name === title || s.name?.trim() === title.trim());
+        if (found) openSeriesModal(found);
+        else openSeriesModal({ series_id: seriesId, name: title });
     };
 
     window.copySeriesTitle = function(encTitle) {
@@ -3931,13 +3797,20 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
         });
     };
 
-    window.shareSeriesDirect = async function(seriesId, encTitle, encGroup) {
-        const inputUrl = document.getElementById("iptv_url") ? document.getElementById("iptv_url").value.trim() : "";
-        const serverUrl = inputUrl || localStorage.getItem("albasem_url") || "";
-        if (!serverUrl) {
-            alert("يرجى تشغيل سيرفر أولاً لتتمكن من مشاركة المسلسل!");
-            return;
+    window.shareCurrentModalSeries = function() {
+        if (window.currentViewingSeries) {
+            const s = window.currentViewingSeries;
+            window.shareSeriesDirect(s.series_id || "", encodeURIComponent(s.name || ""), encodeURIComponent(s.group || ""));
+        } else {
+            const titleEl = document.getElementById("series_modal_title");
+            const t = titleEl ? titleEl.innerText.replace("🎬", "").trim() : "مسلسل";
+            window.shareSeriesDirect("", encodeURIComponent(t), "");
         }
+    };
+
+    window.shareSeriesDirect = async function(seriesId, encTitle, encGroup) {
+        const serverUrl = document.getElementById("iptv_url")?.value.trim() || localStorage.getItem("albasem_url") || "";
+        if (!serverUrl) return alert("يرجى تشغيل سيرفر أولاً لتتمكن من مشاركة المسلسل!");
 
         const title = decodeURIComponent(encTitle || "مسلسل");
         const group = decodeURIComponent(encGroup || "مسلسلات");
@@ -3947,7 +3820,6 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
         const pathname = window.location.pathname;
         const fullSeriesUrl = `${origin}${pathname}?url=${encodeURIComponent(serverUrl)}&tab=series&series_id=${encodeURIComponent(sId)}&series_name=${encodeURIComponent(title)}`;
 
-        // فتح نافذة مسبقة فوراً لحماية الرابط من حظر المتصفحات (Popup Blocker)
         const waWin = window.open("about:blank", "_blank");
         let finalUrl = fullSeriesUrl;
         if (typeof showToast === "function") showToast("⏳ جاري تجهيز واختصار رابط المسلسل للواتساب...");
@@ -3966,17 +3838,77 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
                 const data = await res.json();
                 if (data.short_url) finalUrl = data.short_url;
             }
-        } catch(e) {
-            console.warn("استخدام الرابط المباشر للمسلسل:", e);
-        }
+        } catch(e) {}
 
         const msg = `🍿 *تم تجهيز مسلسل كامل لك على الباسم سات* 👑\n\n🎬 *المسلسل:* ${title}\n📁 *الباقة:* ${group}\n📂 *القسم:* 🍿 مكتبة المسلسلات (كافة المواسم والحلقات)\n\n⚡ *اضغط هنا لتصفح واختيار الحلقات فوراً:*\n${finalUrl}`;
         const waLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+        if (waWin) waWin.location.href = waLink;
+        else window.location.href = waLink;
+    };
 
-        if (waWin) {
-            waWin.location.href = waLink;
-        } else {
-            window.location.href = waLink;
+    // معالجة فتح الروابط المشتركة تلقائياً
+    window.addEventListener("DOMContentLoaded", () => {
+        const params = new URLSearchParams(window.location.search);
+        const pGrp = params.get("group");
+        const pTab = params.get("tab");
+        const pSerId = params.get("series_id");
+        const pSerName = params.get("series_name") || params.get("series");
+
+        if (pGrp) window.autoLaunchGroup = decodeURIComponent(pGrp);
+        if (pSerId || pSerName) {
+            window.autoLaunchSeries = {
+                id: pSerId ? decodeURIComponent(pSerId) : null,
+                name: pSerName ? decodeURIComponent(pSerName) : null
+            };
+            const chkS = document.getElementById("chk_fetch_series");
+            if (chkS) chkS.checked = true;
+            currentTab = "series";
+        } else if (pTab && ["live", "movies", "series"].includes(pTab)) {
+            currentTab = pTab;
+        }
+    });
+
+    window.checkAndApplyStartupActions = function() {
+        // 1. فتح باقة مشتركة
+        if (window.autoLaunchGroup) {
+            const grp = window.autoLaunchGroup;
+            window.autoLaunchGroup = null;
+            currentGroup = grp;
+            if (typeof buildPackagesBar === "function") buildPackagesBar();
+            if (typeof renderItems === "function") renderItems();
+            if (typeof showToast === "function") showToast(`🎁 تم فتح باقة: ${grp} ⚡`);
+            setTimeout(() => {
+                const chips = document.querySelectorAll(".pkg-chip");
+                chips.forEach(c => {
+                    if (c.textContent.includes(grp)) {
+                        c.classList.add("active");
+                        c.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                    } else c.classList.remove("active");
+                });
+            }, 300);
+            return;
+        }
+
+        // 2. فتح حلقات مسلسل مشترك
+        if (window.autoLaunchSeries) {
+            const sInfo = window.autoLaunchSeries;
+            window.autoLaunchSeries = null;
+            switchSection("series");
+            switchMainTab("series");
+            setTimeout(() => {
+                const sList = (rawData && rawData.series) ? rawData.series : [];
+                let found = sInfo.id ? sList.find(s => String(s.series_id) === String(sInfo.id)) : null;
+                if (!found && sInfo.name) {
+                    const norm = sInfo.name.trim().toLowerCase();
+                    found = sList.find(s => s.name?.trim().toLowerCase() === norm || s.name?.toLowerCase().includes(norm));
+                }
+                if (found && typeof openSeriesModal === "function") {
+                    openSeriesModal(found);
+                    if (typeof showToast === "function") showToast(`🍿 تم فتح حلقات مسلسل: ${found.name} ⚡`);
+                } else if (sInfo.id && typeof openSeriesModal === "function") {
+                    openSeriesModal({ series_id: sInfo.id, name: sInfo.name || "مسلسل" });
+                }
+            }, 400);
         }
     };
 </script>
