@@ -95,6 +95,84 @@
         }
     }
 
+
+    // ========================================================
+    // مشاركة باقة كاملة بالواتساب واختصار رابطها عبر الـ VPS
+    // ========================================================
+    function updatePackageShareButton() {
+        const btn = document.getElementById("btn_share_package");
+        const lbl = document.getElementById("btn_share_package_label");
+        if (!btn || !lbl) return;
+
+        if (currentGroup && currentGroup !== "all") {
+            lbl.innerText = `مشاركة باقة (${currentGroup}) بالواتس`;
+            btn.style.background = "rgba(37,211,102,0.28)";
+            btn.style.borderColor = "#25D366";
+        } else {
+            lbl.innerText = "مشاركة كافة الباقات بالواتس";
+            btn.style.background = "rgba(37,211,102,0.16)";
+            btn.style.borderColor = "rgba(37,211,102,0.4)";
+        }
+    }
+
+    async function sharePackageToWhatsApp() {
+        const serverUrl = document.getElementById("iptv_url").value.trim() || localStorage.getItem("albasem_url");
+        if (!serverUrl) {
+            alert("يرجى تشغيل سيرفر أولاً لتتمكن من مشاركة باقاته!");
+            return;
+        }
+
+        const groupName = currentGroup || "all";
+        const tabName = currentTab || "live";
+
+        const tabLabels = {
+            live: "📺 المحطات المباشرة",
+            movies: "🎬 مكتبة الأفلام",
+            series: "🍿 مكتبة المسلسلات"
+        };
+        const tabLabel = tabLabels[tabName] || "📺 المحطات المباشرة";
+
+        // حساب عدد قنوات الباقة بدقة
+        const allTabItems = (typeof getVisibleItems === "function") ? getVisibleItems(tabName) : (rawData[tabName] || []);
+        let count = allTabItems.length;
+        let pkgTitle = "كافة القنوات والباقات";
+        if (groupName !== "all") {
+            const filtered = allTabItems.filter(it => (it.group || "عام") === groupName);
+            count = filtered.length;
+            pkgTitle = groupName;
+        }
+
+        const origin = window.location.origin;
+        const pathname = window.location.pathname;
+        const fullPkgUrl = `${origin}${pathname}?url=${encodeURIComponent(serverUrl)}&tab=${tabName}&group=${encodeURIComponent(groupName)}`;
+
+        let finalUrl = fullPkgUrl;
+        showToast("⏳ جاري تجهيز واختصار رابط الباقة للواتساب...");
+
+        // طلب اختصار الرابط من سيرفر الـ VPS
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2500);
+            const res = await fetch("https://albasem-tv.duckdns.org/api/shorten", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: fullPkgUrl, title: `باقة ${pkgTitle}` }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.short_url) finalUrl = data.short_url;
+            }
+        } catch(e) {
+            console.warn("استخدام الرابط المباشر للباقة كبديل:", e);
+        }
+
+        const msg = `🎁 *تم تجهيز باقة خاصة لك على الباسم سات* 👑\n\n📁 *الباقة:* ${pkgTitle}\n📂 *القسم:* ${tabLabel}\n🔢 *العدد:* (${count}) عنصر متاح للمشاهدة\n\n⚡ *اضغط هنا لتصفح ومشاهدة الباقة فوراً:*\n${finalUrl}`;
+        const waLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+        window.open(waLink, '_blank');
+    }
+
 </script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
@@ -1125,8 +1203,13 @@
         </div>
 
         <div class="packages-section" id="packages_section" style="display:none;">
-            <div class="packages-header" style="justify-content: space-between;">
-                <span>📁 اختر الباقة للتصفية السريعة:</span>
+            <div class="packages-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span>📁 اختر الباقة للتصفية السريعة:</span>
+                    <button id="btn_share_package" onclick="sharePackageToWhatsApp()" style="background: rgba(37,211,102,0.18); border: 1px solid rgba(37,211,102,0.5); color: #25D366; border-radius: 8px; padding: 4px 11px; font-size: 11px; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(37,211,102,0.25);">
+                        <span>📲</span> <span id="btn_share_package_label">مشاركة الباقة بالواتس</span>
+                    </button>
+                </div>
                 <button id="btn_adult_lock" onclick="toggleAdultLock()" style="background:#1E293B; border:1px solid #334155; color:#94A3B8; border-radius:8px; padding:2px 10px; font-size:11px; cursor:pointer; font-weight:bold;">🔒 القفل العائلي</button>
             </div>
             <div class="packages-bar" id="packages_bar"></div>
@@ -1403,6 +1486,21 @@
         document.addEventListener("DOMContentLoaded", () => {
             const urlParams = new URLSearchParams(window.location.search);
             const queryUrl = urlParams.get('url');
+            const targetTab = urlParams.get('tab');
+            const targetGroup = urlParams.get('group');
+
+            if (targetGroup) {
+                window.targetStartupGroup = decodeURIComponent(targetGroup);
+            }
+            if (targetTab && ["live", "movies", "series"].includes(targetTab)) {
+                currentTab = targetTab;
+                if (targetTab === "movies" && document.getElementById("chk_fetch_movies")) document.getElementById("chk_fetch_movies").checked = true;
+                if (targetTab === "series" && document.getElementById("chk_fetch_series")) document.getElementById("chk_fetch_series").checked = true;
+                document.querySelectorAll(".portal-card").forEach(c => c.classList.remove("active"));
+                const tabEl = document.getElementById("tab_" + targetTab);
+                if (tabEl) tabEl.classList.add("active");
+            }
+
             const saved = queryUrl || localStorage.getItem("albasem_url");
             if (saved) document.getElementById("iptv_url").value = saved;
 
@@ -1520,8 +1618,19 @@
 
                             rawData = data;
                             updateCounts();
-                            buildPackagesBar();
-                            renderItems();
+                            if (window.targetStartupGroup) {
+                    currentGroup = window.targetStartupGroup;
+                }
+                buildPackagesBar();
+                renderItems();
+                if (window.targetStartupGroup) {
+                    showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
+                    setTimeout(() => {
+                        const activeChip = document.querySelector(".pkg-chip.active");
+                        if (activeChip) activeChip.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                    }, 250);
+                    window.targetStartupGroup = null;
+                }
                             showToast("⚡ تم الفتح الفوري من الكاش السحابي R2 (0.2 ثانية) ⚡");
                             saveScannedLinkAuto(url, (rawData.live[0]?.name ? `باقة: ${rawData.live[0].name}` : "سيرفر مفروز ⚡"));
                             loader.style.display = "none";
@@ -1598,8 +1707,19 @@
 
                 rawData = data;
                 updateCounts();
+                if (window.targetStartupGroup) {
+                    currentGroup = window.targetStartupGroup;
+                }
                 buildPackagesBar();
                 renderItems();
+                if (window.targetStartupGroup) {
+                    showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
+                    setTimeout(() => {
+                        const activeChip = document.querySelector(".pkg-chip.active");
+                        if (activeChip) activeChip.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                    }, 250);
+                    window.targetStartupGroup = null;
+                }
                 showToast("تم الفرز الخارق عبر محرك الـ VPS ⚡");
                 saveScannedLinkAuto(url, (rawData.live[0]?.name ? `باقة: ${rawData.live[0].name}` : "سيرفر مفروز ⚡"));
             } catch (err) {
@@ -1623,8 +1743,19 @@
                 parseM3UContent(e.target.result);
                 document.getElementById("loader").style.display = "none";
                 updateCounts();
+                if (window.targetStartupGroup) {
+                    currentGroup = window.targetStartupGroup;
+                }
                 buildPackagesBar();
                 renderItems();
+                if (window.targetStartupGroup) {
+                    showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
+                    setTimeout(() => {
+                        const activeChip = document.querySelector(".pkg-chip.active");
+                        if (activeChip) activeChip.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                    }, 250);
+                    window.targetStartupGroup = null;
+                }
                 showToast("تم فتح الملف وتصنيف الباقات بنجاح ✅");
             };
             reader.readAsText(file);
@@ -1691,8 +1822,19 @@
                 }
                 currentGroup = "all";
                 updateCounts();
+                if (window.targetStartupGroup) {
+                    currentGroup = window.targetStartupGroup;
+                }
                 buildPackagesBar();
                 renderItems();
+                if (window.targetStartupGroup) {
+                    showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
+                    setTimeout(() => {
+                        const activeChip = document.querySelector(".pkg-chip.active");
+                        if (activeChip) activeChip.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                    }, 250);
+                    window.targetStartupGroup = null;
+                }
                 showToast("🔒 تم تفعيل القفل العائلي وإخفاء المحتوى الخاص");
             } else {
                 const pin = prompt("🔞 أدخل الرقم السري لفتح القفل:");
@@ -1704,8 +1846,19 @@
                         btn.style.color = "#EF4444";
                     }
                     updateCounts();
-                    buildPackagesBar();
-                    renderItems();
+                    if (window.targetStartupGroup) {
+                    currentGroup = window.targetStartupGroup;
+                }
+                buildPackagesBar();
+                renderItems();
+                if (window.targetStartupGroup) {
+                    showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
+                    setTimeout(() => {
+                        const activeChip = document.querySelector(".pkg-chip.active");
+                        if (activeChip) activeChip.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                    }, 250);
+                    window.targetStartupGroup = null;
+                }
                     showToast("🔓 تم فتح القفل بنجاح");
                 } else if (pin !== null) {
                     alert("❌ الرقم السري غير صحيح!");
@@ -1724,8 +1877,19 @@
             currentGroup = "all";
             document.querySelectorAll(".portal-card").forEach(c => c.classList.remove("active"));
             document.getElementById("tab_" + tab).classList.add("active");
-            buildPackagesBar();
-            renderItems();
+            if (window.targetStartupGroup) {
+                    currentGroup = window.targetStartupGroup;
+                }
+                buildPackagesBar();
+                renderItems();
+                if (window.targetStartupGroup) {
+                    showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
+                    setTimeout(() => {
+                        const activeChip = document.querySelector(".pkg-chip.active");
+                        if (activeChip) activeChip.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                    }, 250);
+                    window.targetStartupGroup = null;
+                }
         }
 
         function buildPackagesBar() {
@@ -1757,12 +1921,14 @@
                 renderItems();
             };
             bar.appendChild(allChip);
+            if (typeof updatePackageShareButton === "function") updatePackageShareButton();
 
             Object.keys(groupsMap).sort().forEach(grp => {
                 const chip = document.createElement("div");
                 chip.className = "pkg-chip" + (currentGroup === grp ? " active" : "");
                 chip.innerHTML = `<span>${grp}</span> <span class="pkg-count">${groupsMap[grp]}</span>`;
                 chip.onclick = () => {
+                    if (typeof updatePackageShareButton === "function") updatePackageShareButton();
                     currentGroup = grp;
                     document.querySelectorAll(".pkg-chip").forEach(c => c.classList.remove("active"));
                     chip.classList.add("active");
@@ -3129,8 +3295,19 @@ function playStepChannel(step) {
             // 6. إذا كان داخل باقة فرعية -> ارجع للكل
             if (typeof currentGroup !== "undefined" && currentGroup !== "all") {
                 currentGroup = "all";
+                if (window.targetStartupGroup) {
+                    currentGroup = window.targetStartupGroup;
+                }
                 buildPackagesBar();
                 renderItems();
+                if (window.targetStartupGroup) {
+                    showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
+                    setTimeout(() => {
+                        const activeChip = document.querySelector(".pkg-chip.active");
+                        if (activeChip) activeChip.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                    }, 250);
+                    window.targetStartupGroup = null;
+                }
                 showToast("🔙 العودة لعرض كافة الباقات");
                 return;
             }
