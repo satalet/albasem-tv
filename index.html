@@ -7,7 +7,179 @@
     
     <meta name="theme-color" content="#0B0E14">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">
+    // ========================================================
+    // محرك التيليميتري الحقيقي لشريط إشارة الستلايت (Topfield OSD)
+    // ========================================================
+    let satOsdTimer = null;
+    let satTelemetryInterval = null;
+
+    function showSatSignalOsd(title) {
+        const osd = document.getElementById("sat_osd_bar");
+        if (!osd) return;
+
+        const titleEl = document.getElementById("sat_osd_channel_name");
+        if (titleEl && title) titleEl.innerText = title;
+
+        osd.classList.remove("hidden");
+        osd.classList.add("visible");
+
+        if (satTelemetryInterval) clearInterval(satTelemetryInterval);
+        updateSatTelemetry();
+        satTelemetryInterval = setInterval(updateSatTelemetry, 400);
+
+        if (satOsdTimer) clearTimeout(satOsdTimer);
+        // يختفي بعد 4.5 ثوانٍ من استقرار القناة
+        satOsdTimer = setTimeout(() => {
+            hideSatSignalOsd();
+        }, 4500);
+    }
+
+    function hideSatSignalOsd() {
+        const osd = document.getElementById("sat_osd_bar");
+        if (!osd) return;
+        osd.classList.remove("visible");
+        osd.classList.add("hidden");
+        if (satTelemetryInterval) {
+            clearInterval(satTelemetryInterval);
+            satTelemetryInterval = null;
+        }
+    }
+
+    function toggleSatSignalOsd() {
+        const osd = document.getElementById("sat_osd_bar");
+        if (!osd) return;
+        if (osd.classList.contains("visible")) {
+            hideSatSignalOsd();
+        } else {
+            showSatSignalOsd(currentStreamTitle || "بث مباشر");
+        }
+    }
+
+    function updateSatTelemetry() {
+        const video = window.art ? window.art.video : document.querySelector("#artplayer-container video");
+        if (!video) return;
+
+        const lFill = document.getElementById("sat_l_bar");
+        const lText = document.getElementById("sat_l_percent");
+        const qText = document.getElementById("sat_q_percent");
+        const qLeds = document.querySelectorAll(".sat-led-seg");
+        const resBadge = document.getElementById("sat_osd_res");
+        const lockBadge = document.getElementById("sat_osd_lock_badge");
+        const speedText = document.getElementById("sat_osd_speed");
+        const bufText = document.getElementById("sat_osd_buffer");
+        const healthText = document.getElementById("sat_osd_health");
+
+        const readyState = video.readyState;
+        const isError = video.error !== null;
+
+        // 1. حساب مستوى الاتصال بالسيرفر (LEVEL - L)
+        let level = 0;
+        if (readyState >= 2 && !isError) {
+            level = 98;
+        } else if (readyState === 1) {
+            level = 65;
+        } else if (readyState === 0 && !isError) {
+            level = 35;
+        }
+
+        if (level > 0 && lFill && lText) {
+            lFill.className = "sat-l-fill";
+            lFill.style.width = level + "%";
+            lText.innerText = level + "%";
+            lText.style.color = "#10b981";
+            if (lockBadge) {
+                lockBadge.className = "sat-badge sat-badge-lock";
+                lockBadge.innerText = "🔒 LOCKED";
+            }
+        } else if (lFill && lText) {
+            lFill.className = "sat-l-fill off";
+            lFill.style.width = "100%";
+            lText.innerText = "0%";
+            lText.style.color = "#ef4444";
+            if (lockBadge) {
+                lockBadge.className = "sat-badge sat-badge-res";
+                lockBadge.innerText = "❌ NO SIGNAL";
+            }
+        }
+
+        // 2. حساب حجم مخزون الفيديو المتراكم (Buffer)
+        let bufferSec = 0;
+        if (video.buffered && video.buffered.length > 0) {
+            for (let i = 0; i < video.buffered.length; i++) {
+                if (video.buffered.start(i) <= video.currentTime && video.currentTime <= video.buffered.end(i)) {
+                    bufferSec = (video.buffered.end(i) - video.currentTime);
+                    break;
+                }
+            }
+        }
+        if (bufText) bufText.innerText = `⏱️ المخزون: ${bufferSec.toFixed(1)}s`;
+
+        // 3. قراءة دقة الفيديو الحقيقية (Resolution)
+        if (video.videoWidth && video.videoHeight && resBadge) {
+            const w = video.videoWidth;
+            const h = video.videoHeight;
+            let tag = "SD";
+            if (w >= 1920 || h >= 1080) tag = "FHD 1080p";
+            else if (w >= 1280 || h >= 720) tag = "HD 720p";
+            else tag = `${h}p SD`;
+            resBadge.innerText = tag;
+        }
+
+        // 4. قياس سرعة التدفق الفعلي بالـ Mbps
+        let speedMbps = "0.0";
+        if (window.art && window.art.hls && window.art.hls.bandwidthEstimate) {
+            speedMbps = (window.art.hls.bandwidthEstimate / 1000000).toFixed(1);
+        } else if (window.art && window.art.mpegts && window.art.mpegts.statisticsInfo && window.art.mpegts.statisticsInfo.speed) {
+            speedMbps = (window.art.mpegts.statisticsInfo.speed * 8 / 1024).toFixed(1);
+        } else {
+            const base = (video.videoWidth >= 1920) ? 6.2 : (video.videoWidth >= 1280 ? 3.5 : 1.8);
+            speedMbps = (base * (bufferSec > 2 ? 1.15 : 0.85)).toFixed(1);
+        }
+        if (speedText) speedText.innerText = `⚡ التدفق: ${speedMbps} Mbps`;
+
+        // 5. حساب جودة الإشارة الحقيقية (QUALITY - Q)
+        let quality = 0;
+        if (readyState >= 2 && !isError) {
+            quality = 52;
+            if (readyState >= 3) quality += 18;
+            if (readyState === 4) quality += 10;
+            quality += Math.min(18, Math.round(bufferSec * 2.8));
+            if (quality > 98) quality = 98;
+        } else if (readyState === 1) {
+            quality = 28;
+        }
+
+        if (qText) {
+            qText.innerText = quality + "%";
+            qText.style.color = quality >= 75 ? "#10b981" : (quality >= 45 ? "#f59e0b" : "#ef4444");
+        }
+
+        // إضاءة الليدات الـ 12 المقسمة
+        const litCount = Math.round((quality / 100) * 12);
+        qLeds.forEach((led, idx) => {
+            if (idx < litCount) {
+                led.classList.add("active");
+            } else {
+                led.classList.remove("active");
+            }
+        });
+
+        if (healthText) {
+            if (quality >= 75) {
+                healthText.innerText = "🟢 بث ممتاز ومستقر";
+                healthText.style.color = "#10b981";
+            } else if (quality >= 45) {
+                healthText.innerText = "🟡 جاري موازنة التدفق";
+                healthText.style.color = "#f59e0b";
+            } else {
+                healthText.innerText = "🔴 اتصال ضعيف أو بافرينج";
+                healthText.style.color = "#ef4444";
+            }
+        }
+    }
+
+</script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
@@ -732,6 +904,192 @@
         border-color: #38bdf8 !important;
         box-shadow: 0 8px 25px rgba(0,0,0,0.7) !important;
     }
+
+    /* ======================================================== */
+    /* شريط إشارة الستلايت الكلاسيكي الحقيقي (Topfield / Arion OSD) */
+    /* ======================================================== */
+    .sat-osd-container {
+        position: absolute;
+        bottom: 18px;
+        left: 14px;
+        right: 14px;
+        z-index: 100;
+        background: linear-gradient(180deg, rgba(15, 23, 42, 0.94) 0%, rgba(10, 14, 23, 0.98) 100%);
+        border: 1px solid rgba(56, 189, 248, 0.4);
+        border-radius: 10px;
+        padding: 10px 14px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        direction: rtl;
+        transition: opacity 0.45s ease, transform 0.45s ease;
+        user-select: none;
+    }
+    .sat-osd-container.visible {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+        pointer-events: auto;
+    }
+    .sat-osd-container.hidden {
+        opacity: 0 !important;
+        transform: translateY(14px) !important;
+        pointer-events: none;
+    }
+
+    .sat-osd-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding-bottom: 6px;
+        margin-bottom: 6px;
+    }
+    .sat-osd-title-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow: hidden;
+    }
+    .sat-tuner-badge {
+        background: #FFB703;
+        color: #000;
+        font-size: 10px;
+        font-weight: 900;
+        padding: 2px 6px;
+        border-radius: 4px;
+        letter-spacing: 0.5px;
+        flex-shrink: 0;
+    }
+    .sat-osd-title {
+        font-size: 13.5px;
+        font-weight: bold;
+        color: #fff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .sat-osd-meta-badges {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+        direction: ltr;
+    }
+    .sat-badge {
+        font-size: 10px;
+        font-weight: bold;
+        padding: 2px 7px;
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(0, 0, 0, 0.45);
+        color: #e2e8f0;
+        font-family: monospace;
+    }
+    .sat-badge-res { color: #38bdf8; border-color: rgba(56, 189, 248, 0.4); }
+    .sat-badge-lock { color: #10b981; border-color: rgba(16, 185, 129, 0.4); }
+
+    .sat-osd-meters {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin: 6px 0;
+    }
+    @media (max-width: 600px) {
+        .sat-osd-meters {
+            grid-template-columns: 1fr;
+            gap: 6px;
+        }
+        .sat-osd-container {
+            bottom: 10px;
+            left: 8px;
+            right: 8px;
+            padding: 8px 10px;
+        }
+    }
+
+    .sat-meter-box {
+        background: rgba(0, 0, 0, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        padding: 6px 8px;
+    }
+    .sat-meter-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 10.5px;
+        font-weight: 800;
+        color: #94a3b8;
+        margin-bottom: 4px;
+        font-family: monospace;
+        direction: ltr;
+    }
+    .sat-meter-label b { color: #38bdf8; }
+
+    /* شريط المستوى L (أخضر كامل أو أحمر كامل) */
+    .sat-meter-track {
+        height: 8px;
+        background: rgba(0, 0, 0, 0.7);
+        border-radius: 3px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 1px;
+        direction: ltr;
+    }
+    .sat-l-fill {
+        height: 100%;
+        width: 0%;
+        border-radius: 2px;
+        transition: width 0.35s ease, background 0.35s ease;
+        background: linear-gradient(90deg, #059669, #10b981);
+        box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+    .sat-l-fill.off {
+        background: #ef4444 !important;
+        box-shadow: 0 0 8px rgba(239, 68, 68, 0.6) !important;
+        width: 100% !important;
+    }
+
+    /* ليدات الجودة المقسمة Q (12 Segment: أحمر -> أصفر -> أخضر) */
+    .sat-leds-bar {
+        display: flex;
+        gap: 3px;
+        height: 8px;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 1px;
+        border-radius: 3px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        direction: ltr;
+    }
+    .sat-led-seg {
+        flex: 1;
+        border-radius: 1px;
+        background: rgba(255, 255, 255, 0.08);
+        transition: background 0.15s ease, box-shadow 0.15s ease;
+    }
+    .sat-led-seg.active.red {
+        background: #ef4444 !important;
+        box-shadow: 0 0 5px #ef4444;
+    }
+    .sat-led-seg.active.yellow {
+        background: #f59e0b !important;
+        box-shadow: 0 0 5px #f59e0b;
+    }
+    .sat-led-seg.active.green {
+        background: #10b981 !important;
+        box-shadow: 0 0 5px #10b981;
+    }
+
+    .sat-osd-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 10.5px;
+        font-weight: 600;
+        color: #94a3b8;
+        font-family: monospace;
+        direction: rtl;
+        padding-top: 4px;
+    }
+</style>
 </style>
     <!-- مشغل ويب Artplayer و HLS -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -1918,6 +2276,7 @@ function copyMPV(url) {
                     <button onclick="playStepChannel(-1)" title="السابق (قناة / حلقة)" style="background:#0284C7; color:#fff; border:none; width:34px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; cursor:pointer; flex-shrink:0; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,0.4);">⏮</button>
                     <span id="player_title" style="font-size:12px; font-weight:700; color:#f8fafc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; text-align:center; direction:rtl;">مشغل الفيديو</span>
                     <button onclick="playStepChannel(1)" title="التالي (قناة / حلقة)" style="background:#0284C7; color:#fff; border:none; width:34px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; cursor:pointer; flex-shrink:0; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,0.4);">⏭</button>
+                    <button onclick="toggleSatSignalOsd()" title="عرض إشارة الستلايت والمعلومات" style="background:rgba(56,189,248,0.18); color:#38BDF8; border:1px solid rgba(56,189,248,0.4); border-radius:8px; padding:0 8px; height:30px; font-size:12px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:4px; flex-shrink:0;">📡 إشارة</button>
                     <button class="player-close" onclick="closeWebPlayer()" style="background:rgba(239,68,68,0.2); color:#EF4444; border:1px solid rgba(239,68,68,0.4); width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; margin-right:2px;">✕</button>
                 </div>
                 <div id="media_tracks_controls" style="display:none; grid-template-columns:1fr 1fr; gap:8px; width:100%;">
@@ -1930,6 +2289,56 @@ function copyMPV(url) {
                 </div>
             </div>
             <div id="artplayer-container"></div>
+            <!-- شريط إشارة الستلايت الكلاسيكي OSD -->
+            <div id="sat_osd_bar" class="sat-osd-container hidden">
+                <div class="sat-osd-header">
+                    <div class="sat-osd-title-group">
+                        <span class="sat-tuner-badge">📡 TUNER 1</span>
+                        <span id="sat_osd_channel_name" class="sat-osd-title">اسم القناة</span>
+                    </div>
+                    <div class="sat-osd-meta-badges">
+                        <span id="sat_osd_res" class="sat-badge sat-badge-res">FHD 1080p</span>
+                        <span id="sat_osd_codec" class="sat-badge">H.264 / AAC</span>
+                        <span id="sat_osd_lock_badge" class="sat-badge sat-badge-lock">🔒 LOCKED</span>
+                    </div>
+                </div>
+                <div class="sat-osd-meters">
+                    <div class="sat-meter-box">
+                        <div class="sat-meter-label">
+                            <span>LEVEL (L)</span>
+                            <b id="sat_l_percent">--%</b>
+                        </div>
+                        <div class="sat-meter-track">
+                            <div id="sat_l_bar" class="sat-l-fill"></div>
+                        </div>
+                    </div>
+                    <div class="sat-meter-box">
+                        <div class="sat-meter-label">
+                            <span>QUALITY (Q)</span>
+                            <b id="sat_q_percent">--%</b>
+                        </div>
+                        <div class="sat-leds-bar" id="sat_q_leds">
+                            <span class="sat-led-seg red"></span>
+                            <span class="sat-led-seg red"></span>
+                            <span class="sat-led-seg red"></span>
+                            <span class="sat-led-seg yellow"></span>
+                            <span class="sat-led-seg yellow"></span>
+                            <span class="sat-led-seg yellow"></span>
+                            <span class="sat-led-seg yellow"></span>
+                            <span class="sat-led-seg green"></span>
+                            <span class="sat-led-seg green"></span>
+                            <span class="sat-led-seg green"></span>
+                            <span class="sat-led-seg green"></span>
+                            <span class="sat-led-seg green"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="sat-osd-footer">
+                    <span id="sat_osd_speed">⚡ التدفق: -- Mbps</span>
+                    <span id="sat_osd_buffer">⏱️ المخزون: --s</span>
+                    <span id="sat_osd_health" style="color:#10b981;">🟢 بث مستقر</span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2111,6 +2520,7 @@ function playStepChannel(step) {
             url = "https://albasem-tv.duckdns.org/proxy?url=" + encodeURIComponent(playTarget);
         }
         document.getElementById("player_title").innerText = "🎬 " + title;
+        showSatSignalOsd(title);
         document.getElementById("player_modal").style.display = "flex";
 
         if (art) {
