@@ -1465,8 +1465,7 @@
         // فك الروابط وتوجيه الباقات المشتركة بالواتساب تلقائياً
         // ========================================================
         const urlParams = new URLSearchParams(window.location.search);
-        const urlParams = new URLSearchParams(window.location.search);
-        const targetSeriesParam = urlParams.get('series');
+        targetSeriesParam = urlParams.get('series');
         if (targetSeriesParam) {
             window.targetStartupSeries = decodeURIComponent(targetSeriesParam);
             currentTab = 'series';
