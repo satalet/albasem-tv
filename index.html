@@ -2418,6 +2418,7 @@ function copyMPV(url) {
                     <span id="player_title" style="font-size:12px; font-weight:700; color:#f8fafc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; text-align:center; direction:rtl;">مشغل الفيديو</span>
                     <button onclick="playStepChannel(1)" title="التالي (قناة / حلقة)" style="background:#0284C7; color:#fff; border:none; width:34px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; cursor:pointer; flex-shrink:0; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,0.4);">⏭</button>
                     <button onclick="toggleSatSignalOsd()" title="عرض إشارة الستلايت والمعلومات" style="background:rgba(56,189,248,0.18); color:#38BDF8; border:1px solid rgba(56,189,248,0.4); border-radius:8px; padding:0 8px; height:30px; font-size:12px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:4px; flex-shrink:0;">📡 إشارة</button>
+                     <button id="btn_player_wa" onclick="shareCurrentLiveFromPlayer()" title="مشاركة البث المباشر عبر واتساب" style="display:none; background:rgba(37,211,102,0.18); color:#25D366; border:1px solid rgba(37,211,102,0.45); border-radius:8px; padding:0 8px; height:30px; font-size:12px; font-weight:bold; cursor:pointer; align-items:center; gap:4px; flex-shrink:0; box-shadow:0 2px 6px rgba(0,0,0,0.3);">📲 واتس</button>
                     <button class="player-close" onclick="closeWebPlayer()" style="background:rgba(239,68,68,0.2); color:#EF4444; border:1px solid rgba(239,68,68,0.4); width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; margin-right:2px;">✕</button>
                 </div>
                 <div id="media_tracks_controls" style="display:none; grid-template-columns:1fr 1fr; gap:8px; width:100%;">
@@ -2650,6 +2651,14 @@ function playStepChannel(step) {
 
     function openWebPlayer(rawUrl, title) {
         currentRawStreamUrl = rawUrl;
+        // إظهار زر مشاركة البث فقط للمحطات المباشرة وإخفاؤه للأفلام والمسلسلات
+        const waPlayerBtn = document.getElementById("btn_player_wa");
+        if (waPlayerBtn) {
+            const isMovieOrSeries = (typeof currentTab !== "undefined" && (currentTab === "movies" || currentTab === "series")) || 
+                                    (rawUrl && (String(rawUrl).includes("/movie") || String(rawUrl).includes("/series/")));
+            const isLive = !isMovieOrSeries && ((typeof currentTab !== "undefined" && currentTab === "live") || (rawUrl && String(rawUrl).includes("/live/")));
+            waPlayerBtn.style.display = isLive ? "flex" : "none";
+        }
         currentStreamTitle = title;
         closeWebPlayer();
         let url = rawUrl;
@@ -3962,6 +3971,23 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
             }, 400);
         }
     };
+
+    // دالة مشاركة البث المباشر النشط حالياً مباشرة من المشغل
+    window.shareCurrentLiveFromPlayer = function() {
+        if (!currentRawStreamUrl) {
+            if (typeof showToast === "function") showToast("⚠️ لا يوجد بث مباشر نشط حالياً");
+            return;
+        }
+        const titleEl = document.getElementById("player_title");
+        let cleanTitle = "بث مباشر";
+        if (titleEl && titleEl.innerText) {
+            cleanTitle = titleEl.innerText.replace(/^[🎬📺🍿📡\s]+/, "").trim();
+        }
+        if (typeof shareToWhatsApp === "function") {
+            shareToWhatsApp(encodeURIComponent(currentRawStreamUrl), encodeURIComponent(cleanTitle));
+        }
+    };
+
 </script>
 
 </body>
