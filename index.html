@@ -3972,7 +3972,7 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
         }
     };
 
-    // دالة مشاركة البث المباشر النشط حالياً مباشرة من المشغل
+// دالة مشاركة البث المباشر النشط حالياً مباشرة من المشغل
     window.shareCurrentLiveFromPlayer = function() {
         if (!currentRawStreamUrl) {
             if (typeof showToast === "function") showToast("⚠️ لا يوجد بث مباشر نشط حالياً");
@@ -3987,6 +3987,10 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
             shareToWhatsApp(encodeURIComponent(currentRawStreamUrl), encodeURIComponent(cleanTitle));
         }
     };
+
+window.sharePackageToWhatsApp = window.sharePackageWhatsApp;
+window.updatePackageShareBu
+ton = window.updatePackageShareBtn;
 
 </script>
 
