@@ -3248,10 +3248,9 @@ function playStepChannel(step) {
     if ("serviceWorker" in navigator) {
         navigator.serviceWorker.getRegistrations().then(regs => {
             for (let reg of regs) {
-                reg.update(); // فرض فحص التحديثات من السيرفر
+                reg.update();
             }
         });
-    });
     }
     </script>
 
