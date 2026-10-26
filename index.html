@@ -1293,28 +1293,32 @@ div[id*="signal"] div[style*="height"],
 
 
 
+
 <style id="real-compact-sat-osd">
-/* 1. الحاوية الرئيسية: شريط أفقي عريض ومسطح بارتفاع لا يتجاوز 38px */
+/* شريط نحيف ومسطح ومركزي بالسنتر تماماً */
 #sat_osd_bar, .sat-osd-container {
-    width: auto !important;
+    position: absolute !important;
+    bottom: 8px !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 auto !important;             /* توسيط دقيق بالسنتر بدون إزاحة */
+    transform: none !important;            /* إلغاء الـ transform اللي كان يزيحه للشمال */
+    width: 90% !important;
     max-width: 440px !important;
-    min-width: 300px !important;
-    padding: 3px 8px !important;            /* تقليل المسافة الرأسية لأقل حد */
-    height: auto !important;
-    background: rgba(8, 12, 20, 0.82) !important;
+    padding: 3px 8px !important;
+    background: rgba(8, 12, 20, 0.85) !important;
     backdrop-filter: blur(4px) !important;
-    border-radius: 5px !important;
-    bottom: 6px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important; /* توسيط أنيق تحت الفيديو */
-    box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 6px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6) !important;
+    direction: rtl !important;
+    box-sizing: border-box !important;
 }
 
-/* 2. السطر الأول: دمج الترويسة بمسافة رأسية معدومة */
+/* السطر الأول: العنوان ومربع التيونر */
 #sat_osd_bar .sat-osd-header,
 .sat-osd-header {
-    margin: 0 !important;
+    margin: 0 0 2px 0 !important;
     padding: 0 !important;
     font-size: 8.5px !important;
     line-height: 1.1 !important;
@@ -1323,13 +1327,7 @@ div[id*="signal"] div[style*="height"],
     justify-content: space-between !important;
 }
 
-#sat_osd_bar .sat-osd-header span,
-#sat_osd_bar .sat-osd-header b {
-    font-size: 8px !important;
-    padding: 0 2px !important;
-}
-
-/* 3. السطر الثاني: تنحيف بارات QUALITY و LEVEL ليصيروا خيوط ناعمة */
+/* السطر الثاني: بارات الجودة والإشارة */
 #sat_osd_bar .sat-osd-meters,
 #sat_osd_bar .sat-osd-row {
     margin: 1px 0 !important;
@@ -1339,19 +1337,19 @@ div[id*="signal"] div[style*="height"],
 #sat_osd_bar [class*="bar"],
 #sat_osd_bar [class*="track"],
 #sat_osd_bar .progress {
-    height: 3px !important;                 /* سمك البار 3 بكسل فقط */
+    height: 3px !important;
     margin: 1px 0 !important;
 }
 
-#sat_osd_bar span, #sat_osd_bar div {
+#sat_osd_bar span, #sat_osd_bar div, #sat_osd_bar b {
     font-size: 8px !important;
     line-height: 1.1 !important;
 }
 
-/* 4. السطر الثالث: الفوتر مضغوط بأقل ارتفاع ممكن */
+/* السطر الثالث: الفوتر */
 #sat_osd_bar .sat-osd-footer,
 .sat-osd-footer {
-    margin: 0 !important;
+    margin: 2px 0 0 0 !important;
     padding: 0 !important;
     font-size: 7.5px !important;
     line-height: 1.1 !important;
@@ -1359,19 +1357,16 @@ div[id*="signal"] div[style*="height"],
     justify-content: space-between !important;
 }
 
-/* 5. على شاشات الجوال: شريط نحيف ممتد ومسطح */
 @media (max-width: 768px) {
     #sat_osd_bar, .sat-osd-container {
-        max-width: 92% !important;
-        width: 92% !important;
-        min-width: 0 !important;
+        max-width: 95% !important;
+        width: 95% !important;
+        bottom: 5px !important;
         padding: 2px 6px !important;
-        bottom: 4px !important;
-        transform: translateX(-50%) scale(0.9) !important;
-        transform-origin: bottom center !important;
     }
 }
 </style>
+
 
 
 </head>
