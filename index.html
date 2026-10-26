@@ -1245,6 +1245,52 @@
 }
 </style>
 
+
+<style id="ultra-compact-signal-osd">
+/* تصغير حاوية السيغنال الكلية */
+div[id*="signal"], div[class*="signal"], div[id*="tuner"], div[class*="tuner"], .osd-card {
+    max-width: 250px !important;
+    width: 250px !important;
+    padding: 4px 8px !important;
+    font-size: 9.5px !important;
+    bottom: 6px !important;
+    left: 6px !important;
+    background: rgba(10, 16, 26, 0.85) !important;
+    backdrop-filter: blur(4px) !important;
+    border-radius: 6px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+}
+
+/* تصغير الخطوط والترويسة الداخلية */
+div[id*="signal"] span, div[id*="signal"] b, div[id*="signal"] div,
+.osd-card span, .osd-card b, .osd-card div {
+    font-size: 9px !important;
+    line-height: 1.2 !important;
+}
+
+/* تنحيف بارات QUALITY و LEVEL */
+div[id*="signal"] .progress, 
+div[id*="signal"] .progress-bar,
+div[id*="signal"] div[style*="height"],
+.osd-card .progress-bar {
+    height: 3.5px !important;
+    margin: 2px 0 !important;
+}
+
+/* شاشات الجوال: تصغير إضافي بنسبة 30% لتوفير كامل الشاشة */
+@media (max-width: 768px) {
+    div[id*="signal"], div[class*="signal"], div[id*="tuner"], div[class*="tuner"], .osd-card {
+        max-width: 210px !important;
+        width: 210px !important;
+        transform: scale(0.75) !important;
+        transform-origin: bottom left !important;
+        bottom: 2px !important;
+        left: 2px !important;
+    }
+}
+</style>
+
 </head>
 
 
@@ -4043,6 +4089,50 @@ window.sharePackageToWhatsApp = window.sharePackageWhatsApp;
 window.updatePackageShareBu
 ton = window.updatePackageShareBtn;
 
+</script>
+
+
+<script id="stall-auto-recovery">
+(function() {
+    let lastPlayTime = 0;
+    let stallCounter = 0;
+
+    setInterval(function() {
+        const video = document.querySelector('video');
+        if (!video || video.paused || video.ended) {
+            stallCounter = 0;
+            return;
+        }
+
+        // إذا كان الفيديو بحالة تشغيل لكن الوقت متوقف (تعليق/دائرة تحميل)
+        if (video.currentTime === lastPlayTime && video.readyState < 3) {
+            stallCounter++;
+            if (stallCounter >= 3) { // بعد 3 ثوانٍ من التوقف الحقيقي
+                console.warn('⚠️ تم رصد تعليق البث (STALLED) - جاري إعادة التوصيل التلقائي...');
+                stallCounter = 0;
+                
+                // إنعاش HLS
+                if (window.hls) {
+                    try {
+                        window.hls.stopLoad();
+                        window.hls.recoverMediaError();
+                        window.hls.startLoad(-1);
+                    } catch(e) {
+                        try { window.hls.startLoad(-1); } catch(err){}
+                    }
+                }
+                
+                // إعادة تشغيل الفيديو
+                if (video && typeof video.play === 'function') {
+                    video.play().catch(function(){});
+                }
+            }
+        } else {
+            lastPlayTime = video.currentTime;
+            stallCounter = 0;
+        }
+    }, 1200);
+})();
 </script>
 
 </body>
