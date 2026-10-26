@@ -4170,48 +4170,64 @@ ton = window.updatePackageShareBtn;
 </script>
 
 
+
 <script id="stall-auto-recovery">
 (function() {
-    let lastPlayTime = 0;
-    let stallCounter = 0;
+    let lastTime = 0;
+    let deadCount = 0;
+    let isRecovering = false;
 
     setInterval(function() {
-        const video = document.querySelector('video');
-        if (!video || video.paused || video.ended) {
-            stallCounter = 0;
+        const v = document.querySelector('video');
+        if (!v || v.paused || v.ended) {
+            deadCount = 0;
             return;
         }
 
-        // إذا كان الفيديو بحالة تشغيل لكن الوقت متوقف (تعليق/دائرة تحميل)
-        if (video.currentTime === lastPlayTime && video.readyState < 3) {
-            stallCounter++;
-            if (stallCounter >= 3) { // بعد 3 ثوانٍ من التوقف الحقيقي
-                console.warn('⚠️ تم رصد تعليق البث (STALLED) - جاري إعادة التوصيل التلقائي...');
-                stallCounter = 0;
+        // إذا كان الفيديو شغال لكن الثواني متوقفة تماماً
+        if (v.currentTime === lastTime && v.readyState < 3) {
+            deadCount++;
+            if (deadCount >= 3 && !isRecovering) {
+                console.warn('⚠️ رصد تعليق حاد في تدفق البث - جاري الإنعاش القسري...');
+                isRecovering = true;
                 
-                // إنعاش HLS
-                if (window.hls) {
-                    try {
-                        window.hls.stopLoad();
-                        window.hls.recoverMediaError();
-                        window.hls.startLoad(-1);
-                    } catch(e) {
-                        try { window.hls.startLoad(-1); } catch(err){}
-                    }
+                // 1. محاولة إنعاش مكتبة HLS الأساسية
+                if (window.art && window.art.hls) {
+                    try { window.art.hls.recoverMediaError(); } catch(e){}
+                    try { window.art.hls.startLoad(-1); } catch(e){}
+                } else if (window.hls) {
+                    try { window.hls.recoverMediaError(); } catch(e){}
+                    try { window.hls.startLoad(-1); } catch(e){}
                 }
-                
-                // إعادة تشغيل الفيديو
-                if (video && typeof video.play === 'function') {
-                    video.play().catch(function(){});
+
+                // 2. إذا استمر التعليق أكثر من 5 ثوانٍ، عمل إعادة تشغيل تلقائية لمسار القناة (Soft Reload)
+                if (deadCount >= 5) {
+                    console.warn('♻️ إعادة تحميل مسار القناة تلقائياً دون لمس الواجهة...');
+                    if (window.art && typeof window.art.switchUrl === 'function') {
+                        const curUrl = window.art.url;
+                        window.art.switchUrl(curUrl).then(() => {
+                            window.art.play();
+                            isRecovering = false;
+                            deadCount = 0;
+                        }).catch(() => { isRecovering = false; });
+                    } else if (v.src) {
+                        const src = v.src;
+                        v.src = src;
+                        v.play().catch(()=>{});
+                        isRecovering = false;
+                        deadCount = 0;
+                    }
                 }
             }
         } else {
-            lastPlayTime = video.currentTime;
-            stallCounter = 0;
+            lastTime = v.currentTime;
+            deadCount = 0;
+            isRecovering = false;
         }
-    }, 1200);
+    }, 1000);
 })();
 </script>
+
 
 </body>
 </html>
