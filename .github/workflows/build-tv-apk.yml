@@ -36,4 +36,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cp android/app/build/outputs/apk/debug/app-debug.apk albasem-tv.apk
-          gh release create v1.0 albasem-tv.apk --title "Albasem TV App v1.0" --notes "تطبيق الباسم سات المخصص لشاشات أندرويد و TV Box و Firestick" --clobber
+          gh release delete v1.0 --yes 2>/dev/null || true
+          gh release create v1.0 albasem-tv.apk --title "Albasem TV App v1.0" --notes "تطبيق الباسم سات المخصص لشاشات أندرويد و TV Box و Firestick"
