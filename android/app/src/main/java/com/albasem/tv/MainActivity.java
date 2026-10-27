@@ -44,7 +44,10 @@ public class MainActivity extends Activity {
         s.setAllowContentAccess(true);
         s.setUseWideViewPort(true);
         s.setLoadWithOverviewMode(true);
-        s.setCacheMode(WebSettings.LOAD_DEFAULT);
+
+        // منع الكاش نهائياً لجلب التحديثات فوراً دائماً
+        s.setCacheMode(WebSettings.LOAD_NO_CACHE);
+        myWebView.clearCache(true);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);

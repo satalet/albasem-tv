@@ -1370,75 +1370,111 @@ div[id*="signal"] div[style*="height"],
 
 
 
-<style id="immersive-player-fix">
-/* 1. جعل نافذة المشغل تملأ الشاشة 100% كلياً */
-.player-modal, #player_modal {
+
+
+
+<style id="ultimate-fullscreen-hud">
+/* تثبيت المشغل ليأخذ مساحة الشاشة 100% بنظام الطبقات العائمة */
+#player_modal, .player-modal {
     position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
+    inset: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
-    max-width: 100vw !important;
-    max-height: 100vh !important;
-    margin: 0 !important;
-    padding: 0 !important;
     background: #000 !important;
-    z-index: 99999 !important;
+    z-index: 999999 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
 }
 
 .player-content {
     position: relative !important;
     width: 100% !important;
     height: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    display: block !important;
+    flex: 1 !important;
+    overflow: hidden !important;
 }
 
-/* 2. حاوية الفيديو تفرش كامل مساحة الشاشة بالملي خلف كل العناصر */
+/* الفيديو يفرش الشاشة بالكامل من الحافة للحافة */
 #artplayer-container, .artplayer-app {
     position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
+    inset: 0 !important;
     width: 100% !important;
     height: 100% !important;
     z-index: 1 !important;
 }
 
-/* 3. الهيدر وخيارات الترجمة والصوت تصبح طبقة عائمة أنيقة وشفافة في أعلى الفيديو */
+/* تحويل الهيدر وقوائم الترجمة والصوت إلى طبقة شفافة عائمة أعلى الفيديو */
 #player_header_bar, .player-header {
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    z-index: 20 !important;
-    background: linear-gradient(180deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.4) 75%, transparent 100%) !important;
+    z-index: 30 !important;
+    background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 70%, transparent 100%) !important;
     padding: 6px 12px !important;
     border: none !important;
     box-shadow: none !important;
-    transition: opacity 0.35s ease, visibility 0.35s ease !important;
+    transition: opacity 0.3s ease, visibility 0.3s ease !important;
 }
 
-/* تصغير قوائم الصوت والترجمة لتبدو كشارات مدمجة وأنيقة */
+/* تصغير مربعات الترجمة والصوت لشرائط مدمجة وأنيقة */
 #player_header_bar select, 
 #player_header_bar .custom-select,
 #player_header_bar div[class*="select"] {
     height: 24px !important;
     padding: 1px 6px !important;
-    font-size: 10px !important;
+    font-size: 10.5px !important;
     border-radius: 4px !important;
-    background: rgba(15, 23, 42, 0.7) !important;
+    background: rgba(15, 23, 42, 0.75) !important;
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
 }
 
-/* 4. كلاس التلاشي للاختفاء التلقائي */
-.ui-hidden #player_header_bar,
-.ui-hidden .player-header {
+/* إخفاء الهيدر تلقائياً لتصفية شاشة الفيديو */
+.hide-controls #player_header_bar,
+.hide-controls .player-header {
     opacity: 0 !important;
     visibility: hidden !important;
     pointer-events: none !important;
 }
 </style>
+
+<script id="ultimate-fullscreen-js">
+(function() {
+    // 1. تصحيح زر الفل سكرين في Artplayer لتشغيل ملء الشاشة بدون أخطاء النظام
+    function patchArtplayer() {
+        if (window.art) {
+            window.art.on('ready', function() {
+                try {
+                    window.art.fullscreenWeb = true;
+                } catch(e) {}
+            });
+        }
+    }
+    patchArtplayer();
+    setInterval(patchArtplayer, 1000);
+
+    // 2. إخفاء وإظهار الهيدر تلقائياً بنعومة عند اللمس
+    let hideTimer = null;
+    function showControls() {
+        const modal = document.getElementById('player_modal') || document.querySelector('.player-modal');
+        if (!modal) return;
+        modal.classList.remove('hide-controls');
+        clearTimeout(hideTimer);
+        const v = document.querySelector('video');
+        if (v && !v.paused) {
+            hideTimer = setTimeout(() => {
+                modal.classList.add('hide-controls');
+            }, 3000);
+        }
+    }
+
+    ['touchstart', 'mousemove', 'click', 'keydown'].forEach(evt => {
+        document.addEventListener(evt, showControls, { passive: true });
+    });
+})();
+</script>
 
 </head>
 
@@ -4301,30 +4337,7 @@ ton = window.updatePackageShareBtn;
 
 
 
-<script id="immersive-autohide-logic">
-(function() {
-    let hideTimer = null;
-    function resetUiTimer() {
-        const modal = document.getElementById('player_modal') || document.querySelector('.player-modal');
-        if (!modal) return;
-        
-        modal.classList.remove('ui-hidden');
-        clearTimeout(hideTimer);
-        
-        const video = document.querySelector('video');
-        if (video && !video.paused) {
-            hideTimer = setTimeout(() => {
-                modal.classList.add('ui-hidden');
-            }, 3200); // يختفي بعد 3 ثواني من عدم اللمس
-        }
-    }
 
-    // إظهار عناصر التحكم عند لمس الشاشة أو تحريك الفأرة
-    ['touchstart', 'mousemove', 'click', 'keydown'].forEach(evt => {
-        document.addEventListener(evt, resetUiTimer, { passive: true });
-    });
-})();
-</script>
 
 </body>
 </html>
