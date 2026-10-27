@@ -1378,99 +1378,140 @@ div[id*="signal"] div[style*="height"],
 
 
 
-<style id="clean-responsive-player">
-/* إخفاء المشغل إجبارياً طالما أنه مغلق أو يحمل display: none */
+
+
+
+
+
+<style id="ultimate-tv-experience">
+/* عند الإغلاق: مخفي كلياً ولا يظهر أبداً عند تشغيل التطبيق */
 #player_modal[style*="display: none"],
-#player_modal[style*="display:none"],
-.player-modal[style*="display: none"],
-.player-modal[style*="display:none"] {
+#player_modal[style*="display:none"] {
     display: none !important;
 }
 
-/* عند فتح المشغل فقط: يفرش كامل الشاشة بنظام عائم متكامل */
-#player_modal:not([style*="display: none"]):not([style*="display:none"]),
-.player-modal:not([style*="display: none"]):not([style*="display:none"]) {
-    display: flex !important;
+/* عند التشغيل: يملأ كامل مساحة شاشة التلفزيون والجوال 100% فوراً */
+#player_modal:not([style*="display: none"]):not([style*="display:none"]) {
+    display: block !important;
     position: fixed !important;
     inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
     background: #000 !important;
     z-index: 999999 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    flex-direction: column !important;
+    overflow: hidden !important;
 }
 
 .player-content {
     position: relative !important;
-    width: 100% !important;
-    height: 100% !important;
-    flex: 1 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
     overflow: hidden !important;
-    background: #000 !important;
 }
 
-/* حاوية الفيديو تغطي كامل الشاشة 100% خلف عناصر التحكم */
-#artplayer-container, .artplayer-app {
+/* حاوية الفيديو تغطي الشاشة كاملة من الحافة للحافة */
+#artplayer-container, .artplayer-app, .art-video-player {
     position: absolute !important;
     inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
     width: 100% !important;
     height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
     z-index: 1 !important;
 }
 
-/* شريط الهيدر (العنوان، الأزرار، والترجمة) يطفو بشفافية أعلى الفيديو دون تقليص مساحته */
+/* الهيدر وقوائم الترجمة والصوت تطفو بشفافية أعلى الفيديو وتختفي تلقائياً */
 #player_header_bar, .player-header {
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    z-index: 20 !important;
+    z-index: 30 !important;
     background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 70%, transparent 100%) !important;
     padding: 6px 12px !important;
     display: flex !important;
     align-items: center !important;
-    transition: opacity 0.3s ease, visibility 0.3s ease !important;
+    transition: opacity 0.35s ease, visibility 0.35s ease !important;
 }
 
-/* تصغير خانات الصوت والترجمة لتصبح شرائط ناعمة وعائمة */
-#player_header_bar select, 
-#player_header_bar .custom-select {
-    height: 24px !important;
-    padding: 1px 6px !important;
-    font-size: 10px !important;
-    background: rgba(15, 23, 42, 0.75) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-}
-
-/* إخفاء الهيدر التلقائي أثناء المشاهدة */
-.hide-player-hud #player_header_bar,
-.hide-player-hud .player-header {
+/* إخفاء الهيدر بالكامل أثناء المشاهدة */
+.auto-hide-hud #player_header_bar,
+.auto-hide-hud .player-header {
     opacity: 0 !important;
     visibility: hidden !important;
     pointer-events: none !important;
 }
 </style>
 
-<script id="clean-responsive-js">
+<script id="ultimate-tv-experience-js">
 (function() {
-    let hideTimer = null;
-    function resetControlsTimer() {
-        const modal = document.getElementById('player_modal') || document.querySelector('.player-modal');
-        if (!modal) return;
-        modal.classList.remove('hide-player-hud');
-        clearTimeout(hideTimer);
-        const v = document.querySelector('video');
-        if (v && !v.paused) {
-            hideTimer = setTimeout(() => {
-                modal.classList.add('hide-player-hud');
+    // 1. ضمان بقاء المشغل مغلقاً تماماً عند فتح التطبيق
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('player_modal');
+        if (modal) modal.style.display = 'none';
+    });
+
+    // 2. التكبير التلقائي الفوري لمجرد بدء البث أو الفلم (بدون كبس أزرار)
+    function triggerAutoFullscreen() {
+        if (window.art) {
+            try {
+                window.art.resize();
+                if (!window.art.fullscreenWeb) {
+                    window.art.fullscreenWeb = true; // يفرد الفيديو على كامل أبعاد الشاشة فوراً
+                }
+            } catch(e) {}
+        }
+    }
+
+    // مراقبة حدث تشغيل الفيديو في أي لحظة
+    document.addEventListener('play', triggerAutoFullscreen, true);
+    document.addEventListener('playing', triggerAutoFullscreen, true);
+
+    // مراقبة فتح المشغل لتكبيره فوراً
+    const modalObserver = new MutationObserver(function() {
+        const modal = document.getElementById('player_modal');
+        if (modal && modal.style.display !== 'none') {
+            setTimeout(triggerAutoFullscreen, 200);
+            setTimeout(triggerAutoFullscreen, 800);
+        }
+    });
+
+    const targetModal = document.getElementById('player_modal');
+    if (targetModal) {
+        modalObserver.observe(targetModal, { attributes: true, attributeFilter: ['style', 'class'] });
+    }
+
+    // 3. إخفاء وإظهار الهيدر تلقائياً بنعومة (3 ثوانٍ)
+    let hudTimer = null;
+    function wakeControls() {
+        const modal = document.getElementById('player_modal');
+        if (!modal || modal.style.display === 'none') return;
+        
+        modal.classList.remove('auto-hide-hud');
+        clearTimeout(hudTimer);
+        
+        const video = document.querySelector('video');
+        if (video && !video.paused) {
+            hudTimer = setTimeout(() => {
+                modal.classList.add('auto-hide-hud');
             }, 3000);
         }
     }
 
     ['touchstart', 'mousemove', 'click', 'keydown'].forEach(evt => {
-        document.addEventListener(evt, resetControlsTimer, { passive: true });
+        document.addEventListener(evt, wakeControls, { passive: true });
     });
 })();
 </script>
@@ -2692,7 +2733,7 @@ function copyMPV(url) {
     </div>
 
     <!-- نافذة المشغل المنبثقة -->
-    <div id="player_modal" class="player-modal">
+    <div id="player_modal" class="player-modal" style="display: none;">
         <div class="player-content">
                                     <div class="player-header" id="player_header_bar" style="display:flex; flex-direction:column; gap:8px; padding:10px 12px; align-items:stretch; user-select:none;">
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; width:100%;">
