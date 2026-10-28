@@ -1596,12 +1596,10 @@ div[id*="signal"] div[style*="height"],
     let currentFitMode = 'fill';
     let toastTimeout = null;
     let hudTimer = null;
+    let lastTouchTime = 0;
 
-    function getModal() {
-        return document.getElementById('player_modal');
-    }
+    function getModal() { return document.getElementById('player_modal'); }
 
-    // التحكم بتدوير شاشة الجوال (أفقي عند المشاهدة، وعمودي حر عند التصفح)
     function setMobileLandscape(enableLandscape) {
         try {
             if (window.AndroidBridge && typeof window.AndroidBridge.setLandscape === 'function') {
@@ -1617,7 +1615,7 @@ div[id*="signal"] div[style*="height"],
         } catch(e) {}
     }
 
-    // دالة إخفاء البار العلوي والسفلي بسرعة
+    // جدولة إخفاء البار بوقت مريح جداً (افتراضياً 4.5 ثانية)
     function scheduleHideHud(delayMs) {
         clearTimeout(hudTimer);
         hudTimer = setTimeout(() => {
@@ -1625,14 +1623,15 @@ div[id*="signal"] div[style*="height"],
             if (modal && modal.style.display !== 'none' && !modal.classList.contains('mini-player-mode')) {
                 modal.classList.add('auto-hide-hud');
             }
-        }, delayMs || 1800);
+        }, delayMs || 4500);
     }
 
+    // إظهار البار وتثبيته لوقت كافٍ للضغط على الأزرار
     function showHudAndAutoHide(delayMs) {
         const modal = getModal();
         if (!modal || modal.style.display === 'none' || modal.classList.contains('mini-player-mode')) return;
         modal.classList.remove('auto-hide-hud');
-        scheduleHideHud(delayMs || 2000);
+        scheduleHideHud(delayMs || 4500);
     }
 
     function showPlayerToast(text) {
@@ -1647,9 +1646,7 @@ div[id*="signal"] div[style*="height"],
         toast.textContent = text;
         toast.style.opacity = '1';
         clearTimeout(toastTimeout);
-        toastTimeout = setTimeout(() => {
-            toast.style.opacity = '0';
-        }, 1000);
+        toastTimeout = setTimeout(() => { toast.style.opacity = '0'; }, 1200);
     }
 
     function cycleAspectRatio(forceFullscreen) {
@@ -1658,48 +1655,44 @@ div[id*="signal"] div[style*="height"],
 
         if (forceFullscreen && !document.fullscreenElement) {
             const reqFs = modal.requestFullscreen || modal.webkitRequestFullscreen || document.documentElement.requestFullscreen;
-            if (reqFs) {
-                try { reqFs.call(modal); } catch(e) {}
-            }
+            if (reqFs) { try { reqFs.call(modal); } catch(e) {} }
         }
 
         modal.classList.remove('fit-fill', 'fit-cover', 'fit-contain');
         if (currentFitMode === 'fill') {
             currentFitMode = 'cover';
             modal.classList.add('fit-cover');
-            showPlayerToast('🔍 تكبير متوازن (بدون مط)');
+            showPlayerToast('تكبير متوازن (بدون مط)');
         } else if (currentFitMode === 'cover') {
             currentFitMode = 'contain';
             modal.classList.add('fit-contain');
-            showPlayerToast('🖼️ الأبعاد الأصلية');
+            showPlayerToast('الأبعاد الأصلية');
         } else {
             currentFitMode = 'fill';
             modal.classList.add('fit-fill');
-            showPlayerToast('⛶ ملء الشاشة بالكامل (100%)');
+            showPlayerToast('ملء الشاشة بالكامل');
         }
         if (window.art) setTimeout(() => window.art.resize(), 50);
-        // إخفاء البار العلوي فوراً بعد تعديل الأبعاد
-        scheduleHideHud(600);
+        // إبقاء البار ظاهراً لـ 3.5 ثانية حتى لو كبرت الصورة لتتمكن من اختيار القنوات براحتك
+        showHudAndAutoHide(3500);
     }
 
     function exitSystemFullscreenIfNeeded() {
         if (document.fullscreenElement || document.webkitFullscreenElement) {
             const exitFs = document.exitFullscreen || document.webkitExitFullscreen;
-            if (exitFs) {
-                try { exitFs.call(document); } catch(e) {}
-            }
+            if (exitFs) { try { exitFs.call(document); } catch(e) {} }
         }
     }
 
     function switchChannelByStep(direction) {
         if (direction === 'next' && typeof window.nextChannel === 'function') {
-            showPlayerToast('⏭ القناة التالية');
-            scheduleHideHud(1200);
+            showPlayerToast('القناة التالية');
+            showHudAndAutoHide(3500);
             return window.nextChannel();
         }
         if (direction === 'prev' && typeof window.prevChannel === 'function') {
-            showPlayerToast('⏮ القناة السابقة');
-            scheduleHideHud(1200);
+            showPlayerToast('القناة السابقة');
+            showHudAndAutoHide(3500);
             return window.prevChannel();
         }
 
@@ -1710,15 +1703,15 @@ div[id*="signal"] div[style*="height"],
         for (const btn of buttons) {
             const txt = (btn.innerText || btn.innerHTML || '') + (btn.getAttribute('onclick') || '') + (btn.title || '');
             if (direction === 'next' && (txt.includes('⏭') || txt.toLowerCase().includes('next'))) {
-                showPlayerToast('⏭ القناة التالية');
+                showPlayerToast('القناة التالية');
                 btn.click();
-                scheduleHideHud(1200);
+                showHudAndAutoHide(3500);
                 return;
             }
             if (direction === 'prev' && (txt.includes('⏮') || txt.toLowerCase().includes('prev'))) {
-                showPlayerToast('⏮ القناة السابقة');
+                showPlayerToast('القناة السابقة');
                 btn.click();
-                scheduleHideHud(1200);
+                showHudAndAutoHide(3500);
                 return;
             }
         }
@@ -1734,7 +1727,7 @@ div[id*="signal"] div[style*="height"],
             if (closeBtn && closeBtn.parentElement) {
                 const aspectBtn = document.createElement('button');
                 aspectBtn.id = 'aspect_ratio_btn';
-                aspectBtn.innerHTML = '⛶ الأبعاد';
+                aspectBtn.innerHTML = 'الأبعاد';
                 aspectBtn.onclick = function(e) {
                     e.stopPropagation();
                     cycleAspectRatio(true);
@@ -1746,7 +1739,7 @@ div[id*="signal"] div[style*="height"],
                 miniBtn.onclick = function(e) {
                     e.stopPropagation();
                     exitSystemFullscreenIfNeeded();
-                    setMobileLandscape(false); // إرجاع الجوال للوضع العمودي لتصفح القنوات براحة
+                    setMobileLandscape(false);
                     modal.classList.add('mini-player-mode');
                     if (window.art) setTimeout(() => window.art.resize(), 100);
                 };
@@ -1768,19 +1761,17 @@ div[id*="signal"] div[style*="height"],
                 e.stopPropagation();
                 if (!document.fullscreenElement) {
                     const reqFs = modal.requestFullscreen || modal.webkitRequestFullscreen;
-                    if (reqFs) {
-                        try { reqFs.call(modal); } catch(err) {}
-                    }
+                    if (reqFs) { try { reqFs.call(modal); } catch(err) {} }
                     modal.classList.remove('fit-contain', 'fit-cover');
                     modal.classList.add('fit-fill');
                     currentFitMode = 'fill';
-                    showPlayerToast('⛶ وضع ملء الشاشة الكامل');
+                    showPlayerToast('وضع ملء الشاشة');
                 } else {
                     cycleAspectRatio(false);
                 }
                 if (window.art) setTimeout(() => window.art.resize(), 100);
-                // إخفاء البار العلوي فوراً بعد كبس الفل سكرين
-                scheduleHideHud(600);
+                // إبقاء البار ظاهراً لـ 4 ثوانٍ بعد التكبير لتتمكن من كبس "القنوات" براحتك
+                showHudAndAutoHide(4000);
             }, true);
         }
 
@@ -1789,7 +1780,7 @@ div[id*="signal"] div[style*="height"],
             const overlay = document.createElement('div');
             overlay.id = 'mini_restore_overlay';
             overlay.innerHTML = `
-                <button class="mini-action-btn" id="mini_expand_btn">⛶ تكبير</button>
+                <button class="mini-action-btn" id="mini_expand_btn">تكبير</button>
                 <button class="mini-action-btn" id="mini_close_btn" style="border-color:#ef4444;color:#fca5a5;">✖</button>
             `;
             content.appendChild(overlay);
@@ -1799,7 +1790,7 @@ div[id*="signal"] div[style*="height"],
                 modal.classList.remove('mini-player-mode');
                 setMobileLandscape(true);
                 if (window.art) setTimeout(() => window.art.resize(), 100);
-                scheduleHideHud(1500);
+                showHudAndAutoHide(4000);
             };
             document.getElementById('mini_close_btn').onclick = function(e) {
                 e.stopPropagation();
@@ -1813,41 +1804,47 @@ div[id*="signal"] div[style*="height"],
         }
     }
 
-    // إخفاء البار العلوي تلقائياً وبسرعة بمجرد بدء تشغيل المحطة أو الفلم
-    ['play', 'playing', 'loadeddata'].forEach(evt => {
+    // عند بدء تشغيل الفيديو، يظهر البار لمدة 4 ثوانٍ كاملة قبل أن يختفي بهدوء
+    ['play', 'playing'].forEach(evt => {
         document.addEventListener(evt, function(e) {
             if (e.target && e.target.tagName === 'VIDEO') {
                 if (window.art) setTimeout(() => window.art.resize(), 50);
-                scheduleHideHud(1600);
+                showHudAndAutoHide(4000);
             }
         }, true);
     });
 
-    // دعم التتش: سحب لتقليب القنوات + لمسة واحدة لإخفاء/إظهار البار فوراً + دبل تاب للأبعاد
+    // إدارة اللمس الذكية للجوال بدون تعارض مع أحداث الماوس الوهمية
     let touchStartX = 0;
     let touchStartY = 0;
     let touchStartTime = 0;
     let lastTapTime = 0;
     let singleTapTimer = null;
+    let wasHiddenOnTouchStart = false;
 
     document.addEventListener('touchstart', function(e) {
+        lastTouchTime = Date.now();
         const modal = getModal();
         if (!modal || modal.style.display === 'none' || modal.classList.contains('mini-player-mode')) return;
         if (e.touches.length !== 1) return;
 
         const target = e.target;
+        // إذا لمس المستخدم البار العلوي أو السفلي أو أي زر، نثبت البار لـ 6 ثوانٍ كاملة
         if (target.closest('#player_header_bar') || target.closest('.art-bottom') || target.closest('button') || target.closest('select')) {
             touchStartY = null;
-            showHudAndAutoHide(2500);
+            showHudAndAutoHide(6000);
             return;
         }
 
+        // حفظ حالة البار لحظة بداية اللمس (قبل أي تداخل)
+        wasHiddenOnTouchStart = modal.classList.contains('auto-hide-hud');
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         touchStartTime = Date.now();
     }, { passive: true });
 
     document.addEventListener('touchend', function(e) {
+        lastTouchTime = Date.now();
         const modal = getModal();
         if (!modal || modal.style.display === 'none' || modal.classList.contains('mini-player-mode')) return;
         if (touchStartY === null || e.changedTouches.length !== 1) return;
@@ -1856,7 +1853,7 @@ div[id*="signal"] div[style*="height"],
         const dy = e.changedTouches[0].clientY - touchStartY;
         const dt = Date.now() - touchStartTime;
 
-        // 1. سحبة إصبع (Swipe Up / Down) لتقليب القنوات
+        // 1. سحبة إصبع لتقليب القنوات
         if (dt < 600 && Math.abs(dy) > 55 && Math.abs(dy) > Math.abs(dx) * 1.3) {
             if (dy < 0) switchChannelByStep('next');
             else switchChannelByStep('prev');
@@ -1864,37 +1861,37 @@ div[id*="signal"] div[style*="height"],
             return;
         }
 
-        // 2. لمسة خفيفة على شاشة الفيديو (Tap / Double Tap)
-        if (Math.abs(dx) < 20 && Math.abs(dy) < 20 && dt < 280) {
+        // 2. لمسة على الفيديو
+        if (Math.abs(dx) < 25 && Math.abs(dy) < 25 && dt < 350) {
             const now = Date.now();
             if (now - lastTapTime < 300) {
-                // ضغطة مزدوجة -> تبديل أبعاد الشاشة وتكبيرها
+                // دبل تاب -> تبديل الأبعاد مع إبقاء البار ظاهراً
                 clearTimeout(singleTapTimer);
                 cycleAspectRatio(true);
                 lastTapTime = 0;
             } else {
                 lastTapTime = now;
-                // لمسة واحدة -> إذا البار ظاهر يختفي فوراً، وإذا مخفي يظهر لمدة ثانيتين!
-                singleTapTimer = setTimeout(() => {
-                    if (modal.classList.contains('auto-hide-hud')) {
-                        showHudAndAutoHide(2200);
-                    } else {
+                if (wasHiddenOnTouchStart) {
+                    // إذا كان البار مخفياً، أظهره فوراً وبدون أي تأخير لمدة 5 ثوانٍ كاملة!
+                    showHudAndAutoHide(5000);
+                } else {
+                    // إذا كان ظاهراً بالفعل، انتظر 260ms (للتأكد أنها ليست دبل تاب) ثم أخفه
+                    singleTapTimer = setTimeout(() => {
                         modal.classList.add('auto-hide-hud');
                         clearTimeout(hudTimer);
-                    }
-                }, 260);
+                    }, 260);
+                }
             }
         }
-
         touchStartY = null;
     }, { passive: true });
 
-    // تحريك الماوس على الكمبيوتر (الكالي) يظهر البار ثم يخفيه بعد 1.8 ثانية
+    // تجاهل أحداث الماوس الوهمية على الجوال لمدة ثانية كاملة بعد أي لمسة
     document.addEventListener('mousemove', function() {
-        showHudAndAutoHide(1800);
+        if (Date.now() - lastTouchTime < 1200) return;
+        showHudAndAutoHide(3500);
     }, { passive: true });
 
-    // دعم الريموت كنترول والكيبورد
     document.addEventListener('keydown', function(e) {
         const modal = getModal();
         if (!modal || modal.style.display === 'none') return;
@@ -1909,11 +1906,10 @@ div[id*="signal"] div[style*="height"],
             e.preventDefault();
             cycleAspectRatio(true);
         } else {
-            showHudAndAutoHide(2200);
+            showHudAndAutoHide(4500);
         }
     });
 
-    // مراقبة فتح وإغلاق المشغل لضبط الأبعاد وتدوير الجوال تلقائياً
     const observer = new MutationObserver(function() {
         const modal = getModal();
         if (!modal) return;
@@ -1922,13 +1918,13 @@ div[id*="signal"] div[style*="height"],
         if (isOpen) {
             injectCustomControls();
             if (!modal.classList.contains('mini-player-mode')) {
-                setMobileLandscape(true); // تدوير بالعرض فقط عند تشغيل الفيديو
+                setMobileLandscape(true);
             }
             if (window.art) {
                 setTimeout(() => window.art.resize(), 80);
                 setTimeout(() => window.art.resize(), 350);
             }
-            scheduleHideHud(1800);
+            showHudAndAutoHide(4500);
             if (!historyPushed) {
                 history.pushState({ albasemPlayerOpen: true }, '');
                 historyPushed = true;
@@ -1936,7 +1932,7 @@ div[id*="signal"] div[style*="height"],
         } else {
             modal.classList.remove('mini-player-mode');
             exitSystemFullscreenIfNeeded();
-            setMobileLandscape(false); // إرجاع الجوال للوضع الطولي فور إغلاق الفيديو
+            setMobileLandscape(false);
             historyPushed = false;
         }
     });
