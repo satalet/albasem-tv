@@ -2,11 +2,13 @@ package com.albasem.tv;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.pm.ActivityInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -23,7 +25,6 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        hideSystemUI();
 
         container = new FrameLayout(this);
         container.setLayoutParams(new ViewGroup.LayoutParams(
@@ -44,14 +45,30 @@ public class MainActivity extends Activity {
         s.setAllowContentAccess(true);
         s.setUseWideViewPort(true);
         s.setLoadWithOverviewMode(true);
-
-        // منع الكاش نهائياً لجلب التحديثات فوراً دائماً
         s.setCacheMode(WebSettings.LOAD_NO_CACHE);
         myWebView.clearCache(true);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         }
+
+        // جسر جافاسكربت لتدوير الشاشة بالعرض فقط عند تشغيل الفيديو وإرجاعها للطول عند التصفح
+        myWebView.addJavascriptInterface(new Object() {
+            @JavascriptInterface
+            public void setLandscape(final boolean enable) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (enable) {
+                            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                            hideSystemUI();
+                        } else {
+                            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+                        }
+                    }
+                });
+            }
+        }, "AndroidBridge");
 
         myWebView.setFocusable(true);
         myWebView.setFocusableInTouchMode(true);
@@ -70,6 +87,7 @@ public class MainActivity extends Activity {
                 myWebView.setVisibility(View.GONE);
                 container.addView(view, new FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
                 hideSystemUI();
             }
 
@@ -80,7 +98,6 @@ public class MainActivity extends Activity {
                 customView = null;
                 if (customViewCallback != null) customViewCallback.onCustomViewHidden();
                 myWebView.setVisibility(View.VISIBLE);
-                hideSystemUI();
             }
         });
 
@@ -96,12 +113,6 @@ public class MainActivity extends Activity {
             | View.SYSTEM_UI_FLAG_FULLSCREEN
             | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
         );
-    }
-
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) hideSystemUI();
     }
 
     @Override
