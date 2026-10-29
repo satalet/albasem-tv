@@ -3665,8 +3665,74 @@ function playStepChannel(step) {
     const GIST_RAW_URL = "https://gist.githubusercontent.com/satalet/221a7afceec9f215c9eb61421eab0715/raw/links.json";
 
     let cachedLinksList = [];
+    window.cloudDefaultServerUrl = localStorage.getItem("albasem_cloud_default_url") || "";
+    const ADMIN_PIN = "2000";
 
-        async function loadSavedLinks(forceReload = false) {
+    // استخراج وحفظ السيرفر الأساسي المعتمد داخل مصفوفة الترتيب السحابية على الـ VPS
+    function extractDefaultFromOrder(orderArr) {
+        if (!Array.isArray(orderArr)) return "";
+        const found = orderArr.find(x => typeof x === "string" && x.startsWith("__DEFAULT_SERVER__::"));
+        return found ? found.replace("__DEFAULT_SERVER__::", "").trim() : "";
+    }
+
+    function buildOrderPayload(linksArr, defaultUrl) {
+        const order = (linksArr || []).map(it => it.url || it.id).filter(x => typeof x === "string" && !x.startsWith("__DEFAULT_SERVER__::"));
+        if (defaultUrl) {
+            order.unshift("__DEFAULT_SERVER__::" + defaultUrl.trim());
+        }
+        return order;
+    }
+
+    async function syncCloudOrderAndDefault() {
+        const payload = buildOrderPayload(cachedLinksList, window.cloudDefaultServerUrl);
+        localStorage.setItem("albasem_links_order_v2", JSON.stringify(payload));
+        if (window.cloudDefaultServerUrl) {
+            localStorage.setItem("albasem_cloud_default_url", window.cloudDefaultServerUrl);
+        } else {
+            localStorage.removeItem("albasem_cloud_default_url");
+        }
+        try {
+            await fetch(`${VPS_BASE}/api/links_order`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ order: payload })
+            });
+        } catch (err) {
+            console.warn("فشل مزامنة السيرفر الأساسي:", err);
+        }
+    }
+
+    window.setAsDefaultServer = async function(encodedUrl) {
+        const targetUrl = decodeURIComponent(encodedUrl).trim();
+        const isAlreadyDefault = (window.cloudDefaultServerUrl === targetUrl);
+
+        const pin = prompt(isAlreadyDefault
+            ? "🔐 أدخل الرقم السري لإلغاء اعتماد هذا السيرفر كأساسي:"
+            : "🔐 أدخل الرقم السري لاعتماد هذا السيرفر كأساسي للتطبيق (ينزل تلقائياً للكل):");
+
+        if (pin === null) return;
+        if (pin.trim() !== ADMIN_PIN) {
+            alert("❌ الرقم السري غير صحيح!");
+            return;
+        }
+
+        if (isAlreadyDefault) {
+            window.cloudDefaultServerUrl = "";
+            await syncCloudOrderAndDefault();
+            renderLinksList(cachedLinksList);
+            showToast("🔓 تم إلغاء اعتماد السيرفر الأساسي");
+        } else {
+            window.cloudDefaultServerUrl = targetUrl;
+            localStorage.setItem("albasem_url", targetUrl);
+            const inputEl = document.getElementById("iptv_url");
+            if (inputEl) inputEl.value = targetUrl;
+            await syncCloudOrderAndDefault();
+            renderLinksList(cachedLinksList);
+            showToast("👑 تم اعتماد السيرفر كأساسي للتطبيق بنجاح!");
+        }
+    };
+
+    async function loadSavedLinks(forceReload = false) {
         if (!forceReload && cachedLinksList.length > 0) {
             renderLinksList(cachedLinksList);
             return;
@@ -3674,7 +3740,7 @@ function playStepChannel(step) {
 
         const savedStatusMap = JSON.parse(localStorage.getItem("albasem_links_status_v2") || "{}");
 
-        // جلب الترتيب السحابي الدائم من سيرفر الـ VPS أولاً لضمان عدم ضياعه بمسح الكوكيز
+        // جلب الترتيب والسيرفر الأساسي المعتمد من سيرفر الـ VPS
         let savedOrder = [];
         try {
             const ordRes = await fetch(`${VPS_BASE}/api/links_order?_t=${Date.now()}`);
@@ -3690,6 +3756,32 @@ function playStepChannel(step) {
             try {
                 savedOrder = JSON.parse(localStorage.getItem("albasem_links_order_v2") || "[]");
             } catch(e) {}
+        }
+
+        // فحص إذا كان هناك سيرفر أساسي معتمد في السحابة
+        const cloudDef = extractDefaultFromOrder(savedOrder);
+        const prevCloudDef = localStorage.getItem("albasem_cloud_default_url") || "";
+        window.cloudDefaultServerUrl = cloudDef;
+
+        if (cloudDef) {
+            localStorage.setItem("albasem_cloud_default_url", cloudDef);
+            const urlParams = new URLSearchParams(window.location.search);
+            const hasQueryUrl = urlParams.get('url') || urlParams.get('play');
+            const currentLocalUrl = localStorage.getItem("albasem_url") || "";
+
+            // يفتح السيرفر الأساسي تلقائياً إذا مسح الكوكيز/نزل التطبيق جديد، أو إذا غيّر الأدمن السيرفر الأساسي
+            if (!hasQueryUrl && (!currentLocalUrl || (prevCloudDef && currentLocalUrl === prevCloudDef && cloudDef !== prevCloudDef))) {
+                localStorage.setItem("albasem_url", cloudDef);
+                const inputEl = document.getElementById("iptv_url");
+                if (inputEl) {
+                    inputEl.value = cloudDef;
+                    if (!rawData.live.length && !rawData.movies.length && !rawData.series.length) {
+                        setTimeout(() => loadAndParse(false), 150);
+                    }
+                }
+            }
+        } else {
+            localStorage.removeItem("albasem_cloud_default_url");
         }
 
         function applyOrder(arr) {
@@ -3764,20 +3856,31 @@ function playStepChannel(step) {
                 statusText = `🔴 متوقف${connLabel}`;
             }
 
+            const isDefault = (window.cloudDefaultServerUrl && item.url && window.cloudDefaultServerUrl.trim() === item.url.trim());
+            const cardBorder = isDefault ? "#FFB703" : (item.status === "checking" ? "#38BDF8" : "var(--border)");
+            const cardBg = isDefault ? "linear-gradient(90deg, rgba(255,183,3,0.10) 0%, var(--bg-card) 100%)" : "var(--bg-card)";
+            const defaultBadge = isDefault ? `<span style="background:#FFB703; color:#000; font-size:11px; font-weight:900; padding:2px 8px; border-radius:6px; margin-right:6px;">👑 الأساسي المعتمد</span>` : "";
+
             return `
-                <div id="link_card_${idx}" style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid ${item.status === 'checking' ? '#38BDF8' : 'var(--border)'}; border-radius: 10px; padding: 12px 16px; gap: 12px; flex-wrap: wrap; transition: 0.2s;">
+                <div id="link_card_${idx}" style="display: flex; align-items: center; justify-content: space-between; background: ${cardBg}; border: ${isDefault ? '1.5px' : '1px'} solid ${cardBorder}; border-radius: 10px; padding: 12px 16px; gap: 12px; flex-wrap: wrap; transition: 0.2s;">
                     <div style="flex: 1; min-width: 220px;">
-                        <div style="font-weight: bold; font-size: 15px; color: #fff; margin-bottom: 4px;">${idx + 1}. ${item.title || "بدون عنوان"}</div>
+                        <div style="font-weight: bold; font-size: 15px; color: #fff; margin-bottom: 4px; display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
+                            <span>${idx + 1}. ${item.title || "بدون عنوان"}</span>
+                            ${defaultBadge}
+                        </div>
                         <div style="font-size: 12px; color: var(--text-muted); word-break: break-all;">${item.url}</div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                         <button class="server-drag-btn" title="اسحب من هنا لإعادة الترتيب">⠿</button>
+                        <button onclick="setAsDefaultServer('${encodeURIComponent(item.url)}')" title="${isDefault ? 'إلغاء اعتماد السيرفر الأساسي (رقم سري 2000)' : 'اعتماد كسيرفر أساسي للتطبيق (رقم سري 2000)'}" style="background: ${isDefault ? '#FFB703' : 'rgba(255, 183, 3, 0.15)'}; color: ${isDefault ? '#000' : '#FFB703'}; border: 1px solid #FFB703; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                            👑 ${isDefault ? 'أساسي' : 'اعتماد'}
+                        </button>
                         <span onclick="checkOneLink(${idx})" title="اضغط لإعادة فحص هذا الرابط فقط" style="cursor:pointer; font-size: 12px; padding: 5px 12px; border-radius: 6px; background: rgba(255,255,255,0.05); color: ${statusColor}; border: 1px solid ${statusColor}; font-weight: bold;">
                             ${statusText}
                         </span>
                         <button onclick="applyAndParseLink('${encodeURIComponent(item.url)}', false)" style="background: #10B981; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer;" title="تشغيل مباشر (سحب من R2)">⚡ تشغيل</button>
                         <button onclick="applyAndParseLink('${encodeURIComponent(item.url)}', true)" style="background: #0284C7; color: #fff; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer;" title="تحديث السيرفر بالكامل وإعادة بناء الكاش">🔄</button>
-                        <button onclick="deleteSingleLink('${item.id}')" style="background: rgba(239, 68, 68, 0.2); color: #EF4444; border: 1px solid #EF4444; padding: 6px 10px; border-radius: 6px; cursor: pointer;">🗑️</button>
+                        <button onclick="deleteSingleLink('${item.id}')" title="حذف السيرفر (يتطلب الرقم السري)" style="background: rgba(239, 68, 68, 0.2); color: #EF4444; border: 1px solid #EF4444; padding: 6px 10px; border-radius: 6px; cursor: pointer;">🗑️</button>
                     </div>
                 </div>
             `;
@@ -3795,11 +3898,11 @@ function playStepChannel(step) {
         container._sortableInstance = new Sortable(container, {
             handle: ".server-drag-btn",
             animation: 200,
-            scroll: true,             // تفعيل السكرول التلقائي
-            scrollSensitivity: 150,   // مسافة الإحساس بحافة الشاشة
-            scrollSpeed: 25,          // سرعة الصعود والنزول
+            scroll: true,
+            scrollSensitivity: 150,
+            scrollSpeed: 25,
             bubbleScroll: true,
-            forceFallback: true,      // حل مشكلة اللينكس وكالي للسحب المتواصل لحافة الشاشة
+            forceFallback: true,
             fallbackClass: "sortable-chosen",
             ghostClass: "sortable-ghost",
             chosenClass: "sortable-chosen",
@@ -3808,21 +3911,9 @@ function playStepChannel(step) {
                 const moved = cachedLinksList.splice(evt.oldIndex, 1)[0];
                 cachedLinksList.splice(evt.newIndex, 0, moved);
 
-                const order = cachedLinksList.map(it => it.url || it.id);
-                localStorage.setItem("albasem_links_order_v2", JSON.stringify(order));
                 renderLinksList(cachedLinksList);
-
-                // حفظ الترتيب سحابياً على السيرفر
-                try {
-                    await fetch(`${VPS_BASE}/api/links_order`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ order: order })
-                    });
-                    showToast("☁️ تم حفظ الترتيب الدائم على السيرفر!");
-                } catch(err) {
-                    console.warn("فشل المزامنة:", err);
-                }
+                await syncCloudOrderAndDefault();
+                showToast("☁️ تم حفظ الترتيب الدائم على السيرفر!");
             }
         });
     }
@@ -3917,11 +4008,19 @@ function playStepChannel(step) {
     }
 
     async function deleteSingleLink(id) {
-        if (!confirm("⚠️ هل أنت متأكد من رغبتك في حذف هذا الرابط نهائياً؟")) return;
-        if (!confirm("هل تريد حذف هذا الرابط؟")) return;
+        const pin = prompt("🔐 أدخل الرقم السري لتأكيد حذف هذا السيرفر نهائياً:");
+        if (pin === null) return;
+        if (pin.trim() !== ADMIN_PIN) {
+            alert("❌ الرقم السري غير صحيح! تم إلغاء الحذف.");
+            return;
+        }
         try {
             const targetItem = cachedLinksList.find(it => String(it.id) === String(id));
             if (targetItem && targetItem.url) {
+                if (window.cloudDefaultServerUrl === targetItem.url.trim()) {
+                    window.cloudDefaultServerUrl = "";
+                    await syncCloudOrderAndDefault();
+                }
                 fetch(`${VPS_BASE}/api/purge_r2_cache`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -3938,6 +4037,7 @@ function playStepChannel(step) {
             renderLinksList(cachedLinksList);
             const countBadge = document.getElementById("count-links");
             if (countBadge) countBadge.innerText = cachedLinksList.length;
+            showToast("🗑️ تم حذف السيرفر بنجاح!");
         } catch (e) {
             alert("فشل حذف الرابط");
         }
@@ -3948,10 +4048,18 @@ function playStepChannel(step) {
         if (deadItems.length === 0) {
             return alert("لا توجد روابط معطلة (🔴 متوقف) لحذفها. قم بإجراء الفحص أولاً.");
         }
-        if (!confirm(`تم تحديد (${deadItems.length}) رابط متوقف فعلياً. هل تريد حذفها نهائياً؟`)) return;
+        const pin = prompt(`🔐 تم تحديد (${deadItems.length}) سيرفر متوقف. أدخل الرقم السري لتأكيد حذفها نهائياً:`);
+        if (pin === null) return;
+        if (pin.trim() !== ADMIN_PIN) {
+            alert("❌ الرقم السري غير صحيح! تم إلغاء الحذف.");
+            return;
+        }
         try {
             for (const item of deadItems) {
                 if (item.url) {
+                    if (window.cloudDefaultServerUrl === item.url.trim()) {
+                        window.cloudDefaultServerUrl = "";
+                    }
                     fetch(`${VPS_BASE}/api/purge_r2_cache`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -3965,6 +4073,7 @@ function playStepChannel(step) {
                 });
             }
             cachedLinksList = cachedLinksList.filter(it => it.status !== "dead");
+            await syncCloudOrderAndDefault();
             saveStatusToLocal();
             renderLinksList(cachedLinksList);
             const countBadge = document.getElementById("count-links");
@@ -4772,8 +4881,7 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
     };
 
 window.sharePackageToWhatsApp = window.sharePackageWhatsApp;
-window.updatePackageShareBu
-ton = window.updatePackageShareBtn;
+window.updatePackageShareButton = window.updatePackageShareBtn;
 
 </script>
 
