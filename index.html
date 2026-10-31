@@ -2032,6 +2032,42 @@ div[id*="signal"] div[style*="height"],
 }
 </style>
 
+
+<style id="packages-touch-scroll-style">
+#packages_bar {
+    display: flex !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-behavior: smooth !important;
+    touch-action: pan-x !important;
+    cursor: grab !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    scrollbar-width: none !important; /* إخفاء شريط التمرير على فايرفوكس */
+    padding: 3px 2px 7px 2px !important;
+}
+
+#packages_bar::-webkit-scrollbar {
+    display: none !important; /* إخفاء شريط التمرير على كروم وجوالات أندرويد */
+    width: 0 !important;
+    height: 0 !important;
+}
+
+#packages_bar.is-dragging {
+    cursor: grabbing !important;
+    scroll-behavior: auto !important;
+}
+
+#packages_bar .pkg-chip {
+    flex-shrink: 0 !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -webkit-touch-callout: none !important;
+}
+</style>
+
 </head>
 
 
@@ -5044,6 +5080,88 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 
 
+
+
+<script id="packages-touch-engine-js">
+(function() {
+    function initPackagesTouchDrag() {
+        const bar = document.getElementById("packages_bar");
+        if (!bar || bar.dataset.touchBound === "1") return;
+        bar.dataset.touchBound = "1";
+
+        let isDown = false;
+        let startX = 0;
+        let scrollLeft = 0;
+        let movedDistance = 0;
+
+        // 1. دعم السحب بالماوس (للكالي وأجهزة الكمبيوتر)
+        bar.addEventListener("mousedown", (e) => {
+            isDown = true;
+            bar.classList.add("is-dragging");
+            startX = e.pageX - bar.offsetLeft;
+            scrollLeft = bar.scrollLeft;
+            movedDistance = 0;
+        });
+
+        window.addEventListener("mouseup", () => {
+            if (!isDown) return;
+            isDown = false;
+            bar.classList.remove("is-dragging");
+        });
+
+        bar.addEventListener("mousemove", (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - bar.offsetLeft;
+            const walk = (x - startX) * 1.6; // مضاعفة خفيفة لسرعة السحب
+            movedDistance += Math.abs(walk);
+            bar.scrollLeft = scrollLeft - walk;
+        });
+
+        // 2. دعم اللمس التفاعلي للجوال مع منع النقر العرضي أثناء السحب
+        bar.addEventListener("touchstart", (e) => {
+            if (e.touches.length !== 1) return;
+            isDown = true;
+            startX = e.touches[0].pageX;
+            scrollLeft = bar.scrollLeft;
+            movedDistance = 0;
+        }, { passive: true });
+
+        bar.addEventListener("touchmove", (e) => {
+            if (!isDown || e.touches.length !== 1) return;
+            const currentX = e.touches[0].pageX;
+            const diff = Math.abs(currentX - startX);
+            movedDistance = diff;
+        }, { passive: true });
+
+        bar.addEventListener("touchend", () => {
+            isDown = false;
+        }, { passive: true });
+
+        // 3. منع اختيار الباقة بالخطأ إذا كان المستخدم يسحب الشريط
+        bar.addEventListener("click", (e) => {
+            if (movedDistance > 8) {
+                e.preventDefault();
+                e.stopPropagation();
+                movedDistance = 0;
+            }
+        }, true);
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initPackagesTouchDrag);
+    } else {
+        initPackagesTouchDrag();
+    }
+
+    // إعادة الربط التلقائي عند فتح أقسام جديدة
+    const observer = new MutationObserver(() => {
+        initPackagesTouchDrag();
+    });
+    const pSec = document.getElementById("packages_section");
+    if (pSec) observer.observe(pSec, { attributes: true, childList: true });
+})();
+</script>
 
 </body>
 </html>
