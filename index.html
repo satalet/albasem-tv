@@ -2220,7 +2220,9 @@ div[id*="signal"] div[style*="height"],
         const BACKEND_URL = "https://albasem-tv.duckdns.org";
         let currentTab = "live";
         let currentGroup = "all";
-        let rawData = { live: [], movies: [], series: [] };
+        let window.userExplicitlySelectedAll = false;
+            currentGroup = "all";
+            rawData = { live: [], movies: [], series: [] };
 
         function showToast(msg) {
             const t = document.getElementById("toast");
@@ -2493,6 +2495,8 @@ div[id*="signal"] div[style*="height"],
             btn.disabled = true;
             loader.style.display = "block";
             document.getElementById("items_container").innerHTML = "";
+            window.userExplicitlySelectedAll = false;
+            currentGroup = "all";
             rawData = { live: [], movies: [], series: [] };
             ["live", "movies", "series"].forEach(k => {
                 const el = document.getElementById("count-" + k);
@@ -2664,7 +2668,9 @@ div[id*="signal"] div[style*="height"],
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                rawData = { live: [], movies: [], series: [] };
+                window.userExplicitlySelectedAll = false;
+            currentGroup = "all";
+            rawData = { live: [], movies: [], series: [] };
                 parseM3UContent(e.target.result);
                 document.getElementById("loader").style.display = "none";
                 updateCounts();
@@ -2799,6 +2805,7 @@ div[id*="signal"] div[style*="height"],
 
         function switchSection(tab) {
             currentTab = tab;
+            window.userExplicitlySelectedAll = false;
             currentGroup = "all";
             document.querySelectorAll(".portal-card").forEach(c => c.classList.remove("active"));
             document.getElementById("tab_" + tab).classList.add("active");
@@ -2856,18 +2863,20 @@ div[id*="signal"] div[style*="height"],
             const bar = document.getElementById("packages_bar");
             bar.innerHTML = "";
 
+            // ترتيب المصفوفة الأصلية للقسم ليكون المحتوى العربي بالصدارة دائماً
+            if (rawData && Array.isArray(rawData[currentTab])) {
+                rawData[currentTab].sort((a, b) => {
+                    const pA = getArabicPackagePriority(a.group || a.name || "");
+                    const pB = getArabicPackagePriority(b.group || b.name || "");
+                    return pA - pB;
+                });
+            }
+
             const items = getVisibleItems(currentTab);
             if (items.length === 0) {
                 section.style.display = "none";
                 return;
             }
-
-            // ترتيب عناصر القسم بحيث تظهر القنوات العربية أولاً حتى عند اختيار "الكل"
-            items.sort((a, b) => {
-                const pA = getArabicPackagePriority(a.group || a.name || "");
-                const pB = getArabicPackagePriority(b.group || b.name || "");
-                return pA - pB;
-            });
 
             section.style.display = "block";
 
@@ -2877,24 +2886,23 @@ div[id*="signal"] div[style*="height"],
                 groupsMap[g] = (groupsMap[g] || 0) + 1;
             });
 
-            const allChip = document.createElement("div");
-            allChip.className = "pkg-chip" + (currentGroup === "all" ? " active" : "");
-            allChip.innerHTML = `<span class="pkg-name">الكل</span> <span class="pkg-count">${items.length}</span>`;
-            allChip.onclick = () => {
-                currentGroup = "all";
-                if (window.updatePackageShareBtn) window.updatePackageShareBtn();
-                document.querySelectorAll(".pkg-chip").forEach(c => c.classList.remove("active"));
-                allChip.classList.add("active");
-                renderItems();
-            };
-            bar.appendChild(allChip);
-
             const sortedGroups = sortArabicGroupsFirst(Object.keys(groupsMap));
+            window.defaultFirstGroup = sortedGroups.length > 0 ? sortedGroups[0] : "all";
+
+            // اختيار أول باقة عربية تلقائياً عند فتح السيرفر أو تبديل القسم
+            if ((currentGroup === "all" && !window.userExplicitlySelectedAll) || (currentGroup !== "all" && !groupsMap[currentGroup])) {
+                if (sortedGroups.length > 0) {
+                    currentGroup = sortedGroups[0];
+                }
+            }
+
+            // 1. إضافة الباقات المرتبة (العربية أولاً) في بداية القائمة
             sortedGroups.forEach(grp => {
                 const chip = document.createElement("div");
                 chip.className = "pkg-chip" + (currentGroup === grp ? " active" : "");
                 chip.innerHTML = `<span class="pkg-name">${grp}</span> <span class="pkg-count">${groupsMap[grp]}</span>`;
                 chip.onclick = () => {
+                    window.userExplicitlySelectedAll = false;
                     currentGroup = grp;
                     if (window.updatePackageShareBtn) window.updatePackageShareBtn();
                     document.querySelectorAll(".pkg-chip").forEach(c => c.classList.remove("active"));
@@ -2903,6 +2911,20 @@ div[id*="signal"] div[style*="height"],
                 };
                 bar.appendChild(chip);
             });
+
+            // 2. وضع باقة "الكل" في آخر القائمة دائماً
+            const allChip = document.createElement("div");
+            allChip.className = "pkg-chip" + (currentGroup === "all" ? " active" : "");
+            allChip.innerHTML = `<span class="pkg-name">الكل</span> <span class="pkg-count">${items.length}</span>`;
+            allChip.onclick = () => {
+                window.userExplicitlySelectedAll = true;
+                currentGroup = "all";
+                if (window.updatePackageShareBtn) window.updatePackageShareBtn();
+                document.querySelectorAll(".pkg-chip").forEach(c => c.classList.remove("active"));
+                allChip.classList.add("active");
+                renderItems();
+            };
+            bar.appendChild(allChip);
 
             if (window.updatePackageShareBtn) window.updatePackageShareBtn();
         }
@@ -4394,8 +4416,9 @@ function playStepChannel(step) {
             }
 
             // 6. إذا كان داخل باقة فرعية -> ارجع للكل
-            if (typeof currentGroup !== "undefined" && currentGroup !== "all") {
-                currentGroup = "all";
+            if (typeof currentGroup !== "undefined" && currentGroup !== (window.defaultFirstGroup || "all")) {
+                window.userExplicitlySelectedAll = false;
+                currentGroup = window.defaultFirstGroup || "all";
                 if (window.targetStartupGroup) {
                     currentGroup = window.targetStartupGroup;
                 }
