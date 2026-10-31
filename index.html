@@ -2220,9 +2220,8 @@ div[id*="signal"] div[style*="height"],
         const BACKEND_URL = "https://albasem-tv.duckdns.org";
         let currentTab = "live";
         let currentGroup = "all";
-        let window.userExplicitlySelectedAll = false;
-            currentGroup = "all";
-            rawData = { live: [], movies: [], series: [] };
+        let rawData = { live: [], movies: [], series: [] };
+        window.userExplicitlySelectedAll = false;
 
         function showToast(msg) {
             const t = document.getElementById("toast");
@@ -3925,13 +3924,15 @@ function playStepChannel(step) {
             const currentLocalUrl = localStorage.getItem("albasem_url") || "";
 
             // يفتح السيرفر الأساسي تلقائياً إذا مسح الكوكيز/نزل التطبيق جديد، أو إذا غيّر الأدمن السيرفر الأساسي
-            if (!hasQueryUrl && (!currentLocalUrl || (prevCloudDef && currentLocalUrl === prevCloudDef && cloudDef !== prevCloudDef))) {
+            if (!hasQueryUrl && (!currentLocalUrl || cloudDef !== prevCloudDef)) {
                 localStorage.setItem("albasem_url", cloudDef);
                 const inputEl = document.getElementById("iptv_url");
                 if (inputEl) {
                     inputEl.value = cloudDef;
-                    if (!rawData.live.length && !rawData.movies.length && !rawData.series.length) {
-                        setTimeout(() => loadAndParse(false), 150);
+                    if (typeof rawData !== "undefined" && !rawData.live.length && !rawData.movies.length && !rawData.series.length) {
+                        setTimeout(() => {
+                            if (typeof loadAndParse === "function") loadAndParse(false);
+                        }, 150);
                     }
                 }
             }
