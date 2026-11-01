@@ -3336,9 +3336,10 @@ function copyMPV(url) {
                 <div style="font-size: 13px; color: var(--text-muted);">
                     ⚡ السيرفرات المفروزة والشغالة تُحفظ هنا تلقائياً وتفحص بنقرة واحدة.
                 </div>
-                <div style="display: flex; gap: 8px;">
-                    <button onclick="runFastCheck()" id="btn_check_all" style="background: #10B981; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer;">⚡ فحص سريع للكل</button>
-                    <button onclick="clearDeadLinks()" style="background: #EF4444; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer;">🗑️ تنظيف المعطلة</button>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button onclick="runSmartRadar()" id="btn_smart_radar" style="background: linear-gradient(135deg, #F59E0B, #D97706); color: #000; border: 1px solid #FFB703; padding: 8px 16px; border-radius: 8px; font-weight: 900; cursor: pointer; box-shadow: 0 3px 12px rgba(245, 158, 11, 0.35);">🧠 رادار الفحص الذكي والترتيب</button>
+                    <button onclick="runFastCheck()" id="btn_check_all" style="background: #10B981; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer;">⚡ فحص الكل</button>
+                    <button onclick="clearDeadLinks()" style="background: #EF4444; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer;">🗑️ تنظيف المعطلة</button>
                 </div>
             </div>
         </div>
@@ -3941,13 +3942,17 @@ function playStepChannel(step) {
         }
 
         function applyOrder(arr) {
-            if (savedOrder && savedOrder.length > 0) {
+            const cleanOrder = (savedOrder || []).filter(x => typeof x === "string" && !x.startsWith("__DEFAULT_SERVER__::"));
+            if (cleanOrder.length > 0) {
                 arr.sort((a, b) => {
-                    const kA = a.url || a.id;
-                    const kB = b.url || b.id;
-                    const iA = savedOrder.indexOf(kA);
-                    const iB = savedOrder.indexOf(kB);
-                    return (iA === -1 ? 9999 : iA) - (iB === -1 ? 9999 : iB);
+                    const kA = (a.url || a.id || "").trim();
+                    const kB = (b.url || b.id || "").trim();
+                    const iA = cleanOrder.indexOf(kA);
+                    const iB = cleanOrder.indexOf(kB);
+                    // أي سيرفر جديد غير موجود في قائمة الترتيب ينزل في آخر القائمة دائماً (99999)
+                    const posA = (iA === -1) ? 99999 : iA;
+                    const posB = (iB === -1) ? 99999 : iB;
+                    return posA - posB;
                 });
             }
             return arr;
@@ -3961,6 +3966,10 @@ function playStepChannel(step) {
                     if (savedStatusMap[item.url]) {
                         item.status = savedStatusMap[item.url].status;
                         item.conns = savedStatusMap[item.url].conns;
+                        item.score = savedStatusMap[item.url].score || 0;
+                        item.speed_mbps = savedStatusMap[item.url].speed_mbps || 0;
+                        item.ttfb_ms = savedStatusMap[item.url].ttfb_ms || 9999;
+                        item.exp_date = savedStatusMap[item.url].exp_date || "";
                     }
                 });
                 cachedLinksList = applyOrder(data);
@@ -3976,6 +3985,16 @@ function playStepChannel(step) {
         try {
             const res = await fetch(`${API_BASE}/api/links`);
             let data = await res.json();
+            data.forEach(item => {
+                if (savedStatusMap[item.url]) {
+                    item.status = savedStatusMap[item.url].status;
+                    item.conns = savedStatusMap[item.url].conns;
+                    item.score = savedStatusMap[item.url].score || 0;
+                    item.speed_mbps = savedStatusMap[item.url].speed_mbps || 0;
+                    item.ttfb_ms = savedStatusMap[item.url].ttfb_ms || 9999;
+                    item.exp_date = savedStatusMap[item.url].exp_date || "";
+                }
+            });
             cachedLinksList = applyOrder(data);
             renderLinksList(cachedLinksList);
             const countBadge = document.getElementById("count-links");
@@ -3995,23 +4014,29 @@ function playStepChannel(step) {
 
         container.innerHTML = links.map((item, idx) => {
             let statusColor = "#94A3B8";
-            let statusText = "⚪ غير مفحوص";
-            const connLabel = item.conns ? ` (${item.conns})` : "";
+            let statusBg = "rgba(255,255,255,0.05)";
+            let statusText = "⚪ غير مفحوص (اضغط للفحص العميق)";
+            const detailLabel = item.conns ? item.conns : "";
 
             if (item.status === "checking") {
                 statusColor = "#38BDF8";
-                statusText = "⏳ جاري الفحص...";
+                statusBg = "rgba(56, 189, 248, 0.12)";
+                statusText = "⏳ جاري فحص تدفق الفيديو الفعلي...";
             } else if (item.status === "online") {
                 statusColor = "#10B981";
-                statusText = `🟢 شغال${connLabel}`;
+                statusBg = "rgba(16, 185, 129, 0.12)";
+                statusText = detailLabel.includes("بطل") ? detailLabel : `🟢 شغال ${detailLabel ? '(' + detailLabel + ')' : ''}`;
             } else if (item.status === "busy") {
                 statusColor = "#F59E0B";
-                statusText = `🟡 مشغول${connLabel}`;
+                statusBg = "rgba(245, 158, 11, 0.12)";
+                statusText = detailLabel.includes("ضعيف") ? detailLabel : `🟡 مشغول / ضعيف ${detailLabel ? '(' + detailLabel + ')' : ''}`;
             } else if (item.status === "dead") {
                 statusColor = "#EF4444";
-                statusText = `🔴 متوقف${connLabel}`;
+                statusBg = "rgba(239, 68, 68, 0.14)";
+                statusText = detailLabel.startsWith("❌") ? detailLabel : `🔴 متوقف ${detailLabel ? '(' + detailLabel + ')' : ''}`;
             }
 
+            const expBadge = item.exp_date ? `<span style="background:rgba(56,189,248,0.12); color:#38BDF8; border:1px solid rgba(56,189,248,0.3); font-size:10.5px; padding:1px 7px; border-radius:5px;">📅 صلاحية: ${item.exp_date}</span>` : "";
             const isDefault = (window.cloudDefaultServerUrl && item.url && window.cloudDefaultServerUrl.trim() === item.url.trim());
             const cardBorder = isDefault ? "#FFB703" : (item.status === "checking" ? "#38BDF8" : "var(--border)");
             const cardBg = isDefault ? "linear-gradient(90deg, rgba(255,183,3,0.10) 0%, var(--bg-card) 100%)" : "var(--bg-card)";
@@ -4019,10 +4044,11 @@ function playStepChannel(step) {
 
             return `
                 <div id="link_card_${idx}" style="display: flex; align-items: center; justify-content: space-between; background: ${cardBg}; border: ${isDefault ? '1.5px' : '1px'} solid ${cardBorder}; border-radius: 10px; padding: 12px 16px; gap: 12px; flex-wrap: wrap; transition: 0.2s;">
-                    <div style="flex: 1; min-width: 220px;">
-                        <div style="font-weight: bold; font-size: 15px; color: #fff; margin-bottom: 4px; display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
+                    <div style="flex: 1; min-width: 240px;">
+                        <div style="font-weight: bold; font-size: 15px; color: #fff; margin-bottom: 5px; display:flex; align-items:center; flex-wrap:wrap; gap:6px;">
                             <span>${idx + 1}. ${item.title || "بدون عنوان"}</span>
                             ${defaultBadge}
+                            ${expBadge}
                         </div>
                         <div style="font-size: 12px; color: var(--text-muted); word-break: break-all;">${item.url}</div>
                     </div>
@@ -4031,12 +4057,12 @@ function playStepChannel(step) {
                         <button onclick="setAsDefaultServer('${encodeURIComponent(item.url)}')" title="${isDefault ? 'إلغاء اعتماد السيرفر الأساسي (رقم سري 2000)' : 'اعتماد كسيرفر أساسي للتطبيق (رقم سري 2000)'}" style="background: ${isDefault ? '#FFB703' : 'rgba(255, 183, 3, 0.15)'}; color: ${isDefault ? '#000' : '#FFB703'}; border: 1px solid #FFB703; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
                             👑 ${isDefault ? 'أساسي' : 'اعتماد'}
                         </button>
-                        <span onclick="checkOneLink(${idx})" title="اضغط لإعادة فحص هذا الرابط فقط" style="cursor:pointer; font-size: 12px; padding: 5px 12px; border-radius: 6px; background: rgba(255,255,255,0.05); color: ${statusColor}; border: 1px solid ${statusColor}; font-weight: bold;">
+                        <span onclick="checkOneLink(${idx}, true)" title="اضغط لفحص تدفق الفيديو الحقيقي لهذا السيرفر" style="cursor:pointer; font-size: 11.5px; padding: 5px 11px; border-radius: 6px; background: ${statusBg}; color: ${statusColor}; border: 1px solid ${statusColor}; font-weight: bold; direction: rtl;">
                             ${statusText}
                         </span>
                         <button onclick="applyAndParseLink('${encodeURIComponent(item.url)}', false)" style="background: #10B981; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer;" title="تشغيل مباشر (سحب من R2)">⚡ تشغيل</button>
                         <button onclick="applyAndParseLink('${encodeURIComponent(item.url)}', true)" style="background: #0284C7; color: #fff; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer;" title="تحديث السيرفر بالكامل وإعادة بناء الكاش">🔄</button>
-                        <button onclick="deleteSingleLink('${item.id}')" title="حذف السيرفر (يتطلب الرقم السري)" style="background: rgba(239, 68, 68, 0.2); color: #EF4444; border: 1px solid #EF4444; padding: 6px 10px; border-radius: 6px; cursor: pointer;">🗑️</button>
+                        <button onclick="deleteSingleLink('${item.id}')" title="حذف السيرفر (يتطلب الرقم السري 2000)" style="background: rgba(239, 68, 68, 0.2); color: #EF4444; border: 1px solid #EF4444; padding: 6px 10px; border-radius: 6px; cursor: pointer;">🗑️</button>
                     </div>
                 </div>
             `;
@@ -4078,30 +4104,50 @@ function playStepChannel(step) {
         const map = {};
         cachedLinksList.forEach(it => {
             if (it.url && it.status && it.status !== "checking") {
-                map[it.url] = { status: it.status, conns: it.conns || "" };
+                map[it.url] = {
+                    status: it.status,
+                    conns: it.conns || "",
+                    score: it.score || 0,
+                    speed_mbps: it.speed_mbps || 0,
+                    ttfb_ms: it.ttfb_ms || 9999,
+                    exp_date: it.exp_date || ""
+                };
             }
         });
         localStorage.setItem("albasem_links_status_v2", JSON.stringify(map));
     }
 
-    async function checkOneLink(index) {
+    async function checkOneLink(index, useDeepRadar = true) {
         if (!cachedLinksList[index]) return;
         cachedLinksList[index].status = "checking";
         cachedLinksList[index].conns = "";
         renderLinksList(cachedLinksList);
 
+        const endpoint = useDeepRadar ? `${VPS_BASE}/api/deep_check` : `${VPS_BASE}/api/links/check`;
         try {
-            const res = await fetch(`${VPS_BASE}/api/links/check`, {
+            let res = await fetch(endpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ url: cachedLinksList[index].url })
             });
+            if (!res.ok && useDeepRadar) {
+                res = await fetch(`${VPS_BASE}/api/links/check`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ url: cachedLinksList[index].url })
+                });
+            }
             const d = await res.json();
             cachedLinksList[index].status = d.status || (d.online ? "online" : "dead");
-            cachedLinksList[index].conns = d.conns || "";
+            cachedLinksList[index].conns = d.reason || d.conns || "";
+            cachedLinksList[index].score = d.score || (d.status === "online" ? 70 : 0);
+            cachedLinksList[index].speed_mbps = d.speed_mbps || 0;
+            cachedLinksList[index].ttfb_ms = d.ttfb_ms || 9999;
+            cachedLinksList[index].exp_date = d.exp_date || "";
         } catch (e) {
             cachedLinksList[index].status = "dead";
-            cachedLinksList[index].conns = "خطأ اتصال";
+            cachedLinksList[index].conns = "❌ خطأ اتصال بالسيرفر";
+            cachedLinksList[index].score = 0;
         }
         saveStatusToLocal();
         renderLinksList(cachedLinksList);
@@ -4117,15 +4163,79 @@ function playStepChannel(step) {
 
         const total = cachedLinksList.length;
         for (let i = 0; i < total; i++) {
-            if (btn) btn.innerText = `⏳ فحص (${i + 1} من ${total})...`;
-            await checkOneLink(i);
+            if (btn) btn.innerText = `⏳ فحص (${i + 1}/${total})...`;
+            await checkOneLink(i, true);
         }
 
         if (btn) {
             btn.disabled = false;
-            btn.innerText = "⚡ فحص سريع للكل";
+            btn.innerText = "⚡ فحص الكل";
         }
-        showToast("✅ اكتمل الفحص المتسلسل الدقيق لكافة السيرفرات!");
+        showToast("✅ اكتمل الفحص الميداني لكافة السيرفرات!");
+    }
+
+    // 🧠 رادار الفحص الذكي والترتيب التلقائي للأبطال
+    window.runSmartRadar = async function() {
+        const btn = document.getElementById("btn_smart_radar");
+        const checkBtn = document.getElementById("btn_check_all");
+        if (btn) btn.disabled = true;
+        if (checkBtn) checkBtn.disabled = true;
+
+        if (!cachedLinksList || cachedLinksList.length === 0) {
+            await loadSavedLinks(true);
+        }
+
+        const total = cachedLinksList.length;
+        showToast("🧠 بدأ رادار الباسم الذكي بفحص تدفق الفيديو الفعلي وترتيب الأبطال...");
+
+        for (let i = 0; i < total; i++) {
+            if (btn) btn.innerText = `🧠 جاري تحليل البث (${i + 1} من ${total})...`;
+            await checkOneLink(i, true);
+        }
+
+        // ترتيب السيرفرات: الأبطال (online) بأعلى سكور وسرعة أولاً، ثم الضعيف (busy)، ثم المتوقف (dead) بآخر القائمة
+        cachedLinksList.sort((a, b) => {
+            const rankStatus = (st) => st === "online" ? 2 : (st === "busy" ? 1 : 0);
+            const rA = rankStatus(a.status);
+            const rB = rankStatus(b.status);
+            if (rA !== rB) return rB - rA;
+
+            const sA = a.score || 0;
+            const sB = b.score || 0;
+            if (sA !== sB) return sB - sA;
+
+            const mA = a.speed_mbps || 0;
+            const mB = b.speed_mbps || 0;
+            if (mA !== mB) return mB - mA;
+
+            return (a.ttfb_ms || 9999) - (b.ttfb_ms || 9999);
+        });
+
+        saveStatusToLocal();
+        renderLinksList(cachedLinksList);
+        await syncCloudOrderAndDefault();
+
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = "🧠 رادار الفحص الذكي والترتيب";
+        }
+        if (checkBtn) checkBtn.disabled = false;
+
+        showToast("🏆 اكتمل التحليل الذكي! تم رفع السيرفرات الأبطال للقمة وحفظ الترتيب سحابياً.");
+    };
+
+    // ضمان نزول أي سيرفر جديد في آخر القائمة دائماً
+    async function appendNewServerToEndOfOrder(newUrl) {
+        if (!newUrl) return;
+        const cleanUrl = newUrl.trim();
+        await loadSavedLinks(true);
+        const idx = cachedLinksList.findIndex(it => (it.url || "").trim() === cleanUrl);
+        if (idx !== -1 && idx !== cachedLinksList.length - 1) {
+            const [item] = cachedLinksList.splice(idx, 1);
+            cachedLinksList.push(item);
+        }
+        renderLinksList(cachedLinksList);
+        await syncCloudOrderAndDefault();
     }
 
     async function addManualLink() {
@@ -4143,7 +4253,8 @@ function playStepChannel(step) {
             });
             urlInput.value = "";
             titleInput.value = "";
-            await loadSavedLinks(true);
+            await appendNewServerToEndOfOrder(url);
+            showToast("➕ تمت إضافة السيرفر في آخر القائمة بنجاح!");
         } catch (e) {
             alert("حدث خطأ أثناء حفظ الرابط");
         }
@@ -4151,13 +4262,19 @@ function playStepChannel(step) {
 
     async function saveScannedLinkAuto(url, title) {
         if (!url) return;
+        const cleanUrl = url.trim();
+        const alreadyExists = cachedLinksList.some(it => (it.url || "").trim() === cleanUrl);
         try {
             await fetch(`${API_BASE}/api/links`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url, title: title || "سيرفر مفروز", source: "auto_scan" })
+                body: JSON.stringify({ url: cleanUrl, title: title || "سيرفر مفروز", source: "auto_scan" })
             });
-            await loadSavedLinks(true);
+            if (!alreadyExists) {
+                await appendNewServerToEndOfOrder(cleanUrl);
+            } else {
+                await loadSavedLinks(true);
+            }
         } catch (e) {
             console.log("فشل الحفظ التلقائي", e);
         }
@@ -4175,7 +4292,6 @@ function playStepChannel(step) {
             if (targetItem && targetItem.url) {
                 if (window.cloudDefaultServerUrl === targetItem.url.trim()) {
                     window.cloudDefaultServerUrl = "";
-                    await syncCloudOrderAndDefault();
                 }
                 fetch(`${VPS_BASE}/api/purge_r2_cache`, {
                     method: "POST",
@@ -4190,6 +4306,8 @@ function playStepChannel(step) {
                 body: JSON.stringify({ id })
             });
             cachedLinksList = cachedLinksList.filter(it => String(it.id) !== String(id));
+            await syncCloudOrderAndDefault();
+            saveStatusToLocal();
             renderLinksList(cachedLinksList);
             const countBadge = document.getElementById("count-links");
             if (countBadge) countBadge.innerText = cachedLinksList.length;
