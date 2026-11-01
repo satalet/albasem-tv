@@ -1506,7 +1506,7 @@ div[id*="signal"] div[style*="height"],
             modal.classList.add('fit-fill');
             showPlayerToast('ملء الشاشة بالكامل');
         }
-        if (window.art) setTimeout(() => window.art.resize(), 50);
+        if (window.art) setTimeout(() => if (window.art && typeof window.art.resize === 'function') window.art.resize(), 50);
         // إبقاء البار ظاهراً لـ 3.5 ثانية حتى لو كبرت الصورة لتتمكن من اختيار القنوات براحتك
         showHudAndAutoHide(3500);
     }
@@ -1575,7 +1575,7 @@ div[id*="signal"] div[style*="height"],
                     exitSystemFullscreenIfNeeded();
                     setMobileLandscape(false);
                     modal.classList.add('mini-player-mode');
-                    if (window.art) setTimeout(() => window.art.resize(), 100);
+                    if (window.art) setTimeout(() => if (window.art && typeof window.art.resize === 'function') window.art.resize(), 100);
                 };
 
                 closeBtn.parentElement.insertBefore(aspectBtn, closeBtn.nextSibling);
@@ -1603,7 +1603,7 @@ div[id*="signal"] div[style*="height"],
                 } else {
                     cycleAspectRatio(false);
                 }
-                if (window.art) setTimeout(() => window.art.resize(), 100);
+                if (window.art) setTimeout(() => if (window.art && typeof window.art.resize === 'function') window.art.resize(), 100);
                 // إبقاء البار ظاهراً لـ 4 ثوانٍ بعد التكبير لتتمكن من كبس "القنوات" براحتك
                 showHudAndAutoHide(4000);
             }, true);
@@ -1623,7 +1623,7 @@ div[id*="signal"] div[style*="height"],
                 e.stopPropagation();
                 modal.classList.remove('mini-player-mode');
                 setMobileLandscape(true);
-                if (window.art) setTimeout(() => window.art.resize(), 100);
+                if (window.art) setTimeout(() => if (window.art && typeof window.art.resize === 'function') window.art.resize(), 100);
                 showHudAndAutoHide(4000);
             };
             document.getElementById('mini_close_btn').onclick = function(e) {
@@ -1642,7 +1642,7 @@ div[id*="signal"] div[style*="height"],
     ['play', 'playing'].forEach(evt => {
         document.addEventListener(evt, function(e) {
             if (e.target && e.target.tagName === 'VIDEO') {
-                if (window.art) setTimeout(() => window.art.resize(), 50);
+                if (window.art) setTimeout(() => if (window.art && typeof window.art.resize === 'function') window.art.resize(), 50);
                 showHudAndAutoHide(4000);
             }
         }, true);
@@ -1770,8 +1770,8 @@ div[id*="signal"] div[style*="height"],
                 setMobileLandscape(true);
             }
             if (window.art) {
-                setTimeout(() => window.art.resize(), 80);
-                setTimeout(() => window.art.resize(), 350);
+                setTimeout(() => if (window.art && typeof window.art.resize === 'function') window.art.resize(), 80);
+                setTimeout(() => if (window.art && typeof window.art.resize === 'function') window.art.resize(), 350);
             }
             showHudAndAutoHide(4500);
             if (!historyPushed) {
@@ -2088,6 +2088,227 @@ var ADMIN_PIN = "2000";
             document.getElementById("scan_result_box").style.display = "none";
         }
         function closeScannerModal() {
+            document.getElementById("scanner_modal").style.display = "none";
+        }
+
+        // 1. ميزة التقاط الشاشة الحي بدون حفظ ملفات
+        async function captureLiveScreen() {
+            // إذا كان المتصفح جوالاً أو لا يدعم تصوير الشاشة الحي، نحول فورا للاستوديو
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            if (isMobile || !navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                showToast("جاري فتح الاستوديو لاختيار لقطة الشاشة 📱");
+                document.getElementById("ocr_file").click();
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getDisplayMedia({ video: { mediaSource: "screen" } });
+                const track = stream.getVideoTracks()[0];
+                const imageCapture = new ImageCapture(track);
+                const bitmap = await imageCapture.grabFrame();
+                track.stop();
+
+                const canvas = document.createElement("canvas");
+                canvas.width = bitmap.width;
+                canvas.height = bitmap.height;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(bitmap, 0, 0);
+
+                canvas.toBlob(blob => {
+                    if (blob) readImageAndScan(blob);
+                });
+            } catch (err) {
+                // في حال الإلغاء أو رفض الإذن، التحويل التلقائي للاستوديو
+                showToast("تحويل للاستوديو لاختيار الصورة 📁");
+                document.getElementById("ocr_file").click();
+            }
+        }
+
+        // 2. ميزة قراءة الحافظة مباشرة (صورة أو نص) بضغطة زر
+        async function pasteClipboardDirect() {
+            try {
+                const items = await navigator.clipboard.read();
+                for (let item of items) {
+                    const imgType = item.types.find(t => t.startsWith('image/'));
+                    if (imgType) {
+                        const blob = await item.getType(imgType);
+                        readImageAndScan(blob);
+                        return;
+                    }
+                }
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    document.getElementById("raw_scan_text").value = text;
+                    processTextScan();
+                } else {
+                    alert("الحافظة فارغة! خذ لقطة شاشة أو انسخ نصاً أولاً.");
+                }
+            } catch (err) {
+                // بديل للمتصفحات التي تطلب أذونات Clipboard
+                alert("اضغط Ctrl+V مباشرة داخل الصفحة للصق الصورة المنسوخة.");
+            }
+        }
+
+        // لصق سريع عبر Ctrl+V
+        window.addEventListener('paste', e => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let item of items) {
+                if (item.kind === 'file' && item.type.startsWith('image/')) {
+                    openScannerModal();
+                    readImageAndScan(item.getAsFile());
+                    break;
+                }
+            }
+        });
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (file) readImageAndScan(file);
+        }
+
+        // ضغط وتحسين الصورة قبل الإرسال لمنع Read Timed Out نهائياً
+    async function compressImageForOCR(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement("canvas");
+                    const MAX_W = 1280;
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > MAX_W) {
+                        h = Math.round((h * MAX_W) / w);
+                        w = MAX_W;
+                    }
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext("2d");
+                    ctx.drawImage(img, 0, 0, w, h);
+                    const compressedB64 = canvas.toDataURL("image/jpeg", 0.82);
+                    resolve({ base64: compressedB64, mime: "image/jpeg" });
+                };
+                img.onerror = () => resolve({ base64: e.target.result, mime: file.type || "image/jpeg" });
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // محلل ذكي محلي يستخرج الهوست واليوزر والباسورد بأي ترتيب
+    function extractXtreamFromRawText(rawText) {
+        if (!rawText) return null;
+        const clean = rawText.replace(/[|\\/_~«»•👑🔒🌐]/g, " ");
+
+        const fullUrlMatch = clean.match(/https?:\/\/[^\s"'<>]+get\.php\?username=[^\s"'<>]+/i);
+        if (fullUrlMatch) return fullUrlMatch[0];
+
+        let host = "";
+        const serverLabelMatch = clean.match(/(?:server|host|url|سيرفر|الرابط)\s*[:=\-]?\s*(https?:\/\/[^\s]+|[a-zA-Z0-9][-a-zA-Z0-9.]+\.[a-zA-Z]{2,}(?::\d+)?)/i);
+        if (serverLabelMatch) {
+            host = serverLabelMatch[1].trim();
+        } else {
+            const anyUrlMatch = clean.match(/https?:\/\/[a-zA-Z0-9][-a-zA-Z0-9.]+\.[a-zA-Z]{2,}(?::\d+)?/i);
+            if (anyUrlMatch) host = anyUrlMatch[0].trim();
+        }
+        if (host && !host.startsWith("http")) host = "http://" + host;
+        host = host.replace(/\/+$/, "");
+
+        let user = "";
+        const userMatch = clean.match(/(?:user(?:name)?|يوزر|المستخدم)\s*[:=\-]?\s*([a-zA-Z0-9_.\-@]+)/i);
+        if (userMatch) user = userMatch[1].trim();
+
+        let pass = "";
+        const passMatch = clean.match(/(?:pass(?:word)?|باسورد|كلمة المرور|السر)\s*[:=\-]?\s*([a-zA-Z0-9_.\-@]+)/i);
+        if (passMatch) pass = passMatch[1].trim();
+
+        if (host && user && pass) {
+            return `${host}/get.php?username=${encodeURIComponent(user)}&password=${encodeURIComponent(pass)}&type=m3u_plus&output=m3u8`;
+        }
+        return null;
+    }
+
+    async function readImageAndScan(file) {
+        const st = document.getElementById("scan_status");
+        const txtArea = document.getElementById("ocr_text_result");
+        st.style.display = "block";
+        st.style.color = "#38BDF8";
+        st.innerText = "⚡ جاري ضغط الصورة واستخراج السيرفر بالذكاء الاصطناعي...";
+
+        try {
+            const { base64, mime } = await compressImageForOCR(file);
+
+            let d = null;
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 22000);
+                const r = await fetch(`${BACKEND_URL}/api/ai-scan`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ image: base64, mime_type: mime }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                d = await r.json();
+            } catch (aiErr) {
+                console.warn("AI Scan timeout or error, switching to local OCR fallback...", aiErr);
+            }
+
+            if (d && d.success) {
+                st.style.display = "none";
+                if (txtArea) {
+                    txtArea.value = `SERVER: ${d.host || ''}\nUSER: ${d.user || ''}\nPASS: ${d.pass || ''}\nURL: ${d.url || ''}`;
+                }
+                const box = document.getElementById("scan_result_box");
+                box.style.display = "block";
+                box.style.borderColor = "#10B981";
+                document.getElementById("res_title").innerText = "✅ تم استخراج وفحص السيرفر بنجاح!";
+                document.getElementById("res_details").innerHTML = `
+                    <b>حالة السيرفر:</b> <span style="color:#10B981">${d.status_msg || 'شغال 100%'}</span><br>
+                    <b>الهوست:</b> ${d.host} | <b>المستخدم:</b> ${d.user} | <b>كلمة المرور:</b> ${d.pass}<br>
+                    <b>الاتصالات النشطة:</b> ${d.active_cons} / ${d.max_cons} | <b>تاريخ الانتهاء:</b> ${d.exp_date}
+                `;
+                saveScannedLinkAuto(d.url, `سيرفر OCR (${d.host})`);
+                document.getElementById("btn_apply_link").onclick = () => {
+                    document.getElementById("iptv_url").value = d.url;
+                    closeScannerModal();
+                    loadAndParse();
+                    setTimeout(initServersList, 2000);
+                };
+                return;
+            }
+
+            // خط الدفاع الثاني: قارئ Tesseract المحلي الفوري
+            st.style.color = "#F59E0B";
+            st.innerText = "🔄 جاري القراءة الفورية عبر المحرك المحلي الرديف (Tesseract OCR)...";
+
+            if (typeof Tesseract !== "undefined") {
+                const ocrRes = await Tesseract.recognize(base64, "eng");
+                const rawText = (ocrRes && ocrRes.data && ocrRes.data.text) ? ocrRes.data.text.trim() : "";
+                if (txtArea && rawText) {
+                    txtArea.value = rawText;
+                }
+                const builtUrl = extractXtreamFromRawText(rawText);
+                if (builtUrl && txtArea) {
+                    txtArea.value = builtUrl;
+                }
+                if (rawText) {
+                    st.style.color = "#10B981";
+                    st.innerText = "✅ تم استخراج النص! جاري الفحص والتشخيص تلقائياً...";
+                    await startManualDiagnosis();
+                    return;
+                }
+            }
+
+            st.style.color = "#EF4444";
+            st.innerText = "❌ " + ((d && d.message) ? d.message : "تعذر استخراج بيانات صالحة من الصورة، جرب قص منطقة اليوزر والسيرفر بدقة.");
+        } catch (err) {
+            st.style.color = "#EF4444";
+            st.innerText = "❌ خطأ أثناء معالجة الصورة: " + err.message;
+        }
+    }
+
+    function closeScannerModal() {
             document.getElementById("scanner_modal").style.display = "none";
         }
 
