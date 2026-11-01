@@ -11,6 +11,29 @@
     <meta name="theme-color" content="#0B0E14">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">
+
+    // ==========================================
+    // 🔐 صلاحيات الأدمن والرقم السري في النطاق العام (Global Scope)
+    // ==========================================
+    window.ADMIN_PIN = "2000";
+    window.requireAdminAuth = function(actionName = "هذا الإجراء") {
+        if (sessionStorage.getItem("albasem_admin_session") === "unlocked") {
+            return true;
+        }
+        const pin = prompt(`🔐 أدخل الرقم السري للإدارة (PIN 2000) لتنفيذ ${actionName}:`);
+        if (pin && pin.trim() === window.ADMIN_PIN) {
+            sessionStorage.setItem("albasem_admin_session", "unlocked");
+            if (typeof showToast === "function") showToast("🔓 تم تفعيل وضع الإدارة لهذه الجلسة بنجاح!");
+            return true;
+        }
+        alert("❌ الرقم السري غير صحيح! لا تملك صلاحية التعديل أو الترتيب.");
+        return false;
+    };
+    function requireAdminAuth(actionName) {
+        return window.requireAdminAuth(actionName);
+    }
+
+
      else if (lFill && lText) {
             lFill.className = "sat-l-fill off";
             lFill.style.width = "100%";
@@ -3836,7 +3859,7 @@ function playStepChannel(step) {
 
     let cachedLinksList = [];
     window.cloudDefaultServerUrl = localStorage.getItem("albasem_cloud_default_url") || "";
-    const ADMIN_PIN = "2000";
+    
 
     // استخراج وحفظ السيرفر الأساسي المعتمد داخل مصفوفة الترتيب السحابية على الـ VPS
     function extractDefaultFromOrder(orderArr) {
@@ -3956,19 +3979,7 @@ function playStepChannel(step) {
             localStorage.removeItem("albasem_cloud_default_url");
         }
 
-        function requireAdminAuth(actionName = "هذا الإجراء") {
-        if (sessionStorage.getItem("albasem_admin_session") === "unlocked") {
-            return true;
-        }
-        const pin = prompt(`🔐 أدخل الرقم السري للإدارة (PIN 2000) لتنفيذ ${actionName}:`);
-        if (pin && pin.trim() === ADMIN_PIN) {
-            sessionStorage.setItem("albasem_admin_session", "unlocked");
-            showToast("🔓 تم التحقق بنجاح! وضع الإدارة مفعّل.");
-            return true;
-        }
-        alert("❌ الرقم السري غير صحيح! لا تملك صلاحية التعديل أو الترتيب.");
-        return false;
-    }
+        
 
     function applyOrder(arr) {
         const cleanOrder = (savedOrder || []).filter(x => typeof x === "string" && !x.startsWith("__DEFAULT_SERVER__::"));
