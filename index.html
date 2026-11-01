@@ -3343,7 +3343,22 @@ function copyMPV(url) {
                 </div>
             </div>
         </div>
-        <div id="links_list_container" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- شريط الإجراءات الجماعية والتحديد المتعدد -->
+                <div id="bulk_actions_toolbar" style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border); border-radius: 8px; padding: 9px 14px; margin-top: 10px; margin-bottom: 8px; gap: 10px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <label style="display: flex; align-items: center; gap: 7px; cursor: pointer; color: #fff; font-size: 13px; font-weight: bold; user-select: none;">
+                            <input type="checkbox" id="select_all_servers_cb" onchange="toggleSelectAllServers(this)" style="width: 18px; height: 18px; cursor: pointer; accent-color: #FFB703;">
+                            تحديد الكل
+                        </label>
+                        <span id="selected_servers_count" style="background: rgba(255,183,3,0.15); color: #FFB703; border: 1px solid #FFB703; font-size: 11.5px; padding: 2px 9px; border-radius: 6px; font-weight: bold;">المحدد: 0</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <button onclick="bulkMoveSelected('top')" style="background: #2563EB; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="نقل السيرفرات المحددة لقمة القائمة">⬆️ نقل للأعلى</button>
+                        <button onclick="bulkMoveSelected('bottom')" style="background: #4F46E5; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="نقل السيرفرات المحددة لأسفل القائمة">⬇️ نقل للأسفل</button>
+                        <button onclick="bulkDeleteSelected()" style="background: #DC2626; color: #fff; border: none; padding: 6px 13px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="حذف السيرفرات المحددة دفعة واحدة (يتطلب PIN 2000)">🗑️ حذف المحدد</button>
+                    </div>
+                </div>
+                <div id="links_list_container" style="display: flex; flex-direction: column; gap: 10px;">
             <div style="text-align: center; padding: 30px; color: var(--text-muted);">جاري تحميل السيرفرات...</div>
         </div>
     </div>
@@ -3941,49 +3956,39 @@ function playStepChannel(step) {
             localStorage.removeItem("albasem_cloud_default_url");
         }
 
-        function applyOrder(arr) {
-            const cleanOrder = (savedOrder || []).filter(x => typeof x === "string" && !x.startsWith("__DEFAULT_SERVER__::"));
-            if (cleanOrder.length > 0) {
-                arr.sort((a, b) => {
-                    const kA = (a.url || a.id || "").trim();
-                    const kB = (b.url || b.id || "").trim();
-                    const iA = cleanOrder.indexOf(kA);
-                    const iB = cleanOrder.indexOf(kB);
-                    // أي سيرفر جديد غير موجود في قائمة الترتيب ينزل في آخر القائمة دائماً (99999)
-                    const posA = (iA === -1) ? 99999 : iA;
-                    const posB = (iB === -1) ? 99999 : iB;
-                    return posA - posB;
-                });
-            }
-            return arr;
+        function requireAdminAuth(actionName = "هذا الإجراء") {
+        if (sessionStorage.getItem("albasem_admin_session") === "unlocked") {
+            return true;
         }
-
-        try {
-            const res = await fetch(`${GIST_RAW_URL}?t=${Date.now()}`);
-            if (res.ok) {
-                let data = await res.json();
-                data.forEach(item => {
-                    if (savedStatusMap[item.url]) {
-                        item.status = savedStatusMap[item.url].status;
-                        item.conns = savedStatusMap[item.url].conns;
-                        item.score = savedStatusMap[item.url].score || 0;
-                        item.speed_mbps = savedStatusMap[item.url].speed_mbps || 0;
-                        item.ttfb_ms = savedStatusMap[item.url].ttfb_ms || 9999;
-                        item.exp_date = savedStatusMap[item.url].exp_date || "";
-                    }
-                });
-                cachedLinksList = applyOrder(data);
-                renderLinksList(cachedLinksList);
-                const countBadge = document.getElementById("count-links");
-                if (countBadge) countBadge.innerText = cachedLinksList.length || 0;
-                return;
-            }
-        } catch (e) {
-            console.log("جاري محاولة السحب عبر API البديل...", e);
+        const pin = prompt(`🔐 أدخل الرقم السري للإدارة (PIN 2000) لتنفيذ ${actionName}:`);
+        if (pin && pin.trim() === ADMIN_PIN) {
+            sessionStorage.setItem("albasem_admin_session", "unlocked");
+            showToast("🔓 تم التحقق بنجاح! وضع الإدارة مفعّل.");
+            return true;
         }
+        alert("❌ الرقم السري غير صحيح! لا تملك صلاحية التعديل أو الترتيب.");
+        return false;
+    }
 
-        try {
-            const res = await fetch(`${API_BASE}/api/links`);
+    function applyOrder(arr) {
+        const cleanOrder = (savedOrder || []).filter(x => typeof x === "string" && !x.startsWith("__DEFAULT_SERVER__::"));
+        if (cleanOrder.length > 0) {
+            arr.sort((a, b) => {
+                const kA = (a.url || a.id || "").trim();
+                const kB = (b.url || b.id || "").trim();
+                const iA = cleanOrder.indexOf(kA);
+                const iB = cleanOrder.indexOf(kB);
+                const posA = (iA === -1) ? 99999 : iA;
+                const posB = (iB === -1) ? 99999 : iB;
+                return posA - posB;
+            });
+        }
+        return arr;
+    }
+
+    try {
+        const res = await fetch(`${GIST_RAW_URL}?t=${Date.now()}`);
+        if (res.ok) {
             let data = await res.json();
             data.forEach(item => {
                 if (savedStatusMap[item.url]) {
@@ -3999,10 +4004,117 @@ function playStepChannel(step) {
             renderLinksList(cachedLinksList);
             const countBadge = document.getElementById("count-links");
             if (countBadge) countBadge.innerText = cachedLinksList.length || 0;
-        } catch (err) {
-            console.error("فشل جلب الروابط", err);
+            return;
         }
+    } catch (e) {
+        console.log("جاري محاولة السحب عبر API البديل...", e);
     }
+
+    try {
+        const res = await fetch(`${API_BASE}/api/links`);
+        let data = await res.json();
+        data.forEach(item => {
+            if (savedStatusMap[item.url]) {
+                item.status = savedStatusMap[item.url].status;
+                item.conns = savedStatusMap[item.url].conns;
+                item.score = savedStatusMap[item.url].score || 0;
+                item.speed_mbps = savedStatusMap[item.url].speed_mbps || 0;
+                item.ttfb_ms = savedStatusMap[item.url].ttfb_ms || 9999;
+                item.exp_date = savedStatusMap[item.url].exp_date || "";
+            }
+        });
+        cachedLinksList = applyOrder(data);
+        renderLinksList(cachedLinksList);
+        const countBadge = document.getElementById("count-links");
+        if (countBadge) countBadge.innerText = cachedLinksList.length || 0;
+    } catch (err) {
+        console.error("فشل جلب الروابط", err);
+    }
+}
+
+    window.getSelectedServerIndices = function() {
+        const cbs = document.querySelectorAll(".server-select-cb:checked");
+        return Array.from(cbs).map(cb => parseInt(cb.getAttribute("data-idx"))).filter(n => !isNaN(n));
+    };
+
+    window.onServerSelectChanged = function() {
+        const selected = getSelectedServerIndices();
+        const countSpan = document.getElementById("selected_servers_count");
+        const allCb = document.getElementById("select_all_servers_cb");
+        if (countSpan) countSpan.innerText = `المحدد: ${selected.length}`;
+        if (allCb) allCb.checked = (selected.length === cachedLinksList.length && cachedLinksList.length > 0);
+    };
+
+    window.toggleSelectAllServers = function(masterCb) {
+        const cbs = document.querySelectorAll(".server-select-cb");
+        cbs.forEach(cb => { cb.checked = masterCb.checked; });
+        onServerSelectChanged();
+    };
+
+    window.bulkMoveSelected = async function(direction) {
+        const indices = getSelectedServerIndices();
+        if (indices.length === 0) return alert("يرجى تحديد سيرفر واحد على الأقل لنقله.");
+        if (!requireAdminAuth("نقل السيرفرات المحددة")) return;
+
+        const selectedItems = [];
+        const remainingItems = [];
+        const selectedSet = new Set(indices);
+
+        cachedLinksList.forEach((it, idx) => {
+            if (selectedSet.has(idx)) {
+                selectedItems.push(it);
+            } else {
+                remainingItems.push(it);
+            }
+        });
+
+        if (direction === "top") {
+            cachedLinksList = [...selectedItems, ...remainingItems];
+        } else if (direction === "bottom") {
+            cachedLinksList = [...remainingItems, ...selectedItems];
+        }
+
+        renderLinksList(cachedLinksList);
+        await syncCloudOrderAndDefault();
+        showToast(`↕️ تم نقل (${selectedItems.length}) سيرفر ${direction === 'top' ? 'للأعلى' : 'للأسفل'} وحفظ الترتيب!`);
+    };
+
+    window.bulkDeleteSelected = async function() {
+        const indices = getSelectedServerIndices();
+        if (indices.length === 0) return alert("يرجى تحديد السيرفرات المراد حذفها أولاً.");
+        if (!requireAdminAuth(`حذف (${indices.length}) سيرفر بشكل جماعي`)) return;
+
+        if (!confirm(`هل أنت متأكد تماماً من حذف (${indices.length}) سيرفر نهائياً من النظام؟`)) return;
+
+        const toDelete = indices.map(i => cachedLinksList[i]).filter(Boolean);
+        for (const item of toDelete) {
+            if (item.url && window.cloudDefaultServerUrl === item.url.trim()) {
+                window.cloudDefaultServerUrl = "";
+            }
+            try {
+                fetch(`${VPS_BASE}/api/purge_r2_cache`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ url: item.url })
+                }).catch(() => {});
+
+                await fetch(`${API_BASE}/api/links`, {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: item.id })
+                });
+            } catch(e) {}
+        }
+
+        const deleteIds = new Set(toDelete.map(x => String(x.id)));
+        cachedLinksList = cachedLinksList.filter(x => !deleteIds.has(String(x.id)));
+        await syncCloudOrderAndDefault();
+        saveStatusToLocal();
+        renderLinksList(cachedLinksList);
+        const countBadge = document.getElementById("count-links");
+        if (countBadge) countBadge.innerText = cachedLinksList.length;
+        showToast(`🗑️ تم حذف (${toDelete.length}) سيرفر بنجاح!`);
+    };
 
     function renderLinksList(links) {
         const container = document.getElementById("links_list_container");
@@ -4015,13 +4127,13 @@ function playStepChannel(step) {
         container.innerHTML = links.map((item, idx) => {
             let statusColor = "#94A3B8";
             let statusBg = "rgba(255,255,255,0.05)";
-            let statusText = "⚪ غير مفحوص (اضغط للفحص العميق)";
+            let statusText = "⚪ غير مفحوص";
             const detailLabel = item.conns ? item.conns : "";
 
             if (item.status === "checking") {
                 statusColor = "#38BDF8";
                 statusBg = "rgba(56, 189, 248, 0.12)";
-                statusText = "⏳ جاري فحص تدفق الفيديو الفعلي...";
+                statusText = "⏳ جاري الفحص...";
             } else if (item.status === "online") {
                 statusColor = "#10B981";
                 statusBg = "rgba(16, 185, 129, 0.12)";
@@ -4044,30 +4156,34 @@ function playStepChannel(step) {
 
             return `
                 <div id="link_card_${idx}" style="display: flex; align-items: center; justify-content: space-between; background: ${cardBg}; border: ${isDefault ? '1.5px' : '1px'} solid ${cardBorder}; border-radius: 10px; padding: 12px 16px; gap: 12px; flex-wrap: wrap; transition: 0.2s;">
-                    <div style="flex: 1; min-width: 240px;">
-                        <div style="font-weight: bold; font-size: 15px; color: #fff; margin-bottom: 5px; display:flex; align-items:center; flex-wrap:wrap; gap:6px;">
-                            <span>${idx + 1}. ${item.title || "بدون عنوان"}</span>
-                            ${defaultBadge}
-                            ${expBadge}
+                    <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 240px;">
+                        <input type="checkbox" class="server-select-cb" data-idx="${idx}" data-id="${item.id}" onchange="onServerSelectChanged()" style="width: 18px; height: 18px; cursor: pointer; accent-color: #FFB703; flex-shrink: 0;" title="تحديد هذا السيرفر لإجراء جماعي">
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold; font-size: 15px; color: #fff; margin-bottom: 5px; display:flex; align-items:center; flex-wrap:wrap; gap:6px;">
+                                <span>${idx + 1}. ${item.title || "بدون عنوان"}</span>
+                                ${defaultBadge}
+                                ${expBadge}
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-muted); word-break: break-all;">${item.url}</div>
                         </div>
-                        <div style="font-size: 12px; color: var(--text-muted); word-break: break-all;">${item.url}</div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                        <button class="server-drag-btn" title="اسحب من هنا لإعادة الترتيب">⠿</button>
+                        <button class="server-drag-btn" title="اسحب من هنا لإعادة الترتيب (يتطلب PIN 2000)">⠿</button>
                         <button onclick="setAsDefaultServer('${encodeURIComponent(item.url)}')" title="${isDefault ? 'إلغاء اعتماد السيرفر الأساسي (رقم سري 2000)' : 'اعتماد كسيرفر أساسي للتطبيق (رقم سري 2000)'}" style="background: ${isDefault ? '#FFB703' : 'rgba(255, 183, 3, 0.15)'}; color: ${isDefault ? '#000' : '#FFB703'}; border: 1px solid #FFB703; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
                             👑 ${isDefault ? 'أساسي' : 'اعتماد'}
                         </button>
                         <span onclick="checkOneLink(${idx}, true)" title="اضغط لفحص تدفق الفيديو الحقيقي لهذا السيرفر" style="cursor:pointer; font-size: 11.5px; padding: 5px 11px; border-radius: 6px; background: ${statusBg}; color: ${statusColor}; border: 1px solid ${statusColor}; font-weight: bold; direction: rtl;">
                             ${statusText}
                         </span>
-                        <button onclick="applyAndParseLink('${encodeURIComponent(item.url)}', false)" style="background: #10B981; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer;" title="تشغيل مباشر (سحب من R2)">⚡ تشغيل</button>
-                        <button onclick="applyAndParseLink('${encodeURIComponent(item.url)}', true)" style="background: #0284C7; color: #fff; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer;" title="تحديث السيرفر بالكامل وإعادة بناء الكاش">🔄</button>
-                        <button onclick="deleteSingleLink('${item.id}')" title="حذف السيرفر (يتطلب الرقم السري 2000)" style="background: rgba(239, 68, 68, 0.2); color: #EF4444; border: 1px solid #EF4444; padding: 6px 10px; border-radius: 6px; cursor: pointer;">🗑️</button>
+                        <button onclick="applyAndParseLink('${encodeURIComponent(item.url)}', false)" style="background: #10B981; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer;" title="تشغيل مباشر">⚡ تشغيل</button>
+                        <button onclick="applyAndParseLink('${encodeURIComponent(item.url)}', true)" style="background: #0284C7; color: #fff; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer;" title="تحديث السيرفر بالكامل">🔄</button>
+                        <button onclick="deleteSingleLink('${item.id}')" title="حذف السيرفر (يتطلب PIN 2000)" style="background: rgba(239, 68, 68, 0.2); color: #EF4444; border: 1px solid #EF4444; padding: 6px 10px; border-radius: 6px; cursor: pointer;">🗑️</button>
                     </div>
                 </div>
             `;
         }).join("");
 
+        onServerSelectChanged();
         setTimeout(initSortableOnServers, 60);
     }
 
@@ -4090,12 +4206,18 @@ function playStepChannel(step) {
             chosenClass: "sortable-chosen",
             onEnd: async function(evt) {
                 if (evt.oldIndex === evt.newIndex) return;
+
+                if (!requireAdminAuth("تعديل ترتيب السيرفرات")) {
+                    renderLinksList(cachedLinksList);
+                    return;
+                }
+
                 const moved = cachedLinksList.splice(evt.oldIndex, 1)[0];
                 cachedLinksList.splice(evt.newIndex, 0, moved);
 
                 renderLinksList(cachedLinksList);
                 await syncCloudOrderAndDefault();
-                showToast("☁️ تم حفظ الترتيب الدائم على السيرفر!");
+                showToast("☁️ تم حفظ الترتيب الجديد للإدارة بنجاح!");
             }
         });
     }
@@ -4174,8 +4296,9 @@ function playStepChannel(step) {
         showToast("✅ اكتمل الفحص الميداني لكافة السيرفرات!");
     }
 
-    // 🧠 رادار الفحص الذكي والترتيب التلقائي للأبطال
     window.runSmartRadar = async function() {
+        if (!requireAdminAuth("تشغيل الرادار الذكي وإعادة الترتيب التلقائي")) return;
+
         const btn = document.getElementById("btn_smart_radar");
         const checkBtn = document.getElementById("btn_check_all");
         if (btn) btn.disabled = true;
@@ -4193,7 +4316,6 @@ function playStepChannel(step) {
             await checkOneLink(i, true);
         }
 
-        // ترتيب السيرفرات: الأبطال (online) بأعلى سكور وسرعة أولاً، ثم الضعيف (busy)، ثم المتوقف (dead) بآخر القائمة
         cachedLinksList.sort((a, b) => {
             const rankStatus = (st) => st === "online" ? 2 : (st === "busy" ? 1 : 0);
             const rA = rankStatus(a.status);
@@ -4224,7 +4346,6 @@ function playStepChannel(step) {
         showToast("🏆 اكتمل التحليل الذكي! تم رفع السيرفرات الأبطال للقمة وحفظ الترتيب سحابياً.");
     };
 
-    // ضمان نزول أي سيرفر جديد في آخر القائمة دائماً
     async function appendNewServerToEndOfOrder(newUrl) {
         if (!newUrl) return;
         const cleanUrl = newUrl.trim();
@@ -4281,12 +4402,7 @@ function playStepChannel(step) {
     }
 
     async function deleteSingleLink(id) {
-        const pin = prompt("🔐 أدخل الرقم السري لتأكيد حذف هذا السيرفر نهائياً:");
-        if (pin === null) return;
-        if (pin.trim() !== ADMIN_PIN) {
-            alert("❌ الرقم السري غير صحيح! تم إلغاء الحذف.");
-            return;
-        }
+        if (!requireAdminAuth("حذف هذا السيرفر نهائياً")) return;
         try {
             const targetItem = cachedLinksList.find(it => String(it.id) === String(id));
             if (targetItem && targetItem.url) {
@@ -4322,12 +4438,8 @@ function playStepChannel(step) {
         if (deadItems.length === 0) {
             return alert("لا توجد روابط معطلة (🔴 متوقف) لحذفها. قم بإجراء الفحص أولاً.");
         }
-        const pin = prompt(`🔐 تم تحديد (${deadItems.length}) سيرفر متوقف. أدخل الرقم السري لتأكيد حذفها نهائياً:`);
-        if (pin === null) return;
-        if (pin.trim() !== ADMIN_PIN) {
-            alert("❌ الرقم السري غير صحيح! تم إلغاء الحذف.");
-            return;
-        }
+        if (!requireAdminAuth(`تنظيف (${deadItems.length}) سيرفر متوقف دفعة واحدة`)) return;
+
         try {
             for (const item of deadItems) {
                 if (item.url) {
@@ -4357,8 +4469,7 @@ function playStepChannel(step) {
             alert("فشل تنظيف الروابط");
         }
     }
-
-    function toggleLinksHub() {
+function toggleLinksHub() {
         const sec = document.getElementById("links_view_section");
         const isOpen = sec && sec.style.display === "block";
         if (isOpen) {
