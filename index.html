@@ -10,196 +10,7 @@
     
     <meta name="theme-color" content="#0B0E14">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">
-
-    // ==========================================
-    // 🔐 صلاحيات الأدمن والرقم السري في النطاق العام (Global Scope)
-    // ==========================================
-    window.ADMIN_PIN = "2000";
-    window.requireAdminAuth = function(actionName = "هذا الإجراء") {
-        if (sessionStorage.getItem("albasem_admin_session") === "unlocked") {
-            return true;
-        }
-        const pin = prompt(`🔐 أدخل الرقم السري للإدارة (PIN 2000) لتنفيذ ${actionName}:`);
-        if (pin && pin.trim() === window.ADMIN_PIN) {
-            sessionStorage.setItem("albasem_admin_session", "unlocked");
-            if (typeof showToast === "function") showToast("🔓 تم تفعيل وضع الإدارة لهذه الجلسة بنجاح!");
-            return true;
-        }
-        alert("❌ الرقم السري غير صحيح! لا تملك صلاحية التعديل أو الترتيب.");
-        return false;
-    };
-    function requireAdminAuth(actionName) {
-        return window.requireAdminAuth(actionName);
-    }
-
-
-     else if (lFill && lText) {
-            lFill.className = "sat-l-fill off";
-            lFill.style.width = "100%";
-            lText.innerText = "0%";
-            lText.style.color = "#ef4444";
-            if (lockBadge) {
-                lockBadge.className = "sat-badge sat-badge-res";
-                lockBadge.innerText = "❌ NO SIGNAL";
-            }
-        }
-
-        // 2. حساب حجم مخزون الفيديو المتراكم (Buffer)
-        let bufferSec = 0;
-        if (video.buffered && video.buffered.length > 0) {
-            for (let i = 0; i < video.buffered.length; i++) {
-                if (video.buffered.start(i) <= video.currentTime && video.currentTime <= video.buffered.end(i)) {
-                    bufferSec = (video.buffered.end(i) - video.currentTime);
-                    break;
-                }
-            }
-        }
-        if (bufText) bufText.innerText = `⏱️ المخزون: ${bufferSec.toFixed(1)}s`;
-
-        // 3. قراءة دقة الفيديو الحقيقية (Resolution)
-        if (video.videoWidth && video.videoHeight && resBadge) {
-            const w = video.videoWidth;
-            const h = video.videoHeight;
-            let tag = "SD";
-            if (w >= 1920 || h >= 1080) tag = "FHD 1080p";
-            else if (w >= 1280 || h >= 720) tag = "HD 720p";
-            else tag = `${h}p SD`;
-            resBadge.innerText = tag;
-        }
-
-        // 4. قياس سرعة التدفق الفعلي بالـ Mbps
-        let speedMbps = "0.0";
-        if (window.art && window.art.hls && window.art.hls.bandwidthEstimate) {
-            speedMbps = (window.art.hls.bandwidthEstimate / 1000000).toFixed(1);
-        } else if (window.art && window.art.mpegts && window.art.mpegts.statisticsInfo && window.art.mpegts.statisticsInfo.speed) {
-            speedMbps = (window.art.mpegts.statisticsInfo.speed * 8 / 1024).toFixed(1);
-        } else {
-            const base = (video.videoWidth >= 1920) ? 6.2 : (video.videoWidth >= 1280 ? 3.5 : 1.8);
-            speedMbps = (base * (bufferSec > 2 ? 1.15 : 0.85)).toFixed(1);
-        }
-        if (speedText) speedText.innerText = `⚡ التدفق: ${speedMbps} Mbps`;
-
-        // 5. حساب جودة الإشارة الحقيقية (QUALITY - Q)
-        let quality = 0;
-        if (readyState >= 2 && !isError) {
-            quality = 52;
-            if (readyState >= 3) quality += 18;
-            if (readyState === 4) quality += 10;
-            quality += Math.min(18, Math.round(bufferSec * 2.8));
-            if (quality > 98) quality = 98;
-        } else if (readyState === 1) {
-            quality = 28;
-        }
-
-        if (qText) {
-            qText.innerText = quality + "%";
-            qText.style.color = quality >= 75 ? "#10b981" : (quality >= 45 ? "#f59e0b" : "#ef4444");
-        }
-
-        // إضاءة الليدات الـ 12 المقسمة
-        const litCount = Math.round((quality / 100) * 12);
-        qLeds.forEach((led, idx) => {
-            if (idx < litCount) {
-                led.classList.add("active");
-            } else {
-                led.classList.remove("active");
-            }
-        });
-
-        if (healthText) {
-            if (quality >= 75) {
-                healthText.innerText = "🟢 بث ممتاز ومستقر";
-                healthText.style.color = "#10b981";
-            } else if (quality >= 45) {
-                healthText.innerText = "🟡 جاري موازنة التدفق";
-                healthText.style.color = "#f59e0b";
-            } else {
-                healthText.innerText = "🔴 اتصال ضعيف أو بافرينج";
-                healthText.style.color = "#ef4444";
-            }
-        }
-    }
-
-
-    // ========================================================
-    // مشاركة باقة كاملة بالواتساب واختصار رابطها عبر الـ VPS
-    // ========================================================
-    function updatePackageShareButton() {
-        const btn = document.getElementById("btn_share_package");
-        const lbl = document.getElementById("btn_share_package_label");
-        if (!btn || !lbl) return;
-
-        if (currentGroup && currentGroup !== "all") {
-            lbl.innerText = "مشاركة الباقة";
-            btn.style.background = "rgba(37,211,102,0.28)";
-            btn.style.borderColor = "#25D366";
-        } else {
-            lbl.innerText = "مشاركة الكل";
-            btn.style.background = "rgba(37,211,102,0.16)";
-            btn.style.borderColor = "rgba(37,211,102,0.4)";
-        }
-    }
-
-    async function sharePackageToWhatsApp() {
-        const serverUrl = document.getElementById("iptv_url").value.trim() || localStorage.getItem("albasem_url");
-        if (!serverUrl) {
-            alert("يرجى تشغيل سيرفر أولاً لتتمكن من مشاركة باقاته!");
-            return;
-        }
-
-        const groupName = currentGroup || "all";
-        const tabName = currentTab || "live";
-
-        const tabLabels = {
-            live: "📺 المحطات المباشرة",
-            movies: "🎬 مكتبة الأفلام",
-            series: "🍿 مكتبة المسلسلات"
-        };
-        const tabLabel = tabLabels[tabName] || "📺 المحطات المباشرة";
-
-        // حساب عدد قنوات الباقة بدقة
-        const allTabItems = (typeof getVisibleItems === "function") ? getVisibleItems(tabName) : (rawData[tabName] || []);
-        let count = allTabItems.length;
-        let pkgTitle = "كافة القنوات والباقات";
-        if (groupName !== "all") {
-            const filtered = allTabItems.filter(it => (it.group || "عام") === groupName);
-            count = filtered.length;
-            pkgTitle = groupName;
-        }
-
-        const origin = window.location.origin;
-        const pathname = window.location.pathname;
-        const fullPkgUrl = `${origin}${pathname}?url=${encodeURIComponent(serverUrl)}&tab=${tabName}&group=${encodeURIComponent(groupName)}`;
-
-        let finalUrl = fullPkgUrl;
-        showToast("⏳ جاري تجهيز واختصار رابط الباقة للواتساب...");
-
-        // طلب اختصار الرابط من سيرفر الـ VPS
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 2500);
-            const res = await fetch("https://albasem-tv.duckdns.org/api/shorten", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: fullPkgUrl, title: `باقة ${pkgTitle}` }),
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-            if (res.ok) {
-                const data = await res.json();
-                if (data.short_url) finalUrl = data.short_url;
-            }
-        } catch(e) {
-            console.warn("استخدام الرابط المباشر للباقة كبديل:", e);
-        }
-
-        const msg = `🎁 *تم تجهيز باقة خاصة لك على الباسم سات* 👑\n\n📁 *الباقة:* ${pkgTitle}\n📂 *القسم:* ${tabLabel}\n🔢 *العدد:* (${count}) عنصر متاح للمشاهدة\n\n⚡ *اضغط هنا لتصفح ومشاهدة الباقة فوراً:*\n${finalUrl}`;
-        const waLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-        window.open(waLink, '_blank');
-    }
-
-</script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
@@ -2091,6 +1902,24 @@ div[id*="signal"] div[style*="height"],
 }
 </style>
 
+<script>
+window.ADMIN_PIN = "2000";
+window.requireAdminAuth = function(actionName = "هذا الإجراء") {
+    if (sessionStorage.getItem("albasem_admin_session") === "unlocked") {
+        return true;
+    }
+    const pin = prompt("🔐 أدخل الرقم السري للإدارة (PIN 2000) لتنفيذ " + actionName + ":");
+    if (pin && pin.trim() === "2000") {
+        sessionStorage.setItem("albasem_admin_session", "unlocked");
+        if (typeof showToast === "function") showToast("🔓 تم تفعيل وضع الإدارة لهذه الجلسة!");
+        return true;
+    }
+    alert("❌ الرقم السري غير صحيح! لا تملك صلاحية التعديل أو الترتيب.");
+    return false;
+};
+var requireAdminAuth = window.requireAdminAuth;
+var ADMIN_PIN = "2000";
+</script>
 </head>
 
 
@@ -4065,7 +3894,7 @@ function playStepChannel(step) {
     window.bulkMoveSelected = async function(direction) {
         const indices = getSelectedServerIndices();
         if (indices.length === 0) return alert("يرجى تحديد سيرفر واحد على الأقل لنقله.");
-        if (!requireAdminAuth("نقل السيرفرات المحددة")) return;
+        if (!window.requireAdminAuth("نقل السيرفرات المحددة")) return;
 
         const selectedItems = [];
         const remainingItems = [];
@@ -4093,7 +3922,7 @@ function playStepChannel(step) {
     window.bulkDeleteSelected = async function() {
         const indices = getSelectedServerIndices();
         if (indices.length === 0) return alert("يرجى تحديد السيرفرات المراد حذفها أولاً.");
-        if (!requireAdminAuth(`حذف (${indices.length}) سيرفر بشكل جماعي`)) return;
+        if (!window.requireAdminAuth(`حذف (${indices.length}) سيرفر بشكل جماعي`)) return;
 
         if (!confirm(`هل أنت متأكد تماماً من حذف (${indices.length}) سيرفر نهائياً من النظام؟`)) return;
 
@@ -4218,7 +4047,7 @@ function playStepChannel(step) {
             onEnd: async function(evt) {
                 if (evt.oldIndex === evt.newIndex) return;
 
-                if (!requireAdminAuth("تعديل ترتيب السيرفرات")) {
+                if (!window.requireAdminAuth("تعديل ترتيب السيرفرات")) {
                     renderLinksList(cachedLinksList);
                     return;
                 }
@@ -4308,7 +4137,7 @@ function playStepChannel(step) {
     }
 
     window.runSmartRadar = async function() {
-        if (!requireAdminAuth("تشغيل الرادار الذكي وإعادة الترتيب التلقائي")) return;
+        if (!window.requireAdminAuth("تشغيل الرادار الذكي وإعادة الترتيب التلقائي")) return;
 
         const btn = document.getElementById("btn_smart_radar");
         const checkBtn = document.getElementById("btn_check_all");
@@ -4413,7 +4242,7 @@ function playStepChannel(step) {
     }
 
     async function deleteSingleLink(id) {
-        if (!requireAdminAuth("حذف هذا السيرفر نهائياً")) return;
+        if (!window.requireAdminAuth("حذف هذا السيرفر نهائياً")) return;
         try {
             const targetItem = cachedLinksList.find(it => String(it.id) === String(id));
             if (targetItem && targetItem.url) {
@@ -4449,7 +4278,7 @@ function playStepChannel(step) {
         if (deadItems.length === 0) {
             return alert("لا توجد روابط معطلة (🔴 متوقف) لحذفها. قم بإجراء الفحص أولاً.");
         }
-        if (!requireAdminAuth(`تنظيف (${deadItems.length}) سيرفر متوقف دفعة واحدة`)) return;
+        if (!window.requireAdminAuth(`تنظيف (${deadItems.length}) سيرفر متوقف دفعة واحدة`)) return;
 
         try {
             for (const item of deadItems) {
