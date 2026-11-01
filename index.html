@@ -1908,7 +1908,7 @@ window.requireAdminAuth = function(actionName = "هذا الإجراء") {
     if (sessionStorage.getItem("albasem_admin_session") === "unlocked") {
         return true;
     }
-    const pin = prompt("🔐 أدخل الرقم السري للإدارة (PIN 2000) لتنفيذ " + actionName + ":");
+    const pin = prompt("🔐 أدخل الرقم السري الخاص بالإدارة لتنفيذ " + actionName + ":");
     if (pin && pin.trim() === "2000") {
         sessionStorage.setItem("albasem_admin_session", "unlocked");
         if (typeof showToast === "function") showToast("🔓 تم تفعيل وضع الإدارة لهذه الجلسة!");
