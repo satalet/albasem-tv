@@ -1239,15 +1239,11 @@ div[id*="signal"] div[style*="height"],
     display: none !important;
 }
 
-/* 2. ملء الشاشة 100% على الكالي والجوال والشاشات بدون أي فراغ أسود جانبي أو سفلي */
+/* 2. ملء الشاشة 100% على الكالي والجوال والشاشات بدون أي فراغ أسود */
 #player_modal:not([style*="display: none"]):not([style*="display:none"]):not(.mini-player-mode) {
     display: block !important;
     position: fixed !important;
     inset: 0 !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
     max-width: none !important;
@@ -1257,6 +1253,9 @@ div[id*="signal"] div[style*="height"],
     background: #000 !important;
     z-index: 999999 !important;
     overflow: hidden !important;
+    touch-action: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
 }
 
 #player_modal:not(.mini-player-mode) .player-content,
@@ -1265,10 +1264,6 @@ div[id*="signal"] div[style*="height"],
 #player_modal:not(.mini-player-mode) .art-video-player {
     position: fixed !important;
     inset: 0 !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
     max-width: none !important;
@@ -1279,34 +1274,45 @@ div[id*="signal"] div[style*="height"],
     border-radius: 0 !important;
     background: #000 !important;
     transform: none !important;
+    touch-action: none !important;
 }
 
-/* أوضاع موازنة وتمديد الصورة */
+/* أوضاع أبعاد الصورة الاحترافية (4 أوضاع) */
 #player_modal video {
     width: 100% !important;
     height: 100% !important;
     max-width: none !important;
     max-height: none !important;
     object-fit: fill !important;
-}
-
-#player_modal.fit-contain video {
-    object-fit: contain !important;
-}
-
-#player_modal.fit-cover video {
-    object-fit: cover !important;
+    transition: transform 0.2s ease !important;
 }
 
 #player_modal.fit-fill video {
     object-fit: fill !important;
+    transform: scale(1) !important;
+}
+
+#player_modal.fit-cover video {
+    object-fit: cover !important;
+    transform: scale(1.02) !important;
+}
+
+#player_modal.fit-contain video {
+    object-fit: contain !important;
+    transform: scale(1) !important;
+}
+
+#player_modal.fit-16-9 video {
+    object-fit: contain !important;
+    aspect-ratio: 16 / 9 !important;
+    transform: scale(1.06) !important;
 }
 
 .art-control-fullscreen {
     display: inline-flex !important;
 }
 
-/* 3. الشريط العلوي والسفلي مع اختفاء سريع وتلقائي */
+/* 3. الشريط العلوي والسفلي مع اختفاء سلس */
 #player_header_bar, .player-header {
     position: fixed !important;
     top: 0 !important;
@@ -1314,14 +1320,13 @@ div[id*="signal"] div[style*="height"],
     right: 0 !important;
     width: 100vw !important;
     box-sizing: border-box !important;
-    z-index: 50 !important;
-    background: linear-gradient(180deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.4) 75%, transparent 100%) !important;
-    padding: 8px 14px !important;
+    z-index: 80 !important;
+    background: linear-gradient(180deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.5) 75%, transparent 100%) !important;
+    padding: 8px 12px !important;
     border: none !important;
-    transition: opacity 0.2s ease, visibility 0.2s ease !important;
+    transition: opacity 0.22s ease, visibility 0.22s ease !important;
 }
 
-/* عند تفعيل الإخفاء التلقائي: يختفي البار العلوي والبار السفلي معاً لتصفية الشاشة 100% */
 .auto-hide-hud #player_header_bar,
 .auto-hide-hud .player-header,
 .auto-hide-hud .art-bottom,
@@ -1370,7 +1375,7 @@ div[id*="signal"] div[style*="height"],
     position: absolute;
     top: 6px;
     right: 6px;
-    z-index: 60;
+    z-index: 90;
     gap: 6px;
 }
 
@@ -1379,9 +1384,9 @@ div[id*="signal"] div[style*="height"],
 }
 
 .mini-action-btn {
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(15, 23, 42, 0.9);
     color: #fff;
-    border: 1px solid rgba(56, 189, 248, 0.5);
+    border: 1px solid rgba(56, 189, 248, 0.6);
     border-radius: 6px;
     padding: 4px 8px;
     font-size: 11px;
@@ -1390,18 +1395,25 @@ div[id*="signal"] div[style*="height"],
 }
 
 #quick_browse_btn, #aspect_ratio_btn {
-    background: rgba(14, 165, 233, 0.25) !important;
-    border: 1px solid #38bdf8 !important;
-    color: #fff !important;
+    background: rgba(14, 165, 233, 0.22) !important;
+    border: 1px solid rgba(56, 189, 248, 0.65) !important;
+    color: #38bdf8 !important;
     border-radius: 8px !important;
-    padding: 4px 9px !important;
+    padding: 0 9px !important;
+    height: 30px !important;
     font-size: 11.5px !important;
-    font-weight: bold !important;
+    font-weight: 800 !important;
     cursor: pointer !important;
     display: inline-flex !important;
     align-items: center !important;
+    justify-content: center !important;
     gap: 4px !important;
-    margin-right: 5px !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+}
+#quick_browse_btn:active, #aspect_ratio_btn:active {
+    background: #0284c7 !important;
+    color: #fff !important;
 }
 
 #gesture_toast_osd {
@@ -1409,18 +1421,20 @@ div[id*="signal"] div[style*="height"],
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: rgba(8, 12, 20, 0.88);
-    border: 1px solid rgba(56, 189, 248, 0.5);
+    background: rgba(10, 15, 28, 0.92);
+    border: 1.5px solid #38bdf8;
     color: #fff;
-    padding: 10px 18px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: bold;
-    z-index: 90;
+    padding: 12px 22px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 900;
+    z-index: 120;
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.2s ease;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.8);
+    text-align: center;
+    direction: rtl;
 }
 </style>
 
@@ -1433,6 +1447,14 @@ div[id*="signal"] div[style*="height"],
     let lastTouchTime = 0;
 
     function getModal() { return document.getElementById('player_modal'); }
+
+    function safeResizeArt() {
+        try {
+            if (window.art && typeof window.art.resize === 'function') {
+                window.art.resize();
+            }
+        } catch(e) {}
+    }
 
     function setMobileLandscape(enableLandscape) {
         try {
@@ -1449,7 +1471,6 @@ div[id*="signal"] div[style*="height"],
         } catch(e) {}
     }
 
-    // جدولة إخفاء البار بوقت مريح جداً (افتراضياً 4.5 ثانية)
     function scheduleHideHud(delayMs) {
         clearTimeout(hudTimer);
         hudTimer = setTimeout(() => {
@@ -1460,15 +1481,14 @@ div[id*="signal"] div[style*="height"],
         }, delayMs || 4500);
     }
 
-    // إظهار البار وتثبيته لوقت كافٍ للضغط على الأزرار
-    function showHudAndAutoHide(delayMs) {
+    window.showHudAndAutoHide = function(delayMs) {
         const modal = getModal();
         if (!modal || modal.style.display === 'none' || modal.classList.contains('mini-player-mode')) return;
         modal.classList.remove('auto-hide-hud');
         scheduleHideHud(delayMs || 4500);
-    }
+    };
 
-    function showPlayerToast(text) {
+    window.showPlayerToast = function(text) {
         const modal = getModal();
         if (!modal) return;
         let toast = document.getElementById('gesture_toast_osd');
@@ -1480,10 +1500,11 @@ div[id*="signal"] div[style*="height"],
         toast.textContent = text;
         toast.style.opacity = '1';
         clearTimeout(toastTimeout);
-        toastTimeout = setTimeout(() => { toast.style.opacity = '0'; }, 1200);
-    }
+        toastTimeout = setTimeout(() => { toast.style.opacity = '0'; }, 1400);
+    };
 
-    function cycleAspectRatio(forceFullscreen) {
+    // دالة تبديل الأبعاد الاحترافية (4 أوضاع) متاحة عالمياً
+    window.cycleAspectRatio = function(forceFullscreen) {
         const modal = getModal();
         if (!modal) return;
 
@@ -1492,24 +1513,44 @@ div[id*="signal"] div[style*="height"],
             if (reqFs) { try { reqFs.call(modal); } catch(e) {} }
         }
 
-        modal.classList.remove('fit-fill', 'fit-cover', 'fit-contain');
+        modal.classList.remove('fit-fill', 'fit-cover', 'fit-contain', 'fit-16-9');
+        const btn = document.getElementById('aspect_ratio_btn');
+
         if (currentFitMode === 'fill') {
             currentFitMode = 'cover';
             modal.classList.add('fit-cover');
-            showPlayerToast('تكبير متوازن (بدون مط)');
+            if (btn) btn.innerHTML = '📐 زووم';
+            window.showPlayerToast('📐 الأبعاد: تكبير سينمائي (بدون مط)');
         } else if (currentFitMode === 'cover') {
             currentFitMode = 'contain';
             modal.classList.add('fit-contain');
-            showPlayerToast('الأبعاد الأصلية');
+            if (btn) btn.innerHTML = '📐 أصلي';
+            window.showPlayerToast('📐 الأبعاد: الحجم الأصلي للقناة');
+        } else if (currentFitMode === 'contain') {
+            currentFitMode = '16-9';
+            modal.classList.add('fit-16-9');
+            if (btn) btn.innerHTML = '📐 16:9';
+            window.showPlayerToast('📐 الأبعاد: شاشة عريضة 16:9');
         } else {
             currentFitMode = 'fill';
             modal.classList.add('fit-fill');
-            showPlayerToast('ملء الشاشة بالكامل');
+            if (btn) btn.innerHTML = '📐 ملء';
+            window.showPlayerToast('📐 الأبعاد: ملء الشاشة بالكامل');
         }
-        if (window.art) setTimeout(() => if (window.art && typeof window.art.resize === 'function') window.art.resize(), 50);
-        // إبقاء البار ظاهراً لـ 3.5 ثانية حتى لو كبرت الصورة لتتمكن من اختيار القنوات براحتك
-        showHudAndAutoHide(3500);
-    }
+
+        setTimeout(safeResizeArt, 50);
+        window.showHudAndAutoHide(4000);
+    };
+
+    window.enableMiniPlayerMode = function(e) {
+        if (e) e.stopPropagation();
+        const modal = getModal();
+        if (!modal) return;
+        exitSystemFullscreenIfNeeded();
+        setMobileLandscape(false);
+        modal.classList.add('mini-player-mode');
+        setTimeout(safeResizeArt, 100);
+    };
 
     function exitSystemFullscreenIfNeeded() {
         if (document.fullscreenElement || document.webkitFullscreenElement) {
@@ -1519,35 +1560,11 @@ div[id*="signal"] div[style*="height"],
     }
 
     function switchChannelByStep(direction) {
-        if (direction === 'next' && typeof window.nextChannel === 'function') {
-            showPlayerToast('القناة التالية');
-            showHudAndAutoHide(3500);
-            return window.nextChannel();
-        }
-        if (direction === 'prev' && typeof window.prevChannel === 'function') {
-            showPlayerToast('القناة السابقة');
-            showHudAndAutoHide(3500);
-            return window.prevChannel();
-        }
-
-        const header = document.getElementById('player_header_bar');
-        if (!header) return;
-        const buttons = Array.from(header.querySelectorAll('button'));
-
-        for (const btn of buttons) {
-            const txt = (btn.innerText || btn.innerHTML || '') + (btn.getAttribute('onclick') || '') + (btn.title || '');
-            if (direction === 'next' && (txt.includes('⏭') || txt.toLowerCase().includes('next'))) {
-                showPlayerToast('القناة التالية');
-                btn.click();
-                showHudAndAutoHide(3500);
-                return;
-            }
-            if (direction === 'prev' && (txt.includes('⏮') || txt.toLowerCase().includes('prev'))) {
-                showPlayerToast('القناة السابقة');
-                btn.click();
-                showHudAndAutoHide(3500);
-                return;
-            }
+        const step = (direction === 'next') ? 1 : -1;
+        if (typeof window.playStepChannel === 'function') {
+            window.playStepChannel(step);
+            window.showHudAndAutoHide(4000);
+            return;
         }
     }
 
@@ -1556,57 +1573,41 @@ div[id*="signal"] div[style*="height"],
         const header = document.getElementById('player_header_bar');
         if (!modal || !header) return;
 
-        if (!document.getElementById('quick_browse_btn')) {
-            const closeBtn = header.querySelector('button');
-            if (closeBtn && closeBtn.parentElement) {
-                const aspectBtn = document.createElement('button');
-                aspectBtn.id = 'aspect_ratio_btn';
-                aspectBtn.innerHTML = 'الأبعاد';
-                aspectBtn.onclick = function(e) {
-                    e.stopPropagation();
-                    cycleAspectRatio(true);
-                };
+        // التأكد من وجود أزرار الأبعاد والقنوات المصغرة في الترويسة
+        const topRow = header.querySelector('div');
+        const closeBtn = header.querySelector('.player-close');
 
-                const miniBtn = document.createElement('button');
-                miniBtn.id = 'quick_browse_btn';
-                miniBtn.innerHTML = '📺 القنوات';
-                miniBtn.onclick = function(e) {
-                    e.stopPropagation();
-                    exitSystemFullscreenIfNeeded();
-                    setMobileLandscape(false);
-                    modal.classList.add('mini-player-mode');
-                    if (window.art) setTimeout(() => if (window.art && typeof window.art.resize === 'function') window.art.resize(), 100);
-                };
-
-                closeBtn.parentElement.insertBefore(aspectBtn, closeBtn.nextSibling);
-                closeBtn.parentElement.insertBefore(miniBtn, closeBtn.nextSibling);
-
-                closeBtn.addEventListener('click', function() {
-                    exitSystemFullscreenIfNeeded();
-                    setMobileLandscape(false);
-                });
-            }
+        if (topRow && !document.getElementById('aspect_ratio_btn')) {
+            const aspectBtn = document.createElement('button');
+            aspectBtn.id = 'aspect_ratio_btn';
+            aspectBtn.title = 'تغيير أبعاد ومقاس الفيديو';
+            aspectBtn.innerHTML = '📐 الأبعاد';
+            aspectBtn.onclick = function(e) {
+                e.stopPropagation();
+                window.cycleAspectRatio(false);
+            };
+            if (closeBtn) topRow.insertBefore(aspectBtn, closeBtn);
+            else topRow.appendChild(aspectBtn);
         }
 
-        const fsBtn = modal.querySelector('.art-control-fullscreen');
-        if (fsBtn && !fsBtn.dataset.boundCustomFs) {
-            fsBtn.dataset.boundCustomFs = '1';
-            fsBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                if (!document.fullscreenElement) {
-                    const reqFs = modal.requestFullscreen || modal.webkitRequestFullscreen;
-                    if (reqFs) { try { reqFs.call(modal); } catch(err) {} }
-                    modal.classList.remove('fit-contain', 'fit-cover');
-                    modal.classList.add('fit-fill');
-                    currentFitMode = 'fill';
-                    showPlayerToast('وضع ملء الشاشة');
-                } else {
-                    cycleAspectRatio(false);
-                }
-                if (window.art) setTimeout(() => if (window.art && typeof window.art.resize === 'function') window.art.resize(), 100);
-                // إبقاء البار ظاهراً لـ 4 ثوانٍ بعد التكبير لتتمكن من كبس "القنوات" براحتك
-                showHudAndAutoHide(4000);
-            }, true);
+        if (topRow && !document.getElementById('quick_browse_btn')) {
+            const miniBtn = document.createElement('button');
+            miniBtn.id = 'quick_browse_btn';
+            miniBtn.title = 'تصغير المشغل وتصفح القنوات';
+            miniBtn.innerHTML = '📺 القنوات';
+            miniBtn.onclick = function(e) {
+                window.enableMiniPlayerMode(e);
+            };
+            if (closeBtn) topRow.insertBefore(miniBtn, closeBtn);
+            else topRow.appendChild(miniBtn);
+        }
+
+        if (closeBtn && !closeBtn.dataset.boundExitFs) {
+            closeBtn.dataset.boundExitFs = '1';
+            closeBtn.addEventListener('click', function() {
+                exitSystemFullscreenIfNeeded();
+                setMobileLandscape(false);
+            });
         }
 
         const content = modal.querySelector('.player-content');
@@ -1614,7 +1615,7 @@ div[id*="signal"] div[style*="height"],
             const overlay = document.createElement('div');
             overlay.id = 'mini_restore_overlay';
             overlay.innerHTML = `
-                <button class="mini-action-btn" id="mini_expand_btn">تكبير</button>
+                <button class="mini-action-btn" id="mini_expand_btn">🔍 تكبير</button>
                 <button class="mini-action-btn" id="mini_close_btn" style="border-color:#ef4444;color:#fca5a5;">✖</button>
             `;
             content.appendChild(overlay);
@@ -1623,34 +1624,34 @@ div[id*="signal"] div[style*="height"],
                 e.stopPropagation();
                 modal.classList.remove('mini-player-mode');
                 setMobileLandscape(true);
-                if (window.art) setTimeout(() => if (window.art && typeof window.art.resize === 'function') window.art.resize(), 100);
-                showHudAndAutoHide(4000);
+                setTimeout(safeResizeArt, 100);
+                window.showHudAndAutoHide(4000);
             };
             document.getElementById('mini_close_btn').onclick = function(e) {
                 e.stopPropagation();
                 modal.classList.remove('mini-player-mode');
                 exitSystemFullscreenIfNeeded();
                 setMobileLandscape(false);
-                const origClose = header.querySelector('button');
-                if (origClose) origClose.click();
+                if (typeof window.closeWebPlayer === 'function') window.closeWebPlayer();
                 else modal.style.display = 'none';
             };
         }
     }
 
-    // عند بدء تشغيل الفيديو، يظهر البار لمدة 4 ثوانٍ كاملة قبل أن يختفي بهدوء
     ['play', 'playing'].forEach(evt => {
         document.addEventListener(evt, function(e) {
             if (e.target && e.target.tagName === 'VIDEO') {
-                if (window.art) setTimeout(() => if (window.art && typeof window.art.resize === 'function') window.art.resize(), 50);
-                showHudAndAutoHide(4000);
+                setTimeout(safeResizeArt, 50);
+                window.showHudAndAutoHide(4500);
             }
         }, true);
     });
 
-    // إدارة اللمس الذكية للجوال بدون تعارض مع أحداث الماوس الوهمية
-    let touchStartX = 0;
-    let touchStartY = 0;
+    // =====================================================
+    // 📱 محرك لمس وسحب الجوال الذكي (تقليب قنوات + أبعاد + إظهار البار)
+    // =====================================================
+    let touchStartX = null;
+    let touchStartY = null;
     let touchStartTime = 0;
     let lastTapTime = 0;
     let singleTapTimer = null;
@@ -1663,101 +1664,92 @@ div[id*="signal"] div[style*="height"],
         if (e.touches.length !== 1) return;
 
         const target = e.target;
-        // إذا لمس المستخدم البار العلوي أو السفلي أو أي زر، نثبت البار لـ 6 ثوانٍ كاملة
-        if (target.closest('#player_header_bar') || target.closest('.art-bottom') || target.closest('button') || target.closest('select')) {
+        // إذا لمس البار العلوي أو السفلي أو الأزرار، نثبت البار ولا نعتبرها سحبة قناة
+        if (
+            target.closest('#player_header_bar') ||
+            target.closest('.art-bottom') ||
+            target.closest('.art-controls') ||
+            target.closest('button') ||
+            target.closest('select')
+        ) {
+            touchStartX = null;
             touchStartY = null;
-            showHudAndAutoHide(6000);
+            window.showHudAndAutoHide(6000);
             return;
         }
 
-        // حفظ حالة البار لحظة بداية اللمس (قبل أي تداخل)
         wasHiddenOnTouchStart = modal.classList.contains('auto-hide-hud');
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         touchStartTime = Date.now();
-    }, { passive: true });
+    }, { passive: true, capture: true });
 
     document.addEventListener('touchend', function(e) {
         lastTouchTime = Date.now();
         const modal = getModal();
         if (!modal || modal.style.display === 'none' || modal.classList.contains('mini-player-mode')) return;
-        if (touchStartY === null || e.changedTouches.length !== 1) return;
+        if (touchStartY === null || touchStartX === null || e.changedTouches.length !== 1) return;
 
         const dx = e.changedTouches[0].clientX - touchStartX;
         const dy = e.changedTouches[0].clientY - touchStartY;
+        const absX = Math.abs(dx);
+        const absY = Math.abs(dy);
         const dt = Date.now() - touchStartTime;
 
-        // 1. سحبة إصبع لتقليب القنوات
-        if (dt < 600 && Math.abs(dy) > 55 && Math.abs(dy) > Math.abs(dx) * 1.3) {
-            if (dy < 0) switchChannelByStep('next');
-            else switchChannelByStep('prev');
-            touchStartY = null;
+        touchStartX = null;
+        touchStartY = null;
+
+        // 1. سحبة عمودية (فوق / تحت) لتقليب المحطات
+        if (dt < 750 && absY > 42 && absY > absX * 1.15) {
+            if (dy < 0) {
+                window.showPlayerToast('⏭️ القناة التالية');
+                switchChannelByStep('next');
+            } else {
+                window.showPlayerToast('⏮️ القناة السابقة');
+                switchChannelByStep('prev');
+            }
             return;
         }
 
-        // 2. لمسة على الفيديو
-        if (Math.abs(dx) < 25 && Math.abs(dy) < 25 && dt < 350) {
+        // 2. سحبة أفقية (يمين / يسار) لتقليب المحطات في البث المباشر
+        const isLiveMode = (typeof currentTab === 'undefined' || currentTab === 'live');
+        if (isLiveMode && dt < 750 && absX > 55 && absX > absY * 1.25) {
+            if (dx < 0) {
+                window.showPlayerToast('⏭️ القناة التالية');
+                switchChannelByStep('next');
+            } else {
+                window.showPlayerToast('⏮️ القناة السابقة');
+                switchChannelByStep('prev');
+            }
+            return;
+        }
+
+        // 3. نقرة أو نقرتين (Tap / Double Tap)
+        if (absX < 28 && absY < 28 && dt < 400) {
             const now = Date.now();
-            if (now - lastTapTime < 300) {
-                // دبل تاب -> تبديل الأبعاد مع إبقاء البار ظاهراً
+            if (now - lastTapTime < 320) {
+                // دبل تاب -> تبديل أبعاد الفيديو فوراً
                 clearTimeout(singleTapTimer);
-                cycleAspectRatio(true);
+                window.cycleAspectRatio(true);
                 lastTapTime = 0;
             } else {
                 lastTapTime = now;
                 if (wasHiddenOnTouchStart) {
-                    // إذا كان البار مخفياً، أظهره فوراً وبدون أي تأخير لمدة 5 ثوانٍ كاملة!
-                    showHudAndAutoHide(5000);
+                    window.showHudAndAutoHide(5000);
                 } else {
-                    // إذا كان ظاهراً بالفعل، انتظر 260ms (للتأكد أنها ليست دبل تاب) ثم أخفه
                     singleTapTimer = setTimeout(() => {
                         modal.classList.add('auto-hide-hud');
                         clearTimeout(hudTimer);
-                    }, 260);
+                    }, 270);
                 }
             }
         }
-        touchStartY = null;
-    }, { passive: true });
+    }, { passive: true, capture: true });
 
-    // تجاهل أحداث الماوس الوهمية على الجوال لمدة ثانية كاملة بعد أي لمسة
     document.addEventListener('mousemove', function() {
         if (Date.now() - lastTouchTime < 1200) return;
-        showHudAndAutoHide(3500);
+        window.showHudAndAutoHide(3500);
     }, { passive: true });
-
-    document.addEventListener('keydown', function(e) {
-        const modal = getModal();
-        if (!modal || modal.style.display === 'none') return;
-
-        if (e.key === 'ChannelUp' || e.key === 'PageUp' || e.key === 'MediaTrackNext') {
-            e.preventDefault();
-            switchChannelByStep('next');
-        } else if (e.key === 'ChannelDown' || e.key === 'PageDown' || e.key === 'MediaTrackPrevious') {
-            e.preventDefault();
-            switchChannelByStep('prev');
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            const v = document.querySelector('video');
-            if (v) {
-                v.muted = false;
-                v.volume = Math.min(1, +(v.volume + 0.1).toFixed(2));
-                showPlayerToast('🔊 الصوت: ' + Math.round(v.volume * 100) + '%');
-            }
-        } else if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            const v = document.querySelector('video');
-            if (v) {
-                v.volume = Math.max(0, +(v.volume - 0.1).toFixed(2));
-                showPlayerToast('🔉 الصوت: ' + Math.round(v.volume * 100) + '%');
-            }
-        } else if (e.key === 'f' || e.key === 'F') {
-            e.preventDefault();
-            cycleAspectRatio(true);
-        } else {
-            showHudAndAutoHide(4500);
-        }
-    });
 
     const observer = new MutationObserver(function() {
         const modal = getModal();
@@ -1769,11 +1761,9 @@ div[id*="signal"] div[style*="height"],
             if (!modal.classList.contains('mini-player-mode')) {
                 setMobileLandscape(true);
             }
-            if (window.art) {
-                setTimeout(() => if (window.art && typeof window.art.resize === 'function') window.art.resize(), 80);
-                setTimeout(() => if (window.art && typeof window.art.resize === 'function') window.art.resize(), 350);
-            }
-            showHudAndAutoHide(4500);
+            setTimeout(safeResizeArt, 80);
+            setTimeout(safeResizeArt, 350);
+            window.showHudAndAutoHide(4500);
             if (!historyPushed) {
                 history.pushState({ albasemPlayerOpen: true }, '');
                 historyPushed = true;
@@ -1795,22 +1785,8 @@ div[id*="signal"] div[style*="height"],
         }
         injectCustomControls();
     });
-
-    window.addEventListener('popstate', function() {
-        const modal = getModal();
-        if (modal && modal.style.display !== 'none') {
-            historyPushed = false;
-            modal.classList.remove('mini-player-mode');
-            exitSystemFullscreenIfNeeded();
-            setMobileLandscape(false);
-            const closeBtn = document.querySelector('#player_header_bar button');
-            if (closeBtn) closeBtn.click();
-            else modal.style.display = 'none';
-        }
-    });
 })();
 </script>
-
 
 <style id="packages-compact-arabic-style">
 #packages_section {
@@ -3444,6 +3420,8 @@ function copyMPV(url) {
                     <button onclick="playStepChannel(-1)" title="السابق (قناة / حلقة)" style="background:#0284C7; color:#fff; border:none; width:34px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; cursor:pointer; flex-shrink:0; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,0.4);">⏮</button>
                     <span id="player_title" style="font-size:12px; font-weight:700; color:#f8fafc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; text-align:center; direction:rtl;">مشغل الفيديو</span>
                     <button onclick="playStepChannel(1)" title="التالي (قناة / حلقة)" style="background:#0284C7; color:#fff; border:none; width:34px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; cursor:pointer; flex-shrink:0; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,0.4);">⏭</button>
+                    <button id="aspect_ratio_btn" onclick="window.cycleAspectRatio(false)" title="تغيير أبعاد الفيديو (ملء / زووم / أصلي / 16:9)" style="background:rgba(14,165,233,0.22); color:#38BDF8; border:1px solid rgba(56,189,248,0.65); border-radius:8px; padding:0 9px; height:30px; font-size:11.5px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:4px; flex-shrink:0;">📐 ملء</button>
+                    <button id="quick_browse_btn" onclick="window.enableMiniPlayerMode(event)" title="تصغير المشغل وتصفح القنوات" style="background:rgba(14,165,233,0.22); color:#38BDF8; border:1px solid rgba(56,189,248,0.65); border-radius:8px; padding:0 9px; height:30px; font-size:11.5px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:4px; flex-shrink:0;">📺 القنوات</button>
                     <button onclick="toggleSatSignalOsd()" title="عرض إشارة الستلايت والمعلومات" style="background:rgba(56,189,248,0.18); color:#38BDF8; border:1px solid rgba(56,189,248,0.4); border-radius:8px; padding:0 8px; height:30px; font-size:12px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:4px; flex-shrink:0;">📡</button>
                      <button id="btn_player_wa" onclick="shareCurrentLiveFromPlayer()" title="مشاركة البث المباشر عبر واتساب" style="display:none; background:rgba(37,211,102,0.18); color:#25D366; border:1px solid rgba(37,211,102,0.45); border-radius:8px; padding:0 8px; height:30px; font-size:12px; font-weight:bold; cursor:pointer; align-items:center; gap:4px; flex-shrink:0; box-shadow:0 2px 6px rgba(0,0,0,0.3);">📲</button>
                     <button class="player-close" onclick="closeWebPlayer()" style="background:rgba(239,68,68,0.2); color:#EF4444; border:1px solid rgba(239,68,68,0.4); width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; margin-right:2px;">✕</button>
