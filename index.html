@@ -5994,5 +5994,452 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 })();
 </script>
 
+
+<script id="albasem-smart-hunter-pro-v3">
+// =========================================================================
+// 🎯 محرك صائد السيرفرات الذكي والرادار المدمج (Smart Hunter Pro v3.0)
+// =========================================================================
+window.openScannerModal = function() {
+    const modal = document.getElementById("scanner_modal");
+    if (modal) modal.style.display = "flex";
+    const st = document.getElementById("scan_status");
+    if (st) st.style.display = "none";
+    const box = document.getElementById("scan_result_box");
+    if (box) box.style.display = "none";
+};
+
+window.closeScannerModal = function() {
+    const modal = document.getElementById("scanner_modal");
+    if (modal) modal.style.display = "none";
+};
+
+// دعم إغلاق الفاحص بزر ESC أو النقر على الخلفية المعتمة
+document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape") {
+        const modal = document.getElementById("scanner_modal");
+        if (modal && modal.style.display === "flex") {
+            window.closeScannerModal();
+        }
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    const modal = document.getElementById("scanner_modal");
+    if (modal) {
+        modal.addEventListener("click", function(e) {
+            if (e.target === modal) window.closeScannerModal();
+        });
+    }
+});
+
+// ضغط وتحسين الصورة لتسريع القراءة بالذكاء الاصطناعي ومنع Timeout
+window.compressImageForOCR = async function(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement("canvas");
+                const MAX_W = 1280;
+                let w = img.width;
+                let h = img.height;
+                if (w > MAX_W) {
+                    h = Math.round((h * MAX_W) / w);
+                    w = MAX_W;
+                }
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, w, h);
+                const compressedB64 = canvas.toDataURL("image/jpeg", 0.84);
+                resolve({ base64: compressedB64, mime: "image/jpeg" });
+            };
+            img.onerror = () => resolve({ base64: e.target.result, mime: file.type || "image/jpeg" });
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+};
+
+// عرض معاينة مصغرة للصورة الملتقطة داخل الفاحص
+window.showScannedImagePreview = function(base64Src) {
+    const txtArea = document.getElementById("raw_scan_text");
+    if (!txtArea) return;
+    let prevBox = document.getElementById("ocr_img_preview_box");
+    if (!prevBox) {
+        prevBox = document.createElement("div");
+        prevBox.id = "ocr_img_preview_box";
+        prevBox.style.cssText = "display:none; margin-bottom:8px; text-align:center; background:#0B0E14; border:1px dashed #334155; border-radius:8px; padding:6px; position:relative;";
+        txtArea.parentNode.insertBefore(prevBox, txtArea);
+    }
+    if (base64Src) {
+        prevBox.style.display = "block";
+        prevBox.innerHTML = `<img src="${base64Src}" style="max-height:95px; max-width:100%; border-radius:6px; object-fit:contain;" />`;
+    } else {
+        prevBox.style.display = "none";
+    }
+};
+
+// استخراج ذكي للهوست واليوزر والباسورد من أي نص ملصوق أو مستخرج
+window.extractXtreamFromRawText = function(rawText) {
+    if (!rawText) return null;
+    const clean = rawText.replace(/[|\/_~«»•👑🔒🌐]/g, " ");
+
+    const fullUrlMatch = rawText.match(/https?:\/\/[^\s"'<>]+get\.php\?username=[^\s"'<>]+/i);
+    if (fullUrlMatch) return fullUrlMatch[0].trim();
+
+    let host = "";
+    const serverLabelMatch = rawText.match(/(?:server|host|url|سيرفر|الرابط|هوست)\s*[:=\-]?\s*(https?:\/\/[^\s]+|[a-zA-Z0-9][-a-zA-Z0-9.]+\.[a-zA-Z]{2,}(?::\d+)?)/i);
+    if (serverLabelMatch) {
+        host = serverLabelMatch[1].trim();
+    } else {
+        const anyUrlMatch = rawText.match(/https?:\/\/[a-zA-Z0-9][-a-zA-Z0-9.]+\.[a-zA-Z]{2,}(?::\d+)?/i);
+        if (anyUrlMatch) host = anyUrlMatch[0].trim();
+    }
+    if (host && !host.startsWith("http")) host = "http://" + host;
+    host = host.replace(/\/+$/, "");
+
+    let user = "";
+    const userMatch = clean.match(/(?:user(?:name)?|يوزر|المستخدم|اسم المستخدم)\s*[:=\-]?\s*([a-zA-Z0-9_.\-@]+)/i);
+    if (userMatch) user = userMatch[1].trim();
+
+    let pass = "";
+    const passMatch = clean.match(/(?:pass(?:word)?|باسورد|كلمة المرور|السر|باس)\s*[:=\-]?\s*([a-zA-Z0-9_.\-@]+)/i);
+    if (passMatch) pass = passMatch[1].trim();
+
+    if (host && user && pass) {
+        return `${host}/get.php?username=${encodeURIComponent(user)}&password=${encodeURIComponent(pass)}&type=m3u_plus&output=m3u8`;
+    }
+    return null;
+};
+
+// 1. لقط الشاشة مباشرة (Live Snippet)
+window.captureLiveScreen = async function() {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile || !navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+        showToast("📱 جاري فتح الاستوديو لاختيار لقطة الشاشة");
+        document.getElementById("ocr_file").click();
+        return;
+    }
+
+    try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: { mediaSource: "screen" } });
+        const track = stream.getVideoTracks()[0];
+        let bitmap = null;
+
+        if (typeof ImageCapture !== "undefined") {
+            const imageCapture = new ImageCapture(track);
+            bitmap = await imageCapture.grabFrame();
+        } else {
+            const tempVideo = document.createElement("video");
+            tempVideo.srcObject = stream;
+            await tempVideo.play();
+            const c = document.createElement("canvas");
+            c.width = tempVideo.videoWidth || 1280;
+            c.height = tempVideo.videoHeight || 720;
+            c.getContext("2d").drawImage(tempVideo, 0, 0);
+            track.stop();
+            c.toBlob(blob => { if (blob) window.readImageAndScan(blob); }, "image/jpeg", 0.85);
+            return;
+        }
+
+        track.stop();
+        const canvas = document.createElement("canvas");
+        canvas.width = bitmap.width;
+        canvas.height = bitmap.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(bitmap, 0, 0);
+
+        canvas.toBlob(blob => {
+            if (blob) window.readImageAndScan(blob);
+        }, "image/jpeg", 0.85);
+    } catch (err) {
+        showToast("📁 اختر الصورة من جهازك");
+        document.getElementById("ocr_file").click();
+    }
+};
+
+// 2. لصق الحافظة فورا (صورة أو نص)
+window.pasteClipboardDirect = async function() {
+    try {
+        if (navigator.clipboard && navigator.clipboard.read) {
+            const items = await navigator.clipboard.read();
+            for (let item of items) {
+                const imgType = item.types.find(t => t.startsWith("image/"));
+                if (imgType) {
+                    const blob = await item.getType(imgType);
+                    window.readImageAndScan(blob);
+                    return;
+                }
+            }
+        }
+        if (navigator.clipboard && navigator.clipboard.readText) {
+            const text = await navigator.clipboard.readText();
+            if (text && text.trim()) {
+                document.getElementById("raw_scan_text").value = text.trim();
+                window.processTextScan();
+                return;
+            }
+        }
+        alert("الحافظة فارغة! التقط صورة شاشة أو انسخ نص السيرفر أولا، أو اضغط Ctrl+V.");
+    } catch (err) {
+        const txtArea = document.getElementById("raw_scan_text");
+        if (txtArea) txtArea.focus();
+        showToast("📋 اضغط Ctrl+V الآن للصق الصورة أو النص مباشرة");
+    }
+};
+
+window.handleImageUpload = function(e) {
+    const file = e.target.files[0];
+    if (file) window.readImageAndScan(file);
+};
+
+// عرض النتيجة المتكاملة مع فحص الرادار العميق وأزرار (التشغيل الفوري) أو (الحفظ ومتابعة الصيد)
+window.renderHunterSuccessBox = async function(serverInfo) {
+    const st = document.getElementById("scan_status");
+    const box = document.getElementById("scan_result_box");
+    const titleEl = document.getElementById("res_title");
+    const detailsEl = document.getElementById("res_details");
+    const applyBtn = document.getElementById("btn_apply_link");
+
+    if (st) st.style.display = "none";
+    if (!box) return;
+
+    box.style.display = "block";
+    box.style.borderColor = "#10B981";
+    titleEl.innerHTML = "✅ تم صيد السيرفر وتوثيق صلاحيته بنجاح!";
+
+    detailsEl.innerHTML = `
+        <div style="line-height:1.7;">
+            <b>🌐 الهوست:</b> <span style="color:#38BDF8;">${serverInfo.host || "مباشر"}</span><br>
+            <b>👤 المستخدم:</b> <span style="color:#FFB703;">${serverInfo.user || "-"}</span> | <b>🔑 المرور:</b> <span style="color:#FFB703;">${serverInfo.pass || "-"}</span><br>
+            <b>👥 الاتصالات:</b> ${serverInfo.active_cons ?? 0} / ${serverInfo.max_cons ?? 1} | <b>📅 الانتهاء:</b> ${serverInfo.exp_date || "مفتوح"}<br>
+            <div id="hunter_deep_radar_badge" style="margin-top:6px; padding:6px 10px; border-radius:6px; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.35); color:#38BDF8; font-weight:bold; font-size:11.5px;">
+                🧠 جاري قياس سرعة تدفق البث الفعلي (Mbps) بالرادار الذكي...
+            </div>
+        </div>
+    `;
+
+    // حفظ تلقائي في آخر قائمة سيرفراتي
+    if (typeof saveScannedLinkAuto === "function") {
+        saveScannedLinkAuto(serverInfo.url, `سيرفر OCR (${serverInfo.host || "مفروز"})`);
+    }
+
+    // إعداد أزرار التحكم السريعة للصيد المتتالي
+    if (applyBtn) {
+        applyBtn.innerHTML = "🚀 اعتماد وتشغيل هذه الباقة الآن";
+        applyBtn.onclick = () => {
+            document.getElementById("iptv_url").value = serverInfo.url;
+            window.closeScannerModal();
+            loadAndParse();
+        };
+
+        let huntNextBtn = document.getElementById("btn_hunt_next_server");
+        if (!huntNextBtn) {
+            huntNextBtn = document.createElement("button");
+            huntNextBtn.id = "btn_hunt_next_server";
+            huntNextBtn.className = "btn-parse";
+            huntNextBtn.style.cssText = "width:100%; margin-top:6px; background:#0284C7; border:1px solid #38BDF8;";
+            applyBtn.parentNode.appendChild(huntNextBtn);
+        }
+        huntNextBtn.innerHTML = "💾 تم الحفظ في سيرفراتي • صيد سيرفر آخر ➕";
+        huntNextBtn.onclick = () => {
+            document.getElementById("raw_scan_text").value = "";
+            window.showScannedImagePreview(null);
+            box.style.display = "none";
+            showToast("🎯 جاهز لصيد السيرفر التالي! التقط أو الصق الآن.");
+        };
+    }
+
+    // فحص عميق بالرادار الذكي لعرض السكور والـ Mbps مباشرة داخل نافذة الفاحص
+    try {
+        const rDeep = await fetch(`${BACKEND_URL}/api/deep_check`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: serverInfo.url })
+        });
+        if (rDeep.ok) {
+            const deepData = await rDeep.json();
+            const radarBadge = document.getElementById("hunter_deep_radar_badge");
+            if (radarBadge) {
+                if (deepData.status === "online") {
+                    radarBadge.style.background = "rgba(16,185,129,0.15)";
+                    radarBadge.style.borderColor = "#10B981";
+                    radarBadge.style.color = "#10B981";
+                    radarBadge.innerHTML = `${deepData.reason || "🔥 سيرفر بطل شغال بتدفق ممتاز"}`;
+                } else if (deepData.status === "busy") {
+                    radarBadge.style.background = "rgba(245,158,11,0.15)";
+                    radarBadge.style.borderColor = "#F59E0B";
+                    radarBadge.style.color = "#F59E0B";
+                    radarBadge.innerHTML = `${deepData.reason || "⚠️ الحساب شغال لكن تدفق البث ضعيف"}`;
+                } else {
+                    radarBadge.style.background = "rgba(239,68,68,0.15)";
+                    radarBadge.style.borderColor = "#EF4444";
+                    radarBadge.style.color = "#EF4444";
+                    radarBadge.innerHTML = `${deepData.reason || "❌ الحساب فعال لكن البث محجوب أو متوقف"}`;
+                }
+            }
+        }
+    } catch (e) {}
+};
+
+// 3. قراءة الصورة وضغطها وفحصها بالذكاء الاصطناعي + المحرك الرديف
+window.readImageAndScan = async function(file) {
+    const st = document.getElementById("scan_status");
+    const txtArea = document.getElementById("raw_scan_text");
+    const box = document.getElementById("scan_result_box");
+    if (box) box.style.display = "none";
+
+    if (st) {
+        st.style.display = "block";
+        st.style.color = "#38BDF8";
+        st.innerText = "⚡ جاري ضغط الصورة واستخراج السيرفر بالذكاء الاصطناعي...";
+    }
+
+    try {
+        const { base64, mime } = await window.compressImageForOCR(file);
+        window.showScannedImagePreview(base64);
+
+        let d = null;
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 24000);
+            const r = await fetch(`${BACKEND_URL}/api/ai-scan`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image: base64, mime_type: mime }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            d = await r.json();
+        } catch (aiErr) {
+            console.warn("AI Scan fallback to local OCR:", aiErr);
+        }
+
+        if (d && d.success) {
+            if (txtArea) {
+                txtArea.value = `SERVER: http://${d.host}:${d.port || 80}
+USER: ${d.user}
+PASS: ${d.pass}
+URL: ${d.url}`;
+            }
+            await window.renderHunterSuccessBox(d);
+            return;
+        }
+
+        // خط الدفاع الثاني: قارئ Tesseract المحلي إذا كان السيرفر في الصورة غير مكتمل أو تأخر AI
+        if (st) {
+            st.style.color = "#F59E0B";
+            st.innerText = "🔄 جاري استخراج النص عبر القارئ المحلي الذكي (Tesseract OCR)...";
+        }
+
+        if (typeof Tesseract !== "undefined") {
+            const ocrRes = await Tesseract.recognize(base64, "eng");
+            const rawText = (ocrRes && ocrRes.data && ocrRes.data.text) ? ocrRes.data.text.trim() : "";
+            if (rawText && txtArea) {
+                const builtUrl = window.extractXtreamFromRawText(rawText);
+                txtArea.value = builtUrl ? `${rawText}
+${builtUrl}` : rawText;
+                await window.checkWithBackend(txtArea.value);
+                return;
+            }
+        }
+
+        if (st) {
+            st.style.color = "#EF4444";
+            st.innerText = "❌ " + ((d && d.message) ? d.message : "تعذر استخراج بيانات صالحة من الصورة.");
+        }
+    } catch (err) {
+        if (st) {
+            st.style.color = "#EF4444";
+            st.innerText = "❌ خطأ أثناء معالجة الصورة: " + err.message;
+        }
+    }
+};
+
+// 4. فحص النص الملصوق أو المستخرج يدويا
+window.processTextScan = function() {
+    const txtArea = document.getElementById("raw_scan_text");
+    const txt = txtArea ? txtArea.value.trim() : "";
+    if (!txt) return alert("يرجى لصق نص السيرفر أو التقاط صورة شاشة أولا!");
+    window.checkWithBackend(txt);
+};
+
+window.checkWithBackend = async function(text) {
+    const st = document.getElementById("scan_status");
+    const box = document.getElementById("scan_result_box");
+    if (box) box.style.display = "none";
+
+    if (st) {
+        st.style.display = "block";
+        st.style.color = "#38BDF8";
+        st.innerText = "🔌 جاري الاتصال بالسيرفر وفحص الصلاحية والرادار...";
+    }
+
+    // استخراج الرابط محليا كخط مساند في حال كان النص يحتوي رموزا خاصة
+    const localBuiltUrl = window.extractXtreamFromRawText(text);
+    const payloadText = localBuiltUrl ? `${text}
+${localBuiltUrl}` : text;
+
+    try {
+        const r = await fetch(`${BACKEND_URL}/api/check`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: payloadText })
+        });
+        const d = await r.json();
+
+        if (d && d.success) {
+            await window.renderHunterSuccessBox(d);
+            return;
+        }
+
+        // إذا لم يتعرف /api/check على الصيغة ولكن نجح المحلل المحلي باستخراج رابط M3U كامل، نفحصه مباشرة بالرادار العميق
+        if (localBuiltUrl) {
+            const rDeep = await fetch(`${BACKEND_URL}/api/deep_check`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: localBuiltUrl })
+            });
+            const deepD = await rDeep.json();
+            if (deepD && deepD.online) {
+                const m = localBuiltUrl.match(/https?:\/\/([^:/]+)(?::(\d+))?.*?username=([^&]+)&password=([^&]+)/i);
+                await window.renderHunterSuccessBox({
+                    url: localBuiltUrl,
+                    host: m ? m[1] : "سيرفر مستخرج",
+                    port: m ? (m[2] || 80) : 80,
+                    user: m ? decodeURIComponent(m[3]) : "-",
+                    pass: m ? decodeURIComponent(m[4]) : "-",
+                    active_cons: deepD.active_cons || "-",
+                    max_cons: "",
+                    exp_date: deepD.exp_date || "مفتوح"
+                });
+                return;
+            }
+        }
+
+        if (st) {
+            st.style.color = "#EF4444";
+            st.innerText = "❌ " + ((d && d.message) ? d.message : "السيرفر متوقف أو البيانات غير صحيحة.");
+        }
+    } catch (err) {
+        if (st) {
+            st.style.color = "#EF4444";
+            st.innerText = "❌ فشل الاتصال بمحرك الفحص: " + err.message;
+        }
+    }
+};
+
+// ربط الأسماء العامة لضمان استجابة كافة أزرار الـ HTML فورا
+var openScannerModal = window.openScannerModal;
+var closeScannerModal = window.closeScannerModal;
+var captureLiveScreen = window.captureLiveScreen;
+var pasteClipboardDirect = window.pasteClipboardDirect;
+var handleImageUpload = window.handleImageUpload;
+var readImageAndScan = window.readImageAndScan;
+var processTextScan = window.processTextScan;
+var checkWithBackend = window.checkWithBackend;
+</script>
+
 </body>
 </html>
