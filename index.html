@@ -2301,37 +2301,48 @@ var ADMIN_PIN = "2000";
 
     <!-- Scanner / OCR Modal -->
     <div class="modal" id="scanner_modal">
-        <div class="modal-content">
-            <div class="modal-close" onclick="closeScannerModal()">&times;</div>
-            <h3 style="color:#FFB703;margin-bottom:6px;">🎯 الفاحص الذكي وقراءة الشاشة</h3>
-            <p style="font-size:12px;color:#94A3B8;">التقط سكرين شوت أو الصق الحافظة مباشرة بدون الحاجة لحفظ صور:</p>
-
-            <div class="ocr-tools">
-                <div class="btn-tool" onclick="captureLiveScreen()">
-                    <div style="font-size:24px;margin-bottom:4px;">📸</div>
-                    <div>لقط الشاشة مباشرة (Live Snippet)</div>
+        <div class="modal-content" style="max-width: 580px; width: 96%; max-height: 90vh; overflow-y: auto; overscroll-behavior: contain; padding: 14px 16px; border-radius: 14px; border: 1px solid #38BDF8; box-shadow: 0 15px 40px rgba(0,0,0,0.85);">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #222938; padding-bottom:8px; margin-bottom:10px;">
+                <div>
+                    <h3 style="color:#FFB703; font-size:15.5px; margin:0; display:flex; align-items:center; gap:6px;">🎯 صائد السيرفرات الذكي (Gemini Vision)</h3>
                 </div>
-                <div class="btn-tool" onclick="pasteClipboardDirect()">
-                    <div style="font-size:24px;margin-bottom:4px;">📋</div>
-                    <div>لصق الحافظة فوراً (صورة أو نص)</div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <button onclick="window.resetScannerBox(true)" title="تفريغ وتصفير النافذة لفحص جديد" style="background:rgba(245,158,11,0.15); border:1px solid #F59E0B; color:#F59E0B; border-radius:7px; padding:4px 10px; font-size:11.5px; font-weight:bold; cursor:pointer;">🧹 تفريغ</button>
+                    <button onclick="window.closeScannerModal()" title="إغلاق" style="background:rgba(239,68,68,0.18); border:1px solid #EF4444; color:#EF4444; border-radius:7px; width:28px; height:28px; font-size:15px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center;">✕</button>
                 </div>
             </div>
 
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <span style="font-size:11px;color:#64748B;">أو رفع صورة محفوظة:</span>
-                <button onclick="document.getElementById('ocr_file').click()" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:11px;font-weight:bold;">اختر من الملفات 📁</button>
-                <input type="file" id="ocr_file" accept="image/*" style="display:none;" onchange="handleImageUpload(event)">
+            <!-- أزرار اللقط واللصق بحجم مدمج ومريح للكمبيوتر -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr auto; gap:8px; margin-bottom:10px;">
+                <button class="btn-tool" onclick="window.captureLiveScreen()" style="padding:8px 10px; display:flex; align-items:center; justify-content:center; gap:7px; border-radius:8px; font-size:12px;">
+                    <span style="font-size:17px;">📸</span> <span>لقط الشاشة</span>
+                </button>
+                <button class="btn-tool" onclick="window.pasteClipboardDirect()" style="padding:8px 10px; display:flex; align-items:center; justify-content:center; gap:7px; border-radius:8px; font-size:12px;">
+                    <span style="font-size:17px;">📋</span> <span>لصق (صورة/نص)</span>
+                </button>
+                <button class="btn-tool" onclick="document.getElementById('ocr_file').click()" style="padding:8px 12px; display:flex; align-items:center; justify-content:center; gap:5px; border-radius:8px; font-size:12px; color:#38BDF8; border-color:rgba(56,189,248,0.4);">
+                    <span>📁</span> <span>ملف</span>
+                </button>
+                <input type="file" id="ocr_file" accept="image/*" style="display:none;" onchange="window.handleImageUpload(event)">
             </div>
 
-            <textarea id="raw_scan_text" style="width:100%;height:65px;background:#0B0E14;border:1px solid #334155;border-radius:8px;color:#fff;padding:8px;font-size:12px;outline:none;" placeholder="النص المستخرج أو الملصوق سيظهر هنا..."></textarea>
-            
-            <button class="btn-parse" style="width:100%;margin-top:8px;" id="btn_do_scan" onclick="processTextScan()">بدء الفحص والتشخيص ⚡</button>
-            <div id="scan_status" style="display:none;font-size:12px;margin-top:10px;text-align:center;"></div>
+            <!-- صف مدمج يجمع معاينة الصورة المصغرة بجانب صندوق النص لتوفير المساحة الرأسية -->
+            <div style="display:flex; gap:8px; align-items:stretch; margin-bottom:8px;">
+                <div id="ocr_img_preview_box" style="display:none; width:115px; flex-shrink:0; background:#0B0E14; border:1px dashed #38BDF8; border-radius:8px; padding:4px; align-items:center; justify-content:center;"></div>
+                <textarea id="raw_scan_text" dir="ltr" style="flex:1; height:74px; background:#0B0E14; border:1px solid #334155; border-radius:8px; color:#38BDF8; padding:8px; font-size:12px; font-family:monospace; outline:none; resize:vertical;" placeholder="SERVER / USER / PASS (يظهر هنا تلقائيا من الصورة أو الصق النص يدويا)..."></textarea>
+            </div>
 
-            <div id="scan_result_box" style="display:none;margin-top:12px;background:#0B0E14;border:1px solid #10B981;border-radius:8px;padding:12px;">
-                <div style="color:#10B981;font-weight:bold;font-size:13px;" id="res_title">✅ السيرفر شغال وفعال!</div>
-                <div style="font-size:12px;color:#E2E8F0;margin-top:6px;" id="res_details"></div>
-                <button class="btn-parse" style="width:100%;margin-top:10px;background:#10B981;" id="btn_apply_link">🚀 اعتماد وتشغيل هذه الباقة الآن</button>
+            <button class="btn-parse" style="width:100%; height:36px; font-size:12.5px;" id="btn_do_scan" onclick="window.processTextScan()">⚡ فحص وتشخيص السيرفر بالرادار</button>
+
+            <div id="scan_status" style="display:none; font-size:12px; font-weight:bold; margin-top:8px; padding:8px; border-radius:8px; background:rgba(15,23,42,0.9); text-align:center;"></div>
+
+            <div id="scan_result_box" style="display:none; margin-top:10px; background:#0B0E14; border:1.5px solid #10B981; border-radius:10px; padding:12px;">
+                <div style="color:#10B981; font-weight:900; font-size:13.5px;" id="res_title">✅ نتيجة فحص السيرفر</div>
+                <div style="font-size:12px; color:#E2E8F0; margin-top:6px;" id="res_details"></div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:10px;">
+                    <button class="btn-parse" style="width:100%; background:#D97706; color:#000; font-weight:900; height:36px; font-size:12px;" id="btn_approve_save_server">➕ اعتمد وأضف لسيرفراتي</button>
+                    <button class="btn-parse" style="width:100%; background:#10B981; color:#fff; font-weight:900; height:36px; font-size:12px;" id="btn_apply_link">🚀 تشغيل الباقة الآن</button>
+                </div>
             </div>
         </div>
     </div>
@@ -2556,7 +2567,7 @@ var ADMIN_PIN = "2000";
                 }
                             showToast("⚡ تم الفتح الفوري من الكاش السحابي R2 (0.2 ثانية) ⚡");
                             if (window.checkAndApplyStartupActions) window.checkAndApplyStartupActions();
-                            saveScannedLinkAuto(url, (rawData.live[0]?.name ? `باقة: ${rawData.live[0].name}` : "سيرفر مفروز ⚡"));
+                            // تم إيقاف الإضافة التلقائية بدون إذن صريح من الأدمن
                             loader.style.display = "none";
                             btn.disabled = false;
                             return;
@@ -2646,7 +2657,7 @@ var ADMIN_PIN = "2000";
                 }
                 showToast("تم الفرز الخارق عبر محرك الـ VPS ⚡");
                 if (window.checkAndApplyStartupActions) window.checkAndApplyStartupActions();
-                saveScannedLinkAuto(url, (rawData.live[0]?.name ? `باقة: ${rawData.live[0].name}` : "سيرفر مفروز ⚡"));
+                // تم إيقاف الإضافة التلقائية بدون إذن صريح من الأدمن
             } catch (err) {
                 alert("خطأ: " + err.message);
             } finally {
@@ -5995,25 +6006,48 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 </script>
 
 
+
 <script id="albasem-smart-hunter-pro-v3">
 // =========================================================================
-// 🎯 محرك صائد السيرفرات الذكي والرادار المدمج (Smart Hunter Pro v3.0)
+// 🎯 صائد السيرفرات الذكي (Gemini Vision + عدم الإضافة إلا باعتماد صريح)
 // =========================================================================
+
+// دالة تصفير وتفريغ الفاحص بالكامل قبل أي صورة أو عملية جديدة
+window.resetScannerBox = function(showMsg = false) {
+    const txtArea = document.getElementById("raw_scan_text");
+    if (txtArea) txtArea.value = "";
+    const prevBox = document.getElementById("ocr_img_preview_box");
+    if (prevBox) {
+        prevBox.style.display = "none";
+        prevBox.innerHTML = "";
+    }
+    const st = document.getElementById("scan_status");
+    if (st) {
+        st.style.display = "none";
+        st.innerText = "";
+    }
+    const box = document.getElementById("scan_result_box");
+    if (box) box.style.display = "none";
+    const fileInput = document.getElementById("ocr_file");
+    if (fileInput) fileInput.value = "";
+    if (showMsg && typeof showToast === "function") {
+        showToast("🧹 تم تفريغ الفاحص! جاهز لصورة أو نص جديد.");
+    }
+};
+
 window.openScannerModal = function() {
     const modal = document.getElementById("scanner_modal");
     if (modal) modal.style.display = "flex";
-    const st = document.getElementById("scan_status");
-    if (st) st.style.display = "none";
-    const box = document.getElementById("scan_result_box");
-    if (box) box.style.display = "none";
+    // قفل تمرير الخلفية ليكون السكرول بالماوس محصورا داخل نافذة الفاحص فقط
+    document.body.style.overflow = "hidden";
 };
 
 window.closeScannerModal = function() {
     const modal = document.getElementById("scanner_modal");
     if (modal) modal.style.display = "none";
+    document.body.style.overflow = "";
 };
 
-// دعم إغلاق الفاحص بزر ESC أو النقر على الخلفية المعتمة
 document.addEventListener("keydown", function(e) {
     if (e.key === "Escape") {
         const modal = document.getElementById("scanner_modal");
@@ -6032,7 +6066,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-// ضغط وتحسين الصورة لتسريع القراءة بالذكاء الاصطناعي ومنع Timeout
 window.compressImageForOCR = async function(file) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -6040,7 +6073,7 @@ window.compressImageForOCR = async function(file) {
             const img = new Image();
             img.onload = function() {
                 const canvas = document.createElement("canvas");
-                const MAX_W = 1280;
+                const MAX_W = 1400;
                 let w = img.width;
                 let h = img.height;
                 if (w > MAX_W) {
@@ -6051,7 +6084,7 @@ window.compressImageForOCR = async function(file) {
                 canvas.height = h;
                 const ctx = canvas.getContext("2d");
                 ctx.drawImage(img, 0, 0, w, h);
-                const compressedB64 = canvas.toDataURL("image/jpeg", 0.84);
+                const compressedB64 = canvas.toDataURL("image/jpeg", 0.88);
                 resolve({ base64: compressedB64, mime: "image/jpeg" });
             };
             img.onerror = () => resolve({ base64: e.target.result, mime: file.type || "image/jpeg" });
@@ -6061,35 +6094,25 @@ window.compressImageForOCR = async function(file) {
     });
 };
 
-// عرض معاينة مصغرة للصورة الملتقطة داخل الفاحص
 window.showScannedImagePreview = function(base64Src) {
-    const txtArea = document.getElementById("raw_scan_text");
-    if (!txtArea) return;
-    let prevBox = document.getElementById("ocr_img_preview_box");
-    if (!prevBox) {
-        prevBox = document.createElement("div");
-        prevBox.id = "ocr_img_preview_box";
-        prevBox.style.cssText = "display:none; margin-bottom:8px; text-align:center; background:#0B0E14; border:1px dashed #334155; border-radius:8px; padding:6px; position:relative;";
-        txtArea.parentNode.insertBefore(prevBox, txtArea);
-    }
+    const prevBox = document.getElementById("ocr_img_preview_box");
+    if (!prevBox) return;
     if (base64Src) {
-        prevBox.style.display = "block";
-        prevBox.innerHTML = `<img src="${base64Src}" style="max-height:95px; max-width:100%; border-radius:6px; object-fit:contain;" />`;
+        prevBox.style.display = "flex";
+        prevBox.innerHTML = `<img src="${base64Src}" style="max-height:68px; max-width:100%; border-radius:6px; object-fit:contain;" />`;
     } else {
         prevBox.style.display = "none";
+        prevBox.innerHTML = "";
     }
 };
 
-// استخراج ذكي للهوست واليوزر والباسورد من أي نص ملصوق أو مستخرج
 window.extractXtreamFromRawText = function(rawText) {
     if (!rawText) return null;
-    const clean = rawText.replace(/[|\/_~«»•👑🔒🌐]/g, " ");
-
     const fullUrlMatch = rawText.match(/https?:\/\/[^\s"'<>]+get\.php\?username=[^\s"'<>]+/i);
     if (fullUrlMatch) return fullUrlMatch[0].trim();
 
     let host = "";
-    const serverLabelMatch = rawText.match(/(?:server|host|url|سيرفر|الرابط|هوست)\s*[:=\-]?\s*(https?:\/\/[^\s]+|[a-zA-Z0-9][-a-zA-Z0-9.]+\.[a-zA-Z]{2,}(?::\d+)?)/i);
+    const serverLabelMatch = rawText.match(/(?:server|host|portal|url|سيرفر|الرابط|هوست)\s*[:=\-]?\s*(https?:\/\/[^\s]+|[a-zA-Z0-9][-a-zA-Z0-9.]+\.[a-zA-Z]{2,}(?::\d+)?)/i);
     if (serverLabelMatch) {
         host = serverLabelMatch[1].trim();
     } else {
@@ -6097,14 +6120,14 @@ window.extractXtreamFromRawText = function(rawText) {
         if (anyUrlMatch) host = anyUrlMatch[0].trim();
     }
     if (host && !host.startsWith("http")) host = "http://" + host;
-    host = host.replace(/\/+$/, "");
+    host = host.replace(/\/c\/?$/i, "").replace(/\/+$/, "");
 
     let user = "";
-    const userMatch = clean.match(/(?:user(?:name)?|يوزر|المستخدم|اسم المستخدم)\s*[:=\-]?\s*([a-zA-Z0-9_.\-@]+)/i);
+    const userMatch = rawText.match(/(?:user(?:name)?|يوزر|المستخدم|اسم المستخدم)\s*[:=\-]?\s*([a-zA-Z0-9_.\-@]+)/i);
     if (userMatch) user = userMatch[1].trim();
 
     let pass = "";
-    const passMatch = clean.match(/(?:pass(?:word)?|باسورد|كلمة المرور|السر|باس)\s*[:=\-]?\s*([a-zA-Z0-9_.\-@]+)/i);
+    const passMatch = rawText.match(/(?:pass(?:word)?|باسورد|كلمة المرور|السر|باس)\s*[:=\-]?\s*([a-zA-Z0-9_.\-@]+)/i);
     if (passMatch) pass = passMatch[1].trim();
 
     if (host && user && pass) {
@@ -6113,11 +6136,12 @@ window.extractXtreamFromRawText = function(rawText) {
     return null;
 };
 
-// 1. لقط الشاشة مباشرة (Live Snippet)
+// 1. لقط الشاشة مباشرة مع تصفير تلقائي للقديم
 window.captureLiveScreen = async function() {
+    window.resetScannerBox(false);
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isMobile || !navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-        showToast("📱 جاري فتح الاستوديو لاختيار لقطة الشاشة");
+        showToast("📱 اختر لقطة الشاشة من الاستوديو");
         document.getElementById("ocr_file").click();
         return;
     }
@@ -6139,7 +6163,7 @@ window.captureLiveScreen = async function() {
             c.height = tempVideo.videoHeight || 720;
             c.getContext("2d").drawImage(tempVideo, 0, 0);
             track.stop();
-            c.toBlob(blob => { if (blob) window.readImageAndScan(blob); }, "image/jpeg", 0.85);
+            c.toBlob(blob => { if (blob) window.readImageAndScan(blob); }, "image/jpeg", 0.88);
             return;
         }
 
@@ -6152,15 +6176,16 @@ window.captureLiveScreen = async function() {
 
         canvas.toBlob(blob => {
             if (blob) window.readImageAndScan(blob);
-        }, "image/jpeg", 0.85);
+        }, "image/jpeg", 0.88);
     } catch (err) {
-        showToast("📁 اختر الصورة من جهازك");
+        showToast("📁 اختر الصورة من ملفاتك");
         document.getElementById("ocr_file").click();
     }
 };
 
-// 2. لصق الحافظة فورا (صورة أو نص)
+// 2. لصق الحافظة فورا مع تصفير تلقائي للقديم
 window.pasteClipboardDirect = async function() {
+    window.resetScannerBox(false);
     try {
         if (navigator.clipboard && navigator.clipboard.read) {
             const items = await navigator.clipboard.read();
@@ -6181,77 +6206,78 @@ window.pasteClipboardDirect = async function() {
                 return;
             }
         }
-        alert("الحافظة فارغة! التقط صورة شاشة أو انسخ نص السيرفر أولا، أو اضغط Ctrl+V.");
+        alert("الحافظة فارغة! انسخ صورة أو نص السيرفر أولا أو اضغط Ctrl+V.");
     } catch (err) {
         const txtArea = document.getElementById("raw_scan_text");
         if (txtArea) txtArea.focus();
-        showToast("📋 اضغط Ctrl+V الآن للصق الصورة أو النص مباشرة");
+        showToast("📋 اضغط Ctrl+V الآن داخل المربع للصق الصورة أو النص");
     }
 };
 
 window.handleImageUpload = function(e) {
     const file = e.target.files[0];
-    if (file) window.readImageAndScan(file);
+    if (file) {
+        window.resetScannerBox(false);
+        window.readImageAndScan(file);
+    }
 };
 
-// عرض النتيجة المتكاملة مع فحص الرادار العميق وأزرار (التشغيل الفوري) أو (الحفظ ومتابعة الصيد)
+// عرض النتيجة المفصلة مع الرادار العميق بدون حفظ تلقائي (الحفظ بقرارك الصريح فقط)
 window.renderHunterSuccessBox = async function(serverInfo) {
     const st = document.getElementById("scan_status");
     const box = document.getElementById("scan_result_box");
     const titleEl = document.getElementById("res_title");
     const detailsEl = document.getElementById("res_details");
     const applyBtn = document.getElementById("btn_apply_link");
+    const approveSaveBtn = document.getElementById("btn_approve_save_server");
 
     if (st) st.style.display = "none";
     if (!box) return;
 
     box.style.display = "block";
     box.style.borderColor = "#10B981";
-    titleEl.innerHTML = "✅ تم صيد السيرفر وتوثيق صلاحيته بنجاح!";
+    titleEl.innerHTML = "✅ الحساب فعال! راجع جودة البث بالرادار قبل الاعتماد:";
 
     detailsEl.innerHTML = `
-        <div style="line-height:1.7;">
-            <b>🌐 الهوست:</b> <span style="color:#38BDF8;">${serverInfo.host || "مباشر"}</span><br>
+        <div style="line-height:1.65;">
+            <b>🌐 الهوست:</b> <span style="color:#38BDF8;">${serverInfo.host || "مباشر"}:${serverInfo.port || 80}</span><br>
             <b>👤 المستخدم:</b> <span style="color:#FFB703;">${serverInfo.user || "-"}</span> | <b>🔑 المرور:</b> <span style="color:#FFB703;">${serverInfo.pass || "-"}</span><br>
-            <b>👥 الاتصالات:</b> ${serverInfo.active_cons ?? 0} / ${serverInfo.max_cons ?? 1} | <b>📅 الانتهاء:</b> ${serverInfo.exp_date || "مفتوح"}<br>
-            <div id="hunter_deep_radar_badge" style="margin-top:6px; padding:6px 10px; border-radius:6px; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.35); color:#38BDF8; font-weight:bold; font-size:11.5px;">
-                🧠 جاري قياس سرعة تدفق البث الفعلي (Mbps) بالرادار الذكي...
+            <b>👥 الاتصالات:</b> ${serverInfo.active_cons ?? 0} / ${serverInfo.max_cons ?? 1} | <b>📅 الانتهاء:</b> ${serverInfo.exp_date || "مفتوح"}
+            <div id="hunter_deep_radar_badge" style="margin-top:7px; padding:7px 10px; border-radius:7px; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.35); color:#38BDF8; font-weight:bold; font-size:11.5px; direction:rtl;">
+                🧠 جاري فحص تدفق الفيديو الحقيقي (Mbps) عبر الرادار الذكي...
             </div>
         </div>
     `;
 
-    // حفظ تلقائي في آخر قائمة سيرفراتي
-    if (typeof saveScannedLinkAuto === "function") {
-        saveScannedLinkAuto(serverInfo.url, `سيرفر OCR (${serverInfo.host || "مفروز"})`);
+    let suggestedTitle = `سيرفر OCR (${serverInfo.host || "مفروز"})`;
+
+    // زر الاعتماد والإضافة الصريح إلى سيرفراتي (بإذنك فقط)
+    if (approveSaveBtn) {
+        approveSaveBtn.disabled = false;
+        approveSaveBtn.style.background = "#D97706";
+        approveSaveBtn.style.color = "#000";
+        approveSaveBtn.innerHTML = "➕ اعتمد وأضف لسيرفراتي";
+        approveSaveBtn.onclick = async () => {
+            approveSaveBtn.disabled = true;
+            approveSaveBtn.innerHTML = "⏳ جاري الحفظ...";
+            await saveScannedLinkAuto(serverInfo.url, suggestedTitle);
+            approveSaveBtn.style.background = "#10B981";
+            approveSaveBtn.style.color = "#fff";
+            approveSaveBtn.innerHTML = "✅ تمت الإضافة لسيرفراتي";
+            showToast("✅ تم اعتماد السيرفر وإضافته في آخر قائمة سيرفراتي!");
+        };
     }
 
-    // إعداد أزرار التحكم السريعة للصيد المتتالي
     if (applyBtn) {
-        applyBtn.innerHTML = "🚀 اعتماد وتشغيل هذه الباقة الآن";
+        applyBtn.innerHTML = "🚀 تشغيل الباقة الآن";
         applyBtn.onclick = () => {
             document.getElementById("iptv_url").value = serverInfo.url;
             window.closeScannerModal();
             loadAndParse();
         };
-
-        let huntNextBtn = document.getElementById("btn_hunt_next_server");
-        if (!huntNextBtn) {
-            huntNextBtn = document.createElement("button");
-            huntNextBtn.id = "btn_hunt_next_server";
-            huntNextBtn.className = "btn-parse";
-            huntNextBtn.style.cssText = "width:100%; margin-top:6px; background:#0284C7; border:1px solid #38BDF8;";
-            applyBtn.parentNode.appendChild(huntNextBtn);
-        }
-        huntNextBtn.innerHTML = "💾 تم الحفظ في سيرفراتي • صيد سيرفر آخر ➕";
-        huntNextBtn.onclick = () => {
-            document.getElementById("raw_scan_text").value = "";
-            window.showScannedImagePreview(null);
-            box.style.display = "none";
-            showToast("🎯 جاهز لصيد السيرفر التالي! التقط أو الصق الآن.");
-        };
     }
 
-    // فحص عميق بالرادار الذكي لعرض السكور والـ Mbps مباشرة داخل نافذة الفاحص
+    // فحص البث الحقيقي بالرادار العميق لعرض السكور والـ Mbps قبل أن تقرر إضافته
     try {
         const rDeep = await fetch(`${BACKEND_URL}/api/deep_check`, {
             method: "POST",
@@ -6271,93 +6297,77 @@ window.renderHunterSuccessBox = async function(serverInfo) {
                     radarBadge.style.background = "rgba(245,158,11,0.15)";
                     radarBadge.style.borderColor = "#F59E0B";
                     radarBadge.style.color = "#F59E0B";
-                    radarBadge.innerHTML = `${deepData.reason || "⚠️ الحساب شغال لكن تدفق البث ضعيف"}`;
+                    radarBadge.innerHTML = `${deepData.reason || "⚠️ الحساب شغال لكن تدفق الفيديو ضعيف"}`;
                 } else {
                     radarBadge.style.background = "rgba(239,68,68,0.15)";
                     radarBadge.style.borderColor = "#EF4444";
                     radarBadge.style.color = "#EF4444";
-                    radarBadge.innerHTML = `${deepData.reason || "❌ الحساب فعال لكن البث محجوب أو متوقف"}`;
+                    radarBadge.innerHTML = `${deepData.reason || "❌ الحساب فعال لكن البث محجوب أو لا يتدفق (لا ينصح بإضافته)"}`;
                 }
             }
         }
     } catch (e) {}
 };
 
-// 3. قراءة الصورة وضغطها وفحصها بالذكاء الاصطناعي + المحرك الرديف
+// 3. قراءة الصورة عبر Gemini Vision حصريا مع تفريغ القديم
 window.readImageAndScan = async function(file) {
     const st = document.getElementById("scan_status");
     const txtArea = document.getElementById("raw_scan_text");
     const box = document.getElementById("scan_result_box");
+
     if (box) box.style.display = "none";
+    if (txtArea) txtArea.value = "";
 
     if (st) {
         st.style.display = "block";
         st.style.color = "#38BDF8";
-        st.innerText = "⚡ جاري ضغط الصورة واستخراج السيرفر بالذكاء الاصطناعي...";
+        st.innerText = "🧠 جاري قراءة الصورة بدقة عبر Google Gemini Vision...";
     }
 
     try {
         const { base64, mime } = await window.compressImageForOCR(file);
         window.showScannedImagePreview(base64);
 
-        let d = null;
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 24000);
-            const r = await fetch(`${BACKEND_URL}/api/ai-scan`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ image: base64, mime_type: mime }),
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-            d = await r.json();
-        } catch (aiErr) {
-            console.warn("AI Scan fallback to local OCR:", aiErr);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 28000);
+        const r = await fetch(`${BACKEND_URL}/api/ai-scan`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: base64, mime_type: mime }),
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        const d = await r.json();
+
+        // عرض النص المستخرج بواسطة Gemini في الصندوق دائما وبشكل نظيف
+        if (txtArea && d) {
+            if (d.extracted_text) {
+                txtArea.value = d.extracted_text;
+            } else if (d.host || d.user) {
+                txtArea.value = `SERVER: http://${d.host || ''}:${d.port || 80}
+USER: ${d.user || ''}
+PASS: ${d.pass || ''}
+URL: ${d.url || ''}`;
+            }
         }
 
         if (d && d.success) {
-            if (txtArea) {
-                txtArea.value = `SERVER: http://${d.host}:${d.port || 80}
-USER: ${d.user}
-PASS: ${d.pass}
-URL: ${d.url}`;
-            }
             await window.renderHunterSuccessBox(d);
             return;
         }
 
-        // خط الدفاع الثاني: قارئ Tesseract المحلي إذا كان السيرفر في الصورة غير مكتمل أو تأخر AI
         if (st) {
-            st.style.color = "#F59E0B";
-            st.innerText = "🔄 جاري استخراج النص عبر القارئ المحلي الذكي (Tesseract OCR)...";
-        }
-
-        if (typeof Tesseract !== "undefined") {
-            const ocrRes = await Tesseract.recognize(base64, "eng");
-            const rawText = (ocrRes && ocrRes.data && ocrRes.data.text) ? ocrRes.data.text.trim() : "";
-            if (rawText && txtArea) {
-                const builtUrl = window.extractXtreamFromRawText(rawText);
-                txtArea.value = builtUrl ? `${rawText}
-${builtUrl}` : rawText;
-                await window.checkWithBackend(txtArea.value);
-                return;
-            }
-        }
-
-        if (st) {
-            st.style.color = "#EF4444";
-            st.innerText = "❌ " + ((d && d.message) ? d.message : "تعذر استخراج بيانات صالحة من الصورة.");
+            st.style.color = d && d.is_mac ? "#F59E0B" : "#EF4444";
+            st.innerText = (d && d.message) ? d.message : "❌ تعذر استخراج بيانات صالحة من هذه الصورة.";
         }
     } catch (err) {
         if (st) {
             st.style.color = "#EF4444";
-            st.innerText = "❌ خطأ أثناء معالجة الصورة: " + err.message;
+            st.innerText = "❌ انتهت مهلة الاتصال أو تعذر الوصول للسيرفر، جرب الضغط مرة أخرى.";
         }
     }
 };
 
-// 4. فحص النص الملصوق أو المستخرج يدويا
 window.processTextScan = function() {
     const txtArea = document.getElementById("raw_scan_text");
     const txt = txtArea ? txtArea.value.trim() : "";
@@ -6376,7 +6386,6 @@ window.checkWithBackend = async function(text) {
         st.innerText = "🔌 جاري الاتصال بالسيرفر وفحص الصلاحية والرادار...";
     }
 
-    // استخراج الرابط محليا كخط مساند في حال كان النص يحتوي رموزا خاصة
     const localBuiltUrl = window.extractXtreamFromRawText(text);
     const payloadText = localBuiltUrl ? `${text}
 ${localBuiltUrl}` : text;
@@ -6394,7 +6403,6 @@ ${localBuiltUrl}` : text;
             return;
         }
 
-        // إذا لم يتعرف /api/check على الصيغة ولكن نجح المحلل المحلي باستخراج رابط M3U كامل، نفحصه مباشرة بالرادار العميق
         if (localBuiltUrl) {
             const rDeep = await fetch(`${BACKEND_URL}/api/deep_check`, {
                 method: "POST",
@@ -6420,7 +6428,7 @@ ${localBuiltUrl}` : text;
 
         if (st) {
             st.style.color = "#EF4444";
-            st.innerText = "❌ " + ((d && d.message) ? d.message : "السيرفر متوقف أو البيانات غير صحيحة.");
+            st.innerText = "❌ " + ((d && d.message) ? d.message : "السيرفر متوقف أو البيانات غير مكتملة.");
         }
     } catch (err) {
         if (st) {
@@ -6430,7 +6438,6 @@ ${localBuiltUrl}` : text;
     }
 };
 
-// ربط الأسماء العامة لضمان استجابة كافة أزرار الـ HTML فورا
 var openScannerModal = window.openScannerModal;
 var closeScannerModal = window.closeScannerModal;
 var captureLiveScreen = window.captureLiveScreen;
@@ -6440,6 +6447,7 @@ var readImageAndScan = window.readImageAndScan;
 var processTextScan = window.processTextScan;
 var checkWithBackend = window.checkWithBackend;
 </script>
+
 
 </body>
 </html>
