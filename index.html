@@ -6,12 +6,11 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>الباسم سات | البوابة الذكية</title>
+    <title>الباسم سات | البوابة الذكية v3.0</title>
     
     <meta name="theme-color" content="#0B0E14">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
     <style>
@@ -966,7 +965,6 @@
         padding-top: 4px;
     }
 </style>
-</style>
     <!-- مشغل ويب Artplayer و HLS -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/mpegts.js@latest/dist/mpegts.js"></script>
@@ -1896,13 +1894,301 @@ window.requireAdminAuth = function(actionName = "هذا الإجراء") {
 var requireAdminAuth = window.requireAdminAuth;
 var ADMIN_PIN = "2000";
 </script>
+
+<style id="albasem-v3-architecture-style">
+.portal-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px !important;
+    margin: 12px 0 16px 0 !important;
+}
+.portal-card {
+    position: relative !important;
+    background: linear-gradient(145deg, #161C28 0%, #0F141D 100%) !important;
+    border: 1.5px solid #263042 !important;
+    border-radius: 14px !important;
+    padding: 14px 8px !important;
+    text-align: center !important;
+    cursor: pointer !important;
+    transition: all 0.25s ease !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+    user-select: none !important;
+}
+.portal-card:hover, .portal-card:focus-visible {
+    transform: translateY(-3px) !important;
+    border-color: #38BDF8 !important;
+    box-shadow: 0 8px 22px rgba(56, 189, 248, 0.22) !important;
+    outline: none !important;
+}
+.portal-card.active {
+    background: linear-gradient(145deg, #1E293B 0%, #0F172A 100%) !important;
+    border: 2px solid #38BDF8 !important;
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.28) !important;
+}
+.portal-card.card-live.active { border-color: #10B981 !important; box-shadow: 0 0 20px rgba(16, 185, 129, 0.28) !important; }
+.portal-card.card-movies.active { border-color: #F59E0B !important; box-shadow: 0 0 20px rgba(245, 158, 11, 0.28) !important; }
+.portal-card.card-series.active { border-color: #8B5CF6 !important; box-shadow: 0 0 20px rgba(139, 92, 246, 0.28) !important; }
+
+#v3_nav_header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 12px;
+    padding: 9px 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    position: sticky;
+    top: 4px;
+    z-index: 85;
+}
+.v3-nav-right {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1;
+}
+.v3-nav-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.v3-btn-back {
+    background: linear-gradient(135deg, #0284C7, #0369A1);
+    color: #fff;
+    border: 1px solid #38BDF8;
+    border-radius: 9px;
+    padding: 6px 13px;
+    font-size: 12.5px;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    box-shadow: 0 3px 10px rgba(2, 132, 199, 0.35);
+    transition: 0.2s;
+    white-space: nowrap;
+}
+.v3-btn-back:hover, .v3-btn-back:focus-visible {
+    background: #0ea5e9;
+    transform: scale(1.03);
+    outline: 2px solid #FFB703;
+}
+.v3-btn-home {
+    background: rgba(255, 183, 3, 0.14);
+    color: #FFB703;
+    border: 1px solid rgba(255, 183, 3, 0.45);
+    border-radius: 9px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: 0.2s;
+    white-space: nowrap;
+}
+.v3-btn-home:hover {
+    background: #FFB703;
+    color: #000;
+}
+.v3-breadcrumb-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: #F8FAFC;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 4px;
+}
+
+.pkg-folder-card {
+    position: relative !important;
+    background: linear-gradient(160deg, #171E2E 0%, #101520 100%) !important;
+    border: 1.5px solid #263147 !important;
+    border-radius: 13px !important;
+    padding: 8px 7px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    cursor: pointer !important;
+    transition: all 0.22s ease !important;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4) !important;
+    overflow: hidden !important;
+    user-select: none !important;
+}
+.pkg-folder-card:hover, .pkg-folder-card:focus-visible {
+    transform: translateY(-4px) !important;
+    border-color: #38BDF8 !important;
+    background: linear-gradient(160deg, #1E293B 0%, #131C2E 100%) !important;
+    box-shadow: 0 10px 24px rgba(56, 189, 248, 0.25) !important;
+    outline: none !important;
+}
+.pkg-folder-card.arabic-priority {
+    border-color: rgba(16, 185, 129, 0.35) !important;
+}
+.pkg-folder-card.arabic-priority:hover {
+    border-color: #10B981 !important;
+    box-shadow: 0 10px 24px rgba(16, 185, 129, 0.25) !important;
+}
+.pkg-folder-thumb {
+    position: relative !important;
+    width: 100% !important;
+    height: 112px !important;
+    min-height: 112px !important;
+    background: radial-gradient(circle at center, #1E293B 0%, #0B0E14 100%) !important;
+    border-radius: 9px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    margin-bottom: 7px !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+.pkg-folder-thumb img {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100px !important;
+    max-width: 90% !important;
+    object-fit: contain !important;
+    transition: transform 0.25s ease !important;
+}
+.pkg-folder-card:hover .pkg-folder-thumb img {
+    transform: scale(1.07) !important;
+}
+.pkg-folder-fallback-icon {
+    font-size: 40px !important;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6));
+}
+.pkg-folder-count-badge {
+    position: absolute !important;
+    top: 6px !important;
+    right: 6px !important;
+    background: rgba(11, 14, 20, 0.88) !important;
+    border: 1px solid rgba(56, 189, 248, 0.45) !important;
+    color: #38BDF8 !important;
+    font-size: 10.5px !important;
+    font-weight: 900 !important;
+    padding: 2px 8px !important;
+    border-radius: 8px !important;
+    z-index: 4 !important;
+    backdrop-filter: blur(4px) !important;
+}
+.pkg-card-share-btn {
+    position: absolute !important;
+    top: 6px !important;
+    left: 6px !important;
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 8px !important;
+    background: rgba(15, 23, 42, 0.88) !important;
+    border: 1px solid rgba(37, 211, 102, 0.55) !important;
+    color: #25D366 !important;
+    font-size: 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    z-index: 6 !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6) !important;
+}
+.pkg-card-share-btn:hover {
+    background: #25D366 !important;
+    color: #000 !important;
+    transform: scale(1.12) !important;
+}
+.pkg-folder-title {
+    font-size: 12.5px !important;
+    font-weight: 800 !important;
+    color: #F8FAFC !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    direction: ltr !important;
+    unicode-bidi: plaintext !important;
+    padding: 2px 4px !important;
+    line-height: 1.3 !important;
+}
+.pkg-folder-sub {
+    font-size: 10px !important;
+    color: #10B981 !important;
+    text-align: center !important;
+    font-weight: 700 !important;
+    margin-top: 2px !important;
+    opacity: 0.9 !important;
+}
+
+@media (max-width: 600px) {
+    #items_container.v3-mode-packages {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+    }
+    #items_container.v3-mode-channels {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 8px !important;
+    }
+    .pkg-folder-thumb {
+        height: 96px !important;
+        min-height: 96px !important;
+    }
+    .pkg-folder-title {
+        font-size: 11.5px !important;
+    }
+    .v3-breadcrumb-title {
+        font-size: 11.5px !important;
+        max-width: 165px !important;
+    }
+}
+
+@media (min-width: 601px) and (max-width: 1024px) {
+    #items_container.v3-mode-packages {
+        grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)) !important;
+        gap: 12px !important;
+    }
+    #items_container.v3-mode-channels {
+        grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)) !important;
+        gap: 12px !important;
+    }
+}
+
+@media (min-width: 1025px) {
+    #items_container.v3-mode-packages {
+        grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)) !important;
+        gap: 14px !important;
+    }
+    #items_container.v3-mode-channels {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+        gap: 14px !important;
+    }
+    .pkg-folder-thumb {
+        height: 125px !important;
+        min-height: 125px !important;
+    }
+}
+
+#packages_section.v3-in-packages-grid #packages_bar {
+    display: none !important;
+}
+</style>
+
 </head>
 
 
 <body>
 
     <div class="header">
-        <h1>👑 الباسم سات | بوابة المشاهدة الذكية</h1>
+        <h1>👑 الباسم سات | بوابة المشاهدة الذكية <span style="font-size:13px; background:linear-gradient(135deg,#FFB703,#D97706); color:#000; padding:2px 8px; border-radius:8px; vertical-align:middle; font-weight:900;">v3.0</span></h1>
         <p>بإدارة المهندس: محمد زربا (أبو باسم) | 📞 0534829927</p>
     </div>
 
@@ -1954,13 +2240,21 @@ var ADMIN_PIN = "2000";
         </div>
 
         <div class="packages-section" id="packages_section" style="display:none;">
-            <div class="packages-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: nowrap; gap: 6px; margin-bottom: 8px;">
-                <span style="font-size: 12px; color: #38BDF8; font-weight: 800; white-space: nowrap;">📁 الباقات:</span>
-                <div style="display: flex; align-items: center; gap: 5px; flex-wrap: nowrap;">
-                    <button id="btn_share_package" onclick="sharePackageToWhatsApp()" style="background: rgba(37,211,102,0.16); border: 1px solid rgba(37,211,102,0.45); color: #25D366; border-radius: 7px; padding: 3px 8px; font-size: 10.5px; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
+            <div id="v3_nav_header">
+                <div class="v3-nav-right">
+                    <button id="v3_btn_back_folders" class="v3-btn-back" onclick="window.v3StepBack()" style="display:none;" title="الرجوع لمجلد الباقات (أو كليك يمين بالماوس)">
+                        🔙 رجوع للباقات
+                    </button>
+                    <button id="v3_btn_top_home" class="v3-btn-home" onclick="window.v3GoHomeTop()" title="العودة لبداية الصفحة والمجلد الرئيسي">
+                        🏠 الرئيسية
+                    </button>
+                    <span id="v3_breadcrumb_label" class="v3-breadcrumb-title">📁 مجلدات الباقات</span>
+                </div>
+                <div class="v3-nav-left">
+                    <button id="btn_share_package" onclick="sharePackageToWhatsApp()" style="background: rgba(37,211,102,0.16); border: 1px solid rgba(37,211,102,0.45); color: #25D366; border-radius: 8px; padding: 5px 10px; font-size: 11px; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
                         <span>📲</span> <span id="btn_share_package_label">مشاركة</span>
                     </button>
-                    <button id="btn_adult_lock" onclick="toggleAdultLock()" style="background:#1E293B; border:1px solid #334155; color:#94A3B8; border-radius:7px; padding:3px 8px; font-size:10.5px; cursor:pointer; font-weight:bold; white-space:nowrap;">🔒 عائلي</button>
+                    <button id="btn_adult_lock" onclick="toggleAdultLock()" style="background:#1E293B; border:1px solid #334155; color:#94A3B8; border-radius:8px; padding:5px 10px; font-size:11px; cursor:pointer; font-weight:bold; white-space:nowrap;">🔒 عائلي</button>
                 </div>
             </div>
             <div class="packages-bar" id="packages_bar"></div>
@@ -2063,353 +2357,7 @@ var ADMIN_PIN = "2000";
             document.getElementById("scan_status").style.display = "none";
             document.getElementById("scan_result_box").style.display = "none";
         }
-        function closeScannerModal() {
-            document.getElementById("scanner_modal").style.display = "none";
-        }
-
-        // 1. ميزة التقاط الشاشة الحي بدون حفظ ملفات
-        async function captureLiveScreen() {
-            // إذا كان المتصفح جوالاً أو لا يدعم تصوير الشاشة الحي، نحول فورا للاستوديو
-            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-            if (isMobile || !navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-                showToast("جاري فتح الاستوديو لاختيار لقطة الشاشة 📱");
-                document.getElementById("ocr_file").click();
-                return;
-            }
-
-            try {
-                const stream = await navigator.mediaDevices.getDisplayMedia({ video: { mediaSource: "screen" } });
-                const track = stream.getVideoTracks()[0];
-                const imageCapture = new ImageCapture(track);
-                const bitmap = await imageCapture.grabFrame();
-                track.stop();
-
-                const canvas = document.createElement("canvas");
-                canvas.width = bitmap.width;
-                canvas.height = bitmap.height;
-                const ctx = canvas.getContext("2d");
-                ctx.drawImage(bitmap, 0, 0);
-
-                canvas.toBlob(blob => {
-                    if (blob) readImageAndScan(blob);
-                });
-            } catch (err) {
-                // في حال الإلغاء أو رفض الإذن، التحويل التلقائي للاستوديو
-                showToast("تحويل للاستوديو لاختيار الصورة 📁");
-                document.getElementById("ocr_file").click();
-            }
-        }
-
-        // 2. ميزة قراءة الحافظة مباشرة (صورة أو نص) بضغطة زر
-        async function pasteClipboardDirect() {
-            try {
-                const items = await navigator.clipboard.read();
-                for (let item of items) {
-                    const imgType = item.types.find(t => t.startsWith('image/'));
-                    if (imgType) {
-                        const blob = await item.getType(imgType);
-                        readImageAndScan(blob);
-                        return;
-                    }
-                }
-                const text = await navigator.clipboard.readText();
-                if (text) {
-                    document.getElementById("raw_scan_text").value = text;
-                    processTextScan();
-                } else {
-                    alert("الحافظة فارغة! خذ لقطة شاشة أو انسخ نصاً أولاً.");
-                }
-            } catch (err) {
-                // بديل للمتصفحات التي تطلب أذونات Clipboard
-                alert("اضغط Ctrl+V مباشرة داخل الصفحة للصق الصورة المنسوخة.");
-            }
-        }
-
-        // لصق سريع عبر Ctrl+V
-        window.addEventListener('paste', e => {
-            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-            for (let item of items) {
-                if (item.kind === 'file' && item.type.startsWith('image/')) {
-                    openScannerModal();
-                    readImageAndScan(item.getAsFile());
-                    break;
-                }
-            }
-        });
-
-        function handleImageUpload(e) {
-            const file = e.target.files[0];
-            if (file) readImageAndScan(file);
-        }
-
-        // ضغط وتحسين الصورة قبل الإرسال لمنع Read Timed Out نهائياً
-    async function compressImageForOCR(file) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement("canvas");
-                    const MAX_W = 1280;
-                    let w = img.width;
-                    let h = img.height;
-                    if (w > MAX_W) {
-                        h = Math.round((h * MAX_W) / w);
-                        w = MAX_W;
-                    }
-                    canvas.width = w;
-                    canvas.height = h;
-                    const ctx = canvas.getContext("2d");
-                    ctx.drawImage(img, 0, 0, w, h);
-                    const compressedB64 = canvas.toDataURL("image/jpeg", 0.82);
-                    resolve({ base64: compressedB64, mime: "image/jpeg" });
-                };
-                img.onerror = () => resolve({ base64: e.target.result, mime: file.type || "image/jpeg" });
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
-    }
-
-    // محلل ذكي محلي يستخرج الهوست واليوزر والباسورد بأي ترتيب
-    function extractXtreamFromRawText(rawText) {
-        if (!rawText) return null;
-        const clean = rawText.replace(/[|\\/_~«»•👑🔒🌐]/g, " ");
-
-        const fullUrlMatch = clean.match(/https?:\/\/[^\s"'<>]+get\.php\?username=[^\s"'<>]+/i);
-        if (fullUrlMatch) return fullUrlMatch[0];
-
-        let host = "";
-        const serverLabelMatch = clean.match(/(?:server|host|url|سيرفر|الرابط)\s*[:=\-]?\s*(https?:\/\/[^\s]+|[a-zA-Z0-9][-a-zA-Z0-9.]+\.[a-zA-Z]{2,}(?::\d+)?)/i);
-        if (serverLabelMatch) {
-            host = serverLabelMatch[1].trim();
-        } else {
-            const anyUrlMatch = clean.match(/https?:\/\/[a-zA-Z0-9][-a-zA-Z0-9.]+\.[a-zA-Z]{2,}(?::\d+)?/i);
-            if (anyUrlMatch) host = anyUrlMatch[0].trim();
-        }
-        if (host && !host.startsWith("http")) host = "http://" + host;
-        host = host.replace(/\/+$/, "");
-
-        let user = "";
-        const userMatch = clean.match(/(?:user(?:name)?|يوزر|المستخدم)\s*[:=\-]?\s*([a-zA-Z0-9_.\-@]+)/i);
-        if (userMatch) user = userMatch[1].trim();
-
-        let pass = "";
-        const passMatch = clean.match(/(?:pass(?:word)?|باسورد|كلمة المرور|السر)\s*[:=\-]?\s*([a-zA-Z0-9_.\-@]+)/i);
-        if (passMatch) pass = passMatch[1].trim();
-
-        if (host && user && pass) {
-            return `${host}/get.php?username=${encodeURIComponent(user)}&password=${encodeURIComponent(pass)}&type=m3u_plus&output=m3u8`;
-        }
-        return null;
-    }
-
-    async function readImageAndScan(file) {
-        const st = document.getElementById("scan_status");
-        const txtArea = document.getElementById("ocr_text_result");
-        st.style.display = "block";
-        st.style.color = "#38BDF8";
-        st.innerText = "⚡ جاري ضغط الصورة واستخراج السيرفر بالذكاء الاصطناعي...";
-
-        try {
-            const { base64, mime } = await compressImageForOCR(file);
-
-            let d = null;
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 22000);
-                const r = await fetch(`${BACKEND_URL}/api/ai-scan`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ image: base64, mime_type: mime }),
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                d = await r.json();
-            } catch (aiErr) {
-                console.warn("AI Scan timeout or error, switching to local OCR fallback...", aiErr);
-            }
-
-            if (d && d.success) {
-                st.style.display = "none";
-                if (txtArea) {
-                    txtArea.value = `SERVER: ${d.host || ''}\nUSER: ${d.user || ''}\nPASS: ${d.pass || ''}\nURL: ${d.url || ''}`;
-                }
-                const box = document.getElementById("scan_result_box");
-                box.style.display = "block";
-                box.style.borderColor = "#10B981";
-                document.getElementById("res_title").innerText = "✅ تم استخراج وفحص السيرفر بنجاح!";
-                document.getElementById("res_details").innerHTML = `
-                    <b>حالة السيرفر:</b> <span style="color:#10B981">${d.status_msg || 'شغال 100%'}</span><br>
-                    <b>الهوست:</b> ${d.host} | <b>المستخدم:</b> ${d.user} | <b>كلمة المرور:</b> ${d.pass}<br>
-                    <b>الاتصالات النشطة:</b> ${d.active_cons} / ${d.max_cons} | <b>تاريخ الانتهاء:</b> ${d.exp_date}
-                `;
-                saveScannedLinkAuto(d.url, `سيرفر OCR (${d.host})`);
-                document.getElementById("btn_apply_link").onclick = () => {
-                    document.getElementById("iptv_url").value = d.url;
-                    closeScannerModal();
-                    loadAndParse();
-                    setTimeout(initServersList, 2000);
-                };
-                return;
-            }
-
-            // خط الدفاع الثاني: قارئ Tesseract المحلي الفوري
-            st.style.color = "#F59E0B";
-            st.innerText = "🔄 جاري القراءة الفورية عبر المحرك المحلي الرديف (Tesseract OCR)...";
-
-            if (typeof Tesseract !== "undefined") {
-                const ocrRes = await Tesseract.recognize(base64, "eng");
-                const rawText = (ocrRes && ocrRes.data && ocrRes.data.text) ? ocrRes.data.text.trim() : "";
-                if (txtArea && rawText) {
-                    txtArea.value = rawText;
-                }
-                const builtUrl = extractXtreamFromRawText(rawText);
-                if (builtUrl && txtArea) {
-                    txtArea.value = builtUrl;
-                }
-                if (rawText) {
-                    st.style.color = "#10B981";
-                    st.innerText = "✅ تم استخراج النص! جاري الفحص والتشخيص تلقائياً...";
-                    await startManualDiagnosis();
-                    return;
-                }
-            }
-
-            st.style.color = "#EF4444";
-            st.innerText = "❌ " + ((d && d.message) ? d.message : "تعذر استخراج بيانات صالحة من الصورة، جرب قص منطقة اليوزر والسيرفر بدقة.");
-        } catch (err) {
-            st.style.color = "#EF4444";
-            st.innerText = "❌ خطأ أثناء معالجة الصورة: " + err.message;
-        }
-    }
-
-    function closeScannerModal() {
-            document.getElementById("scanner_modal").style.display = "none";
-        }
-
-        // 1. ميزة التقاط الشاشة الحي بدون حفظ ملفات
-        async function captureLiveScreen() {
-            // إذا كان المتصفح جوالاً أو لا يدعم تصوير الشاشة الحي، نحول فورا للاستوديو
-            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-            if (isMobile || !navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-                showToast("جاري فتح الاستوديو لاختيار لقطة الشاشة 📱");
-                document.getElementById("ocr_file").click();
-                return;
-            }
-
-            try {
-                const stream = await navigator.mediaDevices.getDisplayMedia({ video: { mediaSource: "screen" } });
-                const track = stream.getVideoTracks()[0];
-                const imageCapture = new ImageCapture(track);
-                const bitmap = await imageCapture.grabFrame();
-                track.stop();
-
-                const canvas = document.createElement("canvas");
-                canvas.width = bitmap.width;
-                canvas.height = bitmap.height;
-                const ctx = canvas.getContext("2d");
-                ctx.drawImage(bitmap, 0, 0);
-
-                canvas.toBlob(blob => {
-                    if (blob) readImageAndScan(blob);
-                });
-            } catch (err) {
-                // في حال الإلغاء أو رفض الإذن، التحويل التلقائي للاستوديو
-                showToast("تحويل للاستوديو لاختيار الصورة 📁");
-                document.getElementById("ocr_file").click();
-            }
-        }
-
-        // 2. ميزة قراءة الحافظة مباشرة (صورة أو نص) بضغطة زر
-        async function pasteClipboardDirect() {
-            try {
-                const items = await navigator.clipboard.read();
-                for (let item of items) {
-                    const imgType = item.types.find(t => t.startsWith('image/'));
-                    if (imgType) {
-                        const blob = await item.getType(imgType);
-                        readImageAndScan(blob);
-                        return;
-                    }
-                }
-                const text = await navigator.clipboard.readText();
-                if (text) {
-                    document.getElementById("raw_scan_text").value = text;
-                    processTextScan();
-                } else {
-                    alert("الحافظة فارغة! خذ لقطة شاشة أو انسخ نصاً أولاً.");
-                }
-            } catch (err) {
-                // بديل للمتصفحات التي تطلب أذونات Clipboard
-                alert("اضغط Ctrl+V مباشرة داخل الصفحة للصق الصورة المنسوخة.");
-            }
-        }
-
-        // لصق سريع عبر Ctrl+V
-        window.addEventListener('paste', e => {
-            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-            for (let item of items) {
-                if (item.kind === 'file' && item.type.startsWith('image/')) {
-                    openScannerModal();
-                    readImageAndScan(item.getAsFile());
-                    break;
-                }
-            }
-        });
-
-        function handleImageUpload(e) {
-            const file = e.target.files[0];
-            if (file) readImageAndScan(file);
-        }
-
-        async function readImageAndScan(file) {
-        const st = document.getElementById("scan_status");
-        st.style.display = "block";
-        st.style.color = "#38BDF8";
-        st.innerText = "🧠 جاري تحليل الصورة واستخراج البيانات عبر الذكاء الاصطناعي...";
-
-        const reader = new FileReader();
-        reader.onload = async function() {
-            const b64 = reader.result;
-            try {
-                const r = await fetch(`${BACKEND_URL}/api/ai-scan`, {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({ image: b64, mime_type: file.type || "image/jpeg" })
-                });
-                const d = await r.json();
-
-                if (d.success) {
-                    st.style.display = "none";
-                    const box = document.getElementById("scan_result_box");
-                    box.style.display = "block";
-                    box.style.borderColor = "#10B981";
-                    document.getElementById("res_title").innerHTML = "🎉 تم الاستخراج والفحص بنجاح!";
-                    document.getElementById("res_details").innerHTML = `
-                        <b>حالة السيرفر:</b> <span style="color:#10B981;font-weight:bold;">🟢 شغال وفعّال (Active)</span><br><b>السيرفر:</b> ${d.host}:${d.port}<br>
-                        <b>المستخدم:</b> ${d.user} | <b>المرور:</b> ${d.pass}<br>
-                        <b>تاريخ الانتهاء:</b> ${d.exp_date} | <b>السرعة:</b> ${d.latency}
-                    `;
-                    saveScannedLinkAuto(d.url, `سيرفر OCR (${d.host})`);
-                    document.getElementById("btn_apply_link").onclick = () => {
-                        document.getElementById("iptv_url").value = d.url;
-                        closeScannerModal();
-                        loadAndParse(); setTimeout(initServersSortable, 500);
-                    };
-                } else {
-                    st.style.color = "#EF4444";
-                    st.innerText = "❌ " + (d.message || "فشل الفحص.");
-                }
-            } catch(err) {
-                st.style.color = "#EF4444";
-                st.innerText = "❌ خطأ بالاتصال بمحرك AI: " + err.message;
-            }
-        };
-        reader.readAsDataURL(file);
-    }
-
-        function processTextScan() {
+            function processTextScan() {
             const txt = document.getElementById("raw_scan_text").value.trim();
             if (!txt) return alert("يرجى إدخال نص أو التقاط سكرين شوت أولاً!");
             checkWithBackend(txt);
@@ -5452,6 +5400,597 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
     });
     const pSec = document.getElementById("packages_section");
     if (pSec) observer.observe(pSec, { attributes: true, childList: true });
+})();
+</script>
+
+
+<script id="albasem-v3-interactive-engine">
+(function() {
+    window.ALBASEM_VERSION = "3.0.0";
+    window.v3ViewMode = "packages";
+    window.v3LastScrollInPackages = 0;
+    window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
+
+    try {
+        const savedVer = localStorage.getItem("albasem_version_tag");
+        if (savedVer !== window.ALBASEM_VERSION) {
+            localStorage.setItem("albasem_version_tag", window.ALBASEM_VERSION);
+            if ("caches" in window) {
+                caches.keys().then(names => {
+                    for (let name of names) caches.delete(name);
+                });
+            }
+            if ("serviceWorker" in navigator) {
+                navigator.serviceWorker.getRegistrations().then(regs => {
+                    for (let reg of regs) reg.unregister();
+                });
+            }
+        }
+    } catch (e) {}
+
+    function getFallbackIconForPackage(grpName, tab) {
+        const s = String(grpName || "").toLowerCase();
+        if (/(sport|bein|ssc|alkass|dazn|arena|match|liga|premier|رياض|كورة|بين)/.test(s)) return "⚽";
+        if (/(quran|islam|makkah|قرآن|اسلام|إسلام|ديني|مكة)/.test(s)) return "🕌";
+        if (/(kids|cartoon|spacetoon|mbc3|disney|nick|اطفال|أطفال|كرتون|طيور|ماجد)/.test(s)) return "🧸";
+        if (/(news|jazeera|arabiya|hadath|bbc|sky|اخبار|أخبار|جزيرة|عربية)/.test(s)) return "🌍";
+        if (/(doc|nat geo|discovery|animal|وثائقي)/.test(s)) return "🦁";
+        if (/(osn|mbc|shahid|rotana|netflix|vip|عرب|شاهد|روتانا)/.test(s)) return "👑";
+        if (tab === "movies") return "🎬";
+        if (tab === "series") return "🍿";
+        return "📺";
+    }
+
+    function getRepresentativeImageForGroup(itemsInGroup) {
+        if (!Array.isArray(itemsInGroup)) return "";
+        for (let i = 0; i < itemsInGroup.length; i++) {
+            const logo = (itemsInGroup[i].logo || "").trim();
+            if (logo && (logo.startsWith("http://") || logo.startsWith("https://"))) {
+                if (logo.startsWith("http://")) {
+                    return "https://wsrv.nl/?url=" + encodeURIComponent(logo) + "&default=1";
+                }
+                return logo;
+            }
+        }
+        return "";
+    }
+
+    window.updateV3NavHeader = function(totalGroupsCount, currentGroupCount) {
+        const sec = document.getElementById("packages_section");
+        const backBtn = document.getElementById("v3_btn_back_folders");
+        const labelEl = document.getElementById("v3_breadcrumb_label");
+        const itemsContainer = document.getElementById("items_container");
+
+        const tabNames = {
+            live: "📺 المحطات المباشرة",
+            movies: "🎬 مكتبة الأفلام",
+            series: "🍿 مكتبة المسلسلات"
+        };
+        const tLabel = tabNames[currentTab] || "📺 المحطات";
+
+        if (window.v3ViewMode === "packages") {
+            if (sec) sec.classList.add("v3-in-packages-grid");
+            if (backBtn) backBtn.style.display = "none";
+            if (labelEl) {
+                labelEl.innerHTML = `${tLabel} <span style="color:#38BDF8;">❯</span> 📁 اختر الباقة (${totalGroupsCount || 0} باقة)`;
+            }
+            if (itemsContainer) {
+                itemsContainer.classList.add("v3-mode-packages");
+                itemsContainer.classList.remove("v3-mode-channels");
+            }
+        } else {
+            if (sec) sec.classList.remove("v3-in-packages-grid");
+            if (backBtn) backBtn.style.display = "inline-flex";
+            const grpDisplay = currentGroup === "all" ? "الكل (جميع القنوات)" : currentGroup;
+            if (labelEl) {
+                labelEl.innerHTML = `${tLabel} <span style="color:#38BDF8;">❯</span> 📂 ${grpDisplay} <span style="color:#10B981;font-size:11.5px;">(${currentGroupCount || 0})</span>`;
+            }
+            if (itemsContainer) {
+                itemsContainer.classList.add("v3-mode-channels");
+                itemsContainer.classList.remove("v3-mode-packages");
+            }
+        }
+        if (window.updatePackageShareBtn) window.updatePackageShareBtn();
+    };
+
+    window.shareSpecificPackageCard = async function(grpName, tabName, evt) {
+        if (evt) {
+            evt.preventDefault();
+            evt.stopPropagation();
+        }
+        const prevGroup = currentGroup;
+        const prevTab = currentTab;
+        currentGroup = grpName;
+        currentTab = tabName || currentTab;
+        if (typeof window.sharePackageWhatsApp === "function") {
+            await window.sharePackageWhatsApp();
+        }
+        currentGroup = prevGroup;
+        currentTab = prevTab;
+    };
+
+    window.openV3PackageFolder = function(grpName) {
+        window.v3LastScrollInPackages = window.scrollY || 0;
+        window.v3ViewMode = "channels";
+        window.userExplicitlySelectedAll = (grpName === "all");
+        currentGroup = grpName;
+
+        try {
+            window.history.pushState({ albasemV3Level: "channels", group: grpName, tab: currentTab }, "", window.location.href);
+        } catch (e) {}
+
+        buildPackagesBar();
+        renderItems();
+
+        const navHeader = document.getElementById("packages_section");
+        if (navHeader) {
+            const rect = navHeader.getBoundingClientRect();
+            if (rect.top < 0 || rect.top > 220) {
+                window.scrollTo({ top: Math.max(0, navHeader.offsetTop - 10), behavior: "smooth" });
+            }
+        }
+    };
+
+    window.v3StepBack = function(fromRightClick = false) {
+        const playerModal = document.getElementById("player_modal");
+        if (playerModal && playerModal.style.display !== "none" && !playerModal.classList.contains("mini-player-mode")) {
+            closeWebPlayer();
+            return true;
+        }
+        const seriesModal = document.getElementById("series_modal");
+        if (seriesModal && seriesModal.style.display === "flex") {
+            closeSeriesModal();
+            return true;
+        }
+        const scannerModal = document.getElementById("scanner_modal");
+        if (scannerModal && scannerModal.style.display === "flex") {
+            closeScannerModal();
+            return true;
+        }
+        const linksSec = document.getElementById("links_view_section");
+        if (linksSec && linksSec.style.display === "block") {
+            switchMainTab(currentTab || "live");
+            showToast("🔙 العودة إلى البوابة الرئيسية");
+            return true;
+        }
+        const searchInput = document.getElementById("search_input");
+        if (searchInput && searchInput.value.trim() !== "") {
+            clearSearch();
+            showToast("🔙 تم مسح البحث والعودة");
+            return true;
+        }
+        if (window.v3ViewMode === "channels") {
+            window.v3ViewMode = "packages";
+            buildPackagesBar();
+            renderItems();
+            setTimeout(() => {
+                window.scrollTo({ top: window.v3LastScrollInPackages || 0, behavior: "smooth" });
+            }, 30);
+            showToast("📁 العودة لمجلد الباقات الرئيسي");
+            return true;
+        }
+        if (window.scrollY > 180) {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            showToast("⬆️ العودة لبداية المنصة");
+            return true;
+        }
+        if (currentTab !== "live") {
+            window.ensureSectionParsedAndOpen("live");
+            showToast("🏠 العودة للقسم الرئيسي (المحطات)");
+            return true;
+        }
+        return false;
+    };
+
+    window.v3GoHomeTop = function() {
+        const linksSec = document.getElementById("links_view_section");
+        if (linksSec && linksSec.style.display === "block") {
+            switchMainTab(currentTab || "live");
+        }
+        const sInput = document.getElementById("search_input");
+        if (sInput && sInput.value) sInput.value = "";
+        window.v3ViewMode = "packages";
+        buildPackagesBar();
+        renderItems();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        showToast("🏠 أنت الآن في المجلد الرئيسي لبداية المنصة");
+    };
+
+    window.renderV3PackagesGrid = function() {
+        const container = document.getElementById("items_container");
+        if (!container) return;
+        container.innerHTML = "";
+
+        if (rawData && Array.isArray(rawData[currentTab])) {
+            rawData[currentTab].sort((a, b) => {
+                const pA = getArabicPackagePriority(a.group || a.name || "");
+                const pB = getArabicPackagePriority(b.group || b.name || "");
+                return pA - pB;
+            });
+        }
+
+        const items = getVisibleItems(currentTab);
+        if (items.length === 0) {
+            container.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px;color:#94A3B8;background:var(--bg-card);border-radius:12px;'>اضغط على أحد الأقسام الثلاثة بالأعلى أو زر (فرز وتشغيل ⚡) لسحب الباقات.</div>";
+            window.updateV3NavHeader(0, 0);
+            return;
+        }
+
+        const groupsMap = {};
+        const groupItemsBucket = {};
+        items.forEach(it => {
+            const g = it.group || "عام";
+            groupsMap[g] = (groupsMap[g] || 0) + 1;
+            if (!groupItemsBucket[g]) groupItemsBucket[g] = [];
+            if (groupItemsBucket[g].length < 8) groupItemsBucket[g].push(it);
+        });
+
+        const sortedGroups = sortArabicGroupsFirst(Object.keys(groupsMap));
+        window.updateV3NavHeader(sortedGroups.length, items.length);
+
+        const unitWord = currentTab === "movies" ? "فيلم" : (currentTab === "series" ? "مسلسل" : "قناة");
+
+        sortedGroups.forEach(grp => {
+            const count = groupsMap[grp];
+            const repImg = getRepresentativeImageForGroup(groupItemsBucket[grp]);
+            const fallbackIcon = getFallbackIconForPackage(grp, currentTab);
+            const isArabicPrio = getArabicPackagePriority(grp) <= 4;
+
+            const card = document.createElement("div");
+            card.className = "pkg-folder-card" + (isArabicPrio ? " arabic-priority" : "");
+            card.tabIndex = 0;
+            card.onclick = () => window.openV3PackageFolder(grp);
+            card.onkeydown = (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    window.openV3PackageFolder(grp);
+                }
+            };
+
+            const thumb = document.createElement("div");
+            thumb.className = "pkg-folder-thumb";
+
+            const badge = document.createElement("span");
+            badge.className = "pkg-folder-count-badge";
+            badge.innerText = `${count} ${unitWord}`;
+            thumb.appendChild(badge);
+
+            const shareBtn = document.createElement("button");
+            shareBtn.className = "pkg-card-share-btn";
+            shareBtn.title = `مشاركة باقة (${grp}) عبر واتساب`;
+            shareBtn.innerHTML = "📲";
+            shareBtn.onclick = (e) => window.shareSpecificPackageCard(grp, currentTab, e);
+            thumb.appendChild(shareBtn);
+
+            if (repImg) {
+                const img = document.createElement("img");
+                img.src = repImg;
+                img.loading = "lazy";
+                img.onerror = () => {
+                    img.style.display = "none";
+                    const fb = document.createElement("div");
+                    fb.className = "pkg-folder-fallback-icon";
+                    fb.innerText = fallbackIcon;
+                    thumb.appendChild(fb);
+                };
+                thumb.appendChild(img);
+            } else {
+                const fb = document.createElement("div");
+                fb.className = "pkg-folder-fallback-icon";
+                fb.innerText = fallbackIcon;
+                thumb.appendChild(fb);
+            }
+
+            const titleDiv = document.createElement("div");
+            titleDiv.className = "pkg-folder-title";
+            titleDiv.title = grp;
+            titleDiv.innerText = grp;
+
+            const subDiv = document.createElement("div");
+            subDiv.className = "pkg-folder-sub";
+            subDiv.innerText = isArabicPrio ? "⭐ باقة مميزة • اضغط للدخول" : "📁 اضغط لفتح الباقة";
+
+            card.appendChild(thumb);
+            card.appendChild(titleDiv);
+            card.appendChild(subDiv);
+            container.appendChild(card);
+        });
+
+        const allCard = document.createElement("div");
+        allCard.className = "pkg-folder-card";
+        allCard.style.borderColor = "#FFB703";
+        allCard.tabIndex = 0;
+        allCard.onclick = () => window.openV3PackageFolder("all");
+        allCard.onkeydown = (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                window.openV3PackageFolder("all");
+            }
+        };
+        allCard.innerHTML = `
+            <div class="pkg-folder-thumb">
+                <span class="pkg-folder-count-badge" style="color:#FFB703;border-color:#FFB703;">${items.length} ${unitWord}</span>
+                <div class="pkg-folder-fallback-icon">🌐</div>
+            </div>
+            <div class="pkg-folder-title" style="color:#FFB703;">الكل (عرض شامل)</div>
+            <div class="pkg-folder-sub" style="color:#94A3B8;">فتح جميع عناصر القسم</div>
+        `;
+        container.appendChild(allCard);
+    };
+
+    const origBuildPackagesBar = window.buildPackagesBar;
+    window.buildPackagesBar = function() {
+        origBuildPackagesBar();
+        const chips = document.querySelectorAll("#packages_bar .pkg-chip");
+        chips.forEach(chip => {
+            const oldClick = chip.onclick;
+            chip.onclick = (e) => {
+                window.v3ViewMode = "channels";
+                if (oldClick) oldClick(e);
+            };
+        });
+    };
+
+    const origRenderItems = window.renderItems;
+    window.renderItems = function() {
+        const q = (document.getElementById("search_input")?.value || "").trim();
+        if (q) {
+            const itemsContainer = document.getElementById("items_container");
+            if (itemsContainer) {
+                itemsContainer.classList.add("v3-mode-channels");
+                itemsContainer.classList.remove("v3-mode-packages");
+            }
+            const backBtn = document.getElementById("v3_btn_back_folders");
+            if (backBtn) backBtn.style.display = "inline-flex";
+            const labelEl = document.getElementById("v3_breadcrumb_label");
+            if (labelEl) labelEl.innerHTML = `🔍 نتائج البحث عن: <span style="color:#FFB703;">"${q}"</span>`;
+            origRenderItems();
+            return;
+        }
+
+        if (window.v3ViewMode === "packages") {
+            window.renderV3PackagesGrid();
+            return;
+        }
+
+        const allItems = getVisibleItems(currentTab);
+        const grpItems = currentGroup === "all" ? allItems : allItems.filter(i => (i.group || "عام") === currentGroup);
+        window.updateV3NavHeader(0, grpItems.length);
+        origRenderItems();
+    };
+
+    window.ensureSectionParsedAndOpen = async function(tab) {
+        const linksSec = document.getElementById("links_view_section");
+        if (linksSec && linksSec.style.display === "block") {
+            switchMainTab(tab);
+        }
+
+        currentTab = tab;
+        window.v3ViewMode = "packages";
+        window.userExplicitlySelectedAll = false;
+        currentGroup = "all";
+
+        document.querySelectorAll(".portal-card").forEach(c => c.classList.remove("active"));
+        const activeCard = document.getElementById("tab_" + tab);
+        if (activeCard) activeCard.classList.add("active");
+
+        const url = (document.getElementById("iptv_url")?.value || localStorage.getItem("albasem_url") || "").trim();
+        if (!url) {
+            buildPackagesBar();
+            renderItems();
+            return;
+        }
+
+        if (window.v3LoadedSections.url !== url) {
+            window.v3LoadedSections = {
+                url: url,
+                live: Array.isArray(rawData.live) && rawData.live.length > 0,
+                movies: Array.isArray(rawData.movies) && rawData.movies.length > 0,
+                series: Array.isArray(rawData.series) && rawData.series.length > 0
+            };
+        }
+
+        const hasDataNow = Array.isArray(rawData[tab]) && rawData[tab].length > 0;
+
+        if (!hasDataNow && !window.v3LoadedSections[tab]) {
+            const chkMap = {
+                live: "chk_fetch_live",
+                movies: "chk_fetch_movies",
+                series: "chk_fetch_series"
+            };
+            const targetChk = document.getElementById(chkMap[tab]);
+            if (targetChk && !targetChk.checked) {
+                targetChk.checked = true;
+                if (typeof saveFetchSettings === "function") saveFetchSettings();
+            }
+
+            const preservedData = {
+                live: Array.isArray(rawData.live) ? [...rawData.live] : [],
+                movies: Array.isArray(rawData.movies) ? [...rawData.movies] : [],
+                series: Array.isArray(rawData.series) ? [...rawData.series] : []
+            };
+
+            const tabAr = tab === "movies" ? "🎬 الأفلام" : (tab === "series" ? "🍿 المسلسلات" : "📺 المحطات");
+            showToast(`⚡ جاري الفرز التلقائي لقسم ${tabAr} لأول مرة...`);
+
+            await window.fetchSingleSectionSmart(url, tab, preservedData);
+            window.v3LoadedSections[tab] = true;
+        }
+
+        buildPackagesBar();
+        renderItems();
+    };
+
+    window.fetchSingleSectionSmart = async function(url, targetTab, preservedData) {
+        const btn = document.getElementById("btn_parse_trigger");
+        const loader = document.getElementById("loader");
+        const stepText = document.getElementById("loader_step_text");
+        const loaderBar = document.getElementById("loader_bar");
+        const loaderTimer = document.getElementById("loader_timer");
+        const loaderStats = document.getElementById("loader_stats");
+
+        if (btn) btn.disabled = true;
+        if (loader) loader.style.display = "block";
+        document.getElementById("items_container").innerHTML = "";
+
+        let startTime = Date.now();
+        let timerInterval = setInterval(() => {
+            if (loaderTimer) loaderTimer.innerText = ((Date.now() - startTime) / 1000).toFixed(1) + "s";
+        }, 100);
+
+        const fLive = (targetTab === "live");
+        const fMovies = (targetTab === "movies");
+        const fSeries = (targetTab === "series");
+
+        try {
+            const uHash = await computeUrlSha256(url);
+            const candidateKeys = [
+                `${uHash}_${fLive ? 1 : 0}_${fMovies ? 1 : 0}_${fSeries ? 1 : 0}.json`,
+                `${uHash}_1_1_1.json`
+            ];
+
+            for (const cKey of candidateKeys) {
+                try {
+                    const r2Res = await fetch(`${R2_PUBLIC_BASE}/${cKey}?_t=${Date.now()}`);
+                    if (r2Res.ok) {
+                        const r2Json = await r2Res.json();
+                        if (r2Json && r2Json.data && Array.isArray(r2Json.data[targetTab]) && r2Json.data[targetTab].length > 0) {
+                            clearInterval(timerInterval);
+                            if (loaderBar) loaderBar.style.width = "100%";
+                            ["live", "movies", "series"].forEach(t => {
+                                if (Array.isArray(r2Json.data[t]) && r2Json.data[t].length > 0) {
+                                    r2Json.data[t].forEach(it => { it.group = it.group || it.category || "عام"; });
+                                    rawData[t] = r2Json.data[t];
+                                    window.v3LoadedSections[t] = true;
+                                } else if (preservedData[t] && preservedData[t].length > 0) {
+                                    rawData[t] = preservedData[t];
+                                }
+                            });
+                            updateCounts();
+                            if (loader) loader.style.display = "none";
+                            if (btn) btn.disabled = false;
+                            showToast("⚡ تم سحب باقات القسم من الكاش السحابي R2!");
+                            return;
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            let progressInterval = setInterval(async () => {
+                try {
+                    let pRes = await fetch("https://albasem-tv.duckdns.org/api/parse_progress?url=" + encodeURIComponent(url));
+                    let pData = await pRes.json();
+                    if (pData) {
+                        if (stepText) stepText.innerText = pData.step || "جاري فرز باقات القسم...";
+                        if (loaderBar) loaderBar.style.width = (pData.percent || 20) + "%";
+                        if (loaderStats) loaderStats.innerText = `📺 قنوات: ${pData.live || 0} | 🎬 أفلام: ${pData.vod || 0} | 🍿 مسلسلات: ${pData.series || 0}`;
+                    }
+                } catch (e) {}
+            }, 600);
+
+            const res = await fetch("https://albasem-tv.duckdns.org/api/parse", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    url: url,
+                    fetch_live: fLive,
+                    fetch_movies: fMovies,
+                    fetch_series: fSeries
+                })
+            });
+
+            clearInterval(progressInterval);
+            clearInterval(timerInterval);
+
+            const jsonRes = await res.json();
+            if (res.ok && jsonRes && jsonRes.success && jsonRes.data) {
+                ["live", "movies", "series"].forEach(t => {
+                    if (Array.isArray(jsonRes.data[t]) && jsonRes.data[t].length > 0) {
+                        jsonRes.data[t].forEach(it => { it.group = it.group || it.category || "عام"; });
+                        rawData[t] = jsonRes.data[t];
+                        window.v3LoadedSections[t] = true;
+                    } else if (preservedData[t] && preservedData[t].length > 0) {
+                        rawData[t] = preservedData[t];
+                    }
+                });
+                updateCounts();
+                showToast("✨ تم فرز وتجهيز باقات القسم بنجاح!");
+            } else {
+                rawData = preservedData;
+                updateCounts();
+                alert((jsonRes && jsonRes.message) ? jsonRes.message : "تعذر جلب بيانات هذا القسم.");
+            }
+        } catch (err) {
+            clearInterval(timerInterval);
+            rawData = preservedData;
+            updateCounts();
+            alert("خطأ أثناء فرز القسم: " + err.message);
+        } finally {
+            if (loader) loader.style.display = "none";
+            if (btn) btn.disabled = false;
+        }
+    };
+
+    const origLoadAndParse = window.loadAndParse;
+    window.loadAndParse = async function(forceReload = false) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedGrp = urlParams.get("group") || window.targetStartupGroup || window.autoLaunchGroup;
+        window.v3ViewMode = sharedGrp ? "channels" : "packages";
+
+        await origLoadAndParse(forceReload);
+
+        const curUrl = (document.getElementById("iptv_url")?.value || "").trim();
+        window.v3LoadedSections = {
+            url: curUrl,
+            live: Array.isArray(rawData.live) && rawData.live.length > 0,
+            movies: Array.isArray(rawData.movies) && rawData.movies.length > 0,
+            series: Array.isArray(rawData.series) && rawData.series.length > 0
+        };
+        renderItems();
+    };
+
+    window.addEventListener("DOMContentLoaded", () => {
+        ["live", "movies", "series"].forEach(tab => {
+            const el = document.getElementById("tab_" + tab);
+            if (el) {
+                const clone = el.cloneNode(true);
+                el.parentNode.replaceChild(clone, el);
+                clone.tabIndex = 0;
+                clone.addEventListener("click", () => {
+                    window.ensureSectionParsedAndOpen(tab);
+                });
+                clone.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        window.ensureSectionParsedAndOpen(tab);
+                    }
+                });
+            }
+        });
+    });
+
+    window.addEventListener("contextmenu", function(e) {
+        const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : "";
+        if (tag === "input" || tag === "textarea" || e.target.closest("#links_view_section") || e.target.closest("#scanner_modal")) {
+            return;
+        }
+        e.preventDefault();
+        window.v3StepBack(true);
+    });
+
+    window.addEventListener("popstate", function(e) {
+        if (window.v3ViewMode === "channels") {
+            e.stopImmediatePropagation();
+            window.v3ViewMode = "packages";
+            buildPackagesBar();
+            renderItems();
+            setTimeout(() => {
+                window.scrollTo({ top: window.v3LastScrollInPackages || 0, behavior: "smooth" });
+            }, 30);
+            showToast("📁 العودة لمجلد الباقات");
+        }
+    }, true);
+
 })();
 </script>
 
