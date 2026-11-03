@@ -6073,7 +6073,7 @@ window.compressImageForOCR = async function(file) {
             const img = new Image();
             img.onload = function() {
                 const canvas = document.createElement("canvas");
-                const MAX_W = 1400;
+                const MAX_W = 850;
                 let w = img.width;
                 let h = img.height;
                 if (w > MAX_W) {
@@ -6084,7 +6084,7 @@ window.compressImageForOCR = async function(file) {
                 canvas.height = h;
                 const ctx = canvas.getContext("2d");
                 ctx.drawImage(img, 0, 0, w, h);
-                const compressedB64 = canvas.toDataURL("image/jpeg", 0.88);
+                const compressedB64 = canvas.toDataURL("image/jpeg", 0.78);
                 resolve({ base64: compressedB64, mime: "image/jpeg" });
             };
             img.onerror = () => resolve({ base64: e.target.result, mime: file.type || "image/jpeg" });
@@ -6409,7 +6409,7 @@ ${localBuiltUrl}` : text;
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ url: localBuiltUrl })
             });
-            const deepD = await rDeep.json();
+            const deepD = rDeep.ok ? await rDeep.json() : null;
             if (deepD && deepD.online) {
                 const m = localBuiltUrl.match(/https?:\/\/([^:/]+)(?::(\d+))?.*?username=([^&]+)&password=([^&]+)/i);
                 await window.renderHunterSuccessBox({
