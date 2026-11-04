@@ -1,0 +1,15 @@
+{
+  "name": "الباسم سات | البوابة الذكية v3.0",
+  "short_name": "الباسم سات v3.0",
+  "start_url": "./index.html?v=3.0",
+  "display": "standalone",
+  "background_color": "#0B0E14",
+  "theme_color": "#0B0E14",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3845/3845868.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
