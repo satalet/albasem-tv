@@ -2241,20 +2241,24 @@ var ADMIN_PIN = "2000";
 
         <div class="packages-section" id="packages_section" style="display:none;">
             <div id="v3_nav_header">
-                <div class="v3-nav-right">
-                    <button id="v3_btn_back_folders" class="v3-btn-back" onclick="window.v3StepBack()" style="display:none;" title="الرجوع لمجلد الباقات (أو كليك يمين بالماوس)">
-                        🔙 رجوع للباقات
-                    </button>
-                    <button id="v3_btn_top_home" class="v3-btn-home" onclick="window.v3GoHomeTop()" title="العودة لبداية الصفحة والمجلد الرئيسي">
-                        🏠 الرئيسية
-                    </button>
-                    <span id="v3_breadcrumb_label" class="v3-breadcrumb-title">📁 مجلدات الباقات</span>
+                <div class="v3-nav-actions-top">
+                    <div class="v3-nav-right-btns">
+                        <button id="v3_btn_back_folders" class="v3-btn-back" onclick="window.v3StepBack()" style="display:none;" title="الرجوع لمجلد الباقات">
+                            <span>🔙</span> <span>الباقات</span>
+                        </button>
+                        <button id="v3_btn_top_home" class="v3-btn-home" onclick="window.v3GoHomeTop()" title="العودة لبداية الصفحة والمجلد الرئيسي">
+                            <span>🏠</span> <span>الرئيسية</span>
+                        </button>
+                    </div>
+                    <div class="v3-nav-left-btns">
+                        <button id="btn_share_package" onclick="sharePackageToWhatsApp()" class="v3-btn-share">
+                            <span>📲</span> <span id="btn_share_package_label">مشاركة</span>
+                        </button>
+                        <button id="btn_adult_lock" onclick="toggleAdultLock()" class="v3-btn-lock">🔒 عائلي</button>
+                    </div>
                 </div>
-                <div class="v3-nav-left">
-                    <button id="btn_share_package" onclick="sharePackageToWhatsApp()" style="background: rgba(37,211,102,0.16); border: 1px solid rgba(37,211,102,0.45); color: #25D366; border-radius: 8px; padding: 5px 10px; font-size: 11px; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
-                        <span>📲</span> <span id="btn_share_package_label">مشاركة</span>
-                    </button>
-                    <button id="btn_adult_lock" onclick="toggleAdultLock()" style="background:#1E293B; border:1px solid #334155; color:#94A3B8; border-radius:8px; padding:5px 10px; font-size:11px; cursor:pointer; font-weight:bold; white-space:nowrap;">🔒 عائلي</button>
+                <div class="v3-nav-breadcrumb-bar">
+                    <span id="v3_breadcrumb_label" class="v3-breadcrumb-title">📁 مجلدات الباقات</span>
                 </div>
             </div>
             <div class="packages-bar" id="packages_bar"></div>
@@ -4131,7 +4135,7 @@ function playStepChannel(step) {
             if (item.status === "checking") {
                 statusColor = "#38BDF8";
                 statusBg = "rgba(56, 189, 248, 0.12)";
-                statusText = "⏳ جاري الفحص...";
+                statusText = detailLabel || "⏳ جاري الفحص...";
             } else if (item.status === "online") {
                 statusColor = "#10B981";
                 statusBg = "rgba(16, 185, 129, 0.12)";
@@ -4240,37 +4244,57 @@ function playStepChannel(step) {
     async function checkOneLink(index, useDeepRadar = true) {
         if (!cachedLinksList[index]) return;
         cachedLinksList[index].status = "checking";
-        cachedLinksList[index].conns = "";
+        cachedLinksList[index].conns = "⏳ جاري الفحص الدقيق...";
         renderLinksList(cachedLinksList);
 
         const endpoint = useDeepRadar ? `${VPS_BASE}/api/deep_check` : `${VPS_BASE}/api/links/check`;
-        try {
-            let res = await fetch(endpoint, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: cachedLinksList[index].url })
-            });
-            if (!res.ok && useDeepRadar) {
-                res = await fetch(`${VPS_BASE}/api/links/check`, {
+
+        async function performSingleFetch() {
+            try {
+                let res = await fetch(endpoint, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ url: cachedLinksList[index].url })
                 });
+                if (!res.ok && useDeepRadar) {
+                    res = await fetch(`${VPS_BASE}/api/links/check`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ url: cachedLinksList[index].url })
+                    });
+                }
+                return await res.json();
+            } catch (e) {
+                return { status: "dead", online: false, reason: "❌ خطأ اتصال بالسيرفر", score: 0 };
             }
-            const d = await res.json();
-            cachedLinksList[index].status = d.status || (d.online ? "online" : "dead");
-            cachedLinksList[index].conns = d.reason || d.conns || "";
-            cachedLinksList[index].score = d.score || (d.status === "online" ? 70 : 0);
-            cachedLinksList[index].speed_mbps = d.speed_mbps || 0;
-            cachedLinksList[index].ttfb_ms = d.ttfb_ms || 9999;
-            cachedLinksList[index].exp_date = d.exp_date || "";
-        } catch (e) {
-            cachedLinksList[index].status = "dead";
-            cachedLinksList[index].conns = "❌ خطأ اتصال بالسيرفر";
-            cachedLinksList[index].score = 0;
         }
+
+        let d = await performSingleFetch();
+        let st = d.status || (d.online ? "online" : "dead");
+
+        const reasonStr = String(d.reason || d.conns || "");
+        const isPermanentlyExpired = reasonStr.includes("منتهي") || reasonStr.includes("الحساب متوقف");
+
+        if (st === "dead" && !isPermanentlyExpired) {
+            cachedLinksList[index].status = "checking";
+            cachedLinksList[index].conns = "🔄 تأكيد الفحص (محاولة 2/2)...";
+            renderLinksList(cachedLinksList);
+
+            await new Promise(r => setTimeout(r, 1500));
+            d = await performSingleFetch();
+            st = d.status || (d.online ? "online" : "dead");
+        }
+
+        cachedLinksList[index].status = st;
+        cachedLinksList[index].conns = d.reason || d.conns || "";
+        cachedLinksList[index].score = d.score || (st === "online" ? 70 : 0);
+        cachedLinksList[index].speed_mbps = d.speed_mbps || 0;
+        cachedLinksList[index].ttfb_ms = d.ttfb_ms || 9999;
+        cachedLinksList[index].exp_date = d.exp_date || "";
+
         saveStatusToLocal();
         renderLinksList(cachedLinksList);
+        await new Promise(r => setTimeout(r, 350));
     }
 
     async function runFastCheck() {
@@ -5414,6 +5438,248 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 })();
 </script>
 
+
+
+<style id="albasem-mobile-sleek-header-style">
+/* تنسيق الهيدر العائم الحديث بدون أي تداخل أو ضغط على الجوال والكمبيوتر */
+#packages_section {
+    padding: 8px 10px 6px 10px !important;
+    margin-bottom: 10px !important;
+}
+#v3_nav_header {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    background: rgba(15, 23, 42, 0.96) !important;
+    border: 1px solid rgba(56, 189, 248, 0.28) !important;
+    border-radius: 10px !important;
+    padding: 7px 10px !important;
+    margin-bottom: 6px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+}
+.v3-nav-actions-top {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    gap: 6px !important;
+    flex-wrap: nowrap !important;
+}
+.v3-nav-right-btns, .v3-nav-left-btns {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    flex-shrink: 0 !important;
+}
+.v3-btn-back, .v3-btn-home, .v3-btn-share, .v3-btn-lock {
+    height: 30px !important;
+    padding: 0 10px !important;
+    border-radius: 8px !important;
+    font-size: 11.5px !important;
+    font-weight: 800 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+    position: static !important;
+    transform: none !important;
+}
+.v3-btn-back {
+    background: linear-gradient(135deg, #0284C7, #0369A1) !important;
+    color: #fff !important;
+    border: 1px solid #38BDF8 !important;
+}
+.v3-btn-home {
+    background: rgba(255, 183, 3, 0.14) !important;
+    color: #FFB703 !important;
+    border: 1px solid rgba(255, 183, 3, 0.45) !important;
+}
+.v3-btn-share {
+    background: rgba(37, 211, 102, 0.16) !important;
+    color: #25D366 !important;
+    border: 1px solid rgba(37, 211, 102, 0.45) !important;
+}
+.v3-btn-lock {
+    background: #1E293B !important;
+    color: #94A3B8 !important;
+    border: 1px solid #334155 !important;
+}
+.v3-nav-breadcrumb-bar {
+    width: 100% !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.07) !important;
+    padding-top: 4px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+.v3-breadcrumb-title {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    color: #F8FAFC !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-align: right !important;
+}
+
+/* تنحيف خاص لشاشات الجوال لمنع أكل مساحة الشاشة فوق القنوات */
+@media (max-width: 640px) {
+    #packages_section {
+        padding: 5px 6px 4px 6px !important;
+        margin-bottom: 8px !important;
+    }
+    #v3_nav_header {
+        padding: 5px 7px !important;
+        gap: 4px !important;
+        margin-bottom: 4px !important;
+        border-radius: 9px !important;
+    }
+    .v3-btn-back, .v3-btn-home, .v3-btn-share, .v3-btn-lock {
+        height: 27px !important;
+        padding: 0 7px !important;
+        font-size: 10.5px !important;
+        border-radius: 7px !important;
+        gap: 3px !important;
+    }
+    .v3-breadcrumb-title {
+        font-size: 11px !important;
+    }
+    #packages_bar {
+        padding: 2px 2px 4px 2px !important;
+        gap: 6px !important;
+    }
+    #packages_bar .pkg-chip {
+        padding: 4px 10px !important;
+        font-size: 11.5px !important;
+        border-radius: 9px !important;
+    }
+    #packages_bar .pkg-chip .pkg-name {
+        font-size: 11.5px !important;
+    }
+    #packages_bar .pkg-chip .pkg-count {
+        font-size: 10px !important;
+        padding: 1px 5px !important;
+    }
+}
+</style>
+
+<script id="albasem-mobile-smart-aspect-and-back-fix">
+(function() {
+    const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (window.innerWidth <= 820 && 'ontouchstart' in window);
+    window.userManuallyLockedAspect = false;
+
+    // 1. ضبط الأبعاد الذكي التلقائي على الجوال فقط (بالطول = أصلي متناسق بدون مط، بالعرض = ملء الشاشة)
+    window.applySmartMobileAspect = function(isInitialOpen = false) {
+        if (!isMobileDevice) return;
+        const modal = document.getElementById("player_modal");
+        if (!modal || modal.style.display === "none") return;
+
+        if (isInitialOpen) {
+            window.userManuallyLockedAspect = false;
+        }
+        if (window.userManuallyLockedAspect) return;
+
+        const isPortrait = window.innerHeight > window.innerWidth;
+        const btn = document.getElementById("aspect_ratio_btn");
+        modal.classList.remove("fit-fill", "fit-cover", "fit-contain", "fit-16-9");
+
+        if (isPortrait) {
+            modal.classList.add("fit-contain");
+            if (btn) btn.innerHTML = "📐 تلقائي";
+        } else {
+            modal.classList.add("fit-fill");
+            if (btn) btn.innerHTML = "📐 ملء";
+        }
+        if (window.art && typeof window.art.resize === "function") {
+            setTimeout(() => window.art.resize(), 60);
+        }
+    };
+
+    const origCycleAspect = window.cycleAspectRatio;
+    window.cycleAspectRatio = function(forceFullscreen) {
+        window.userManuallyLockedAspect = true;
+        if (typeof origCycleAspect === "function") {
+            origCycleAspect(isMobileDevice ? false : forceFullscreen);
+        }
+    };
+
+    window.addEventListener("resize", () => {
+        if (isMobileDevice) {
+            window.applySmartMobileAspect(false);
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const modal = document.getElementById("player_modal");
+        if (modal) {
+            const obs = new MutationObserver(() => {
+                const isOpen = modal.style.display !== "none";
+                if (isOpen && isMobileDevice) {
+                    try {
+                        if (screen.orientation && screen.orientation.unlock) {
+                            screen.orientation.unlock();
+                        }
+                    } catch (e) {}
+                    window.applySmartMobileAspect(true);
+                }
+            });
+            obs.observe(modal, { attributes: true, attributeFilter: ["style"] });
+        }
+    });
+
+    // 2. إبقاء المستخدم داخل الباقة عند الضغط على زر الرجوع (Back) بالجوال لإغلاق المشغل
+    window.addEventListener("popstate", function(e) {
+        const playerModal = document.getElementById("player_modal");
+        const isPlayerOpen = playerModal && playerModal.style.display !== "none" && !playerModal.classList.contains("mini-player-mode");
+
+        if (isPlayerOpen) {
+            e.stopImmediatePropagation();
+            e.stopPropagation();
+            if (typeof closeWebPlayer === "function") {
+                closeWebPlayer();
+            } else {
+                playerModal.style.display = "none";
+            }
+            if (typeof showToast === "function") {
+                showToast("🔙 تم إغلاق المشغل (أنت داخل نفس الباقة)");
+            }
+            return;
+        }
+
+        const seriesModal = document.getElementById("series_modal");
+        if (seriesModal && seriesModal.style.display === "flex") {
+            e.stopImmediatePropagation();
+            e.stopPropagation();
+            if (typeof closeSeriesModal === "function") closeSeriesModal();
+            return;
+        }
+
+        const scannerModal = document.getElementById("scanner_modal");
+        if (scannerModal && scannerModal.style.display === "flex") {
+            e.stopImmediatePropagation();
+            e.stopPropagation();
+            if (typeof window.closeScannerModal === "function") window.closeScannerModal();
+            return;
+        }
+    }, true);
+
+    // تقليص نص زر المشاركة على الجوال ليبقى أنيقا في السطر العلوي
+    const origUpdateShareBtn = window.updatePackageShareBtn;
+    window.updatePackageShareBtn = function() {
+        if (typeof origUpdateShareBtn === "function") origUpdateShareBtn();
+        if (isMobileDevice) {
+            const lbl = document.getElementById("btn_share_package_label");
+            if (lbl) lbl.innerText = "مشاركة";
+        }
+    };
+})();
+</script>
 
 <script id="albasem-v3-interactive-engine">
 (function() {
