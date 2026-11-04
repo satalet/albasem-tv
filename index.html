@@ -1026,178 +1026,15 @@
         }
     </style>
     
-<style id="compact-player-hud">
-/* أزرار المشغل العلوية المدمجة */
-.art-top button, .player-top-btn, button[title*="إشارة"], button[title*="واتس"], [id*="btn-signal"], [id*="wa"] {
-    padding: 3px 6px !important;
-    min-width: 28px !important;
-    height: 28px !important;
-    font-size: 13px !important;
-    border-radius: 6px !important;
-    line-height: 1 !important;
-}
-
-/* تقليص لوحة السيغنال OSD للنصف وتثبيتها أسفل الشاشة بنعومة */
-#signal-osd, .signal-osd, .tuner-osd, [id*="signal"], .signal-overlay, .tuner-box {
-    max-width: 280px !important;
-    padding: 5px 8px !important;
-    font-size: 10px !important;
-    bottom: 8px !important;
-    left: 8px !important;
-    background: rgba(10, 16, 26, 0.8) !important;
-    backdrop-filter: blur(4px) !important;
-    border-radius: 8px !important;
-    transform-origin: bottom left !important;
-}
-
-/* تنحيف بارات قوة الإشارة والجودة */
-#signal-osd div[style*="height"],
-#signal-osd .progress,
-#signal-osd .progress-bar,
-[id*="signal"] .progress,
-[id*="signal"] .progress-bar,
-.tuner-osd .progress-bar {
-    height: 4px !important;
-    margin: 2px 0 !important;
-}
-
-/* شاشات الجوال: تصغير إضافي لتحرير مساحة العرض */
-@media (max-width: 768px) {
-    .art-top button, .player-top-btn {
-        padding: 2px 4px !important;
-        min-width: 24px !important;
-        height: 24px !important;
-        font-size: 11px !important;
-    }
-    #signal-osd, .signal-osd, .tuner-osd, [id*="signal"], .signal-overlay, .tuner-box {
-        transform: scale(0.72) !important;
-        bottom: 4px !important;
-        left: 4px !important;
-    }
-}
-</style>
-
-
-<style id="ultra-compact-signal-osd">
-/* تصغير حاوية السيغنال الكلية */
-div[id*="signal"], div[class*="signal"], div[id*="tuner"], div[class*="tuner"], .osd-card {
-    max-width: 250px !important;
-    width: 250px !important;
-    padding: 4px 8px !important;
-    font-size: 9.5px !important;
-    bottom: 6px !important;
-    left: 6px !important;
-    background: rgba(10, 16, 26, 0.85) !important;
-    backdrop-filter: blur(4px) !important;
-    border-radius: 6px !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
-}
-
-/* تصغير الخطوط والترويسة الداخلية */
-div[id*="signal"] span, div[id*="signal"] b, div[id*="signal"] div,
-.osd-card span, .osd-card b, .osd-card div {
-    font-size: 9px !important;
-    line-height: 1.2 !important;
-}
-
-/* تنحيف بارات QUALITY و LEVEL */
-div[id*="signal"] .progress, 
-div[id*="signal"] .progress-bar,
-div[id*="signal"] div[style*="height"],
-.osd-card .progress-bar {
-    height: 3.5px !important;
-    margin: 2px 0 !important;
-}
-
-/* شاشات الجوال: تصغير إضافي بنسبة 30% لتوفير كامل الشاشة */
-@media (max-width: 768px) {
-    div[id*="signal"], div[class*="signal"], div[id*="tuner"], div[class*="tuner"], .osd-card {
-        max-width: 210px !important;
-        width: 210px !important;
-        transform: scale(0.75) !important;
-        transform-origin: bottom left !important;
-        bottom: 2px !important;
-        left: 2px !important;
-    }
-}
-</style>
 
 
 
 
-<style id="real-compact-sat-osd">
-/* شريط نحيف ومسطح ومركزي بالسنتر تماماً */
-#sat_osd_bar, .sat-osd-container {
-    position: absolute !important;
-    bottom: 8px !important;
-    left: 0 !important;
-    right: 0 !important;
-    margin: 0 auto !important;             /* توسيط دقيق بالسنتر بدون إزاحة */
-    transform: none !important;            /* إلغاء الـ transform اللي كان يزيحه للشمال */
-    width: 90% !important;
-    max-width: 440px !important;
-    padding: 3px 8px !important;
-    background: rgba(8, 12, 20, 0.85) !important;
-    backdrop-filter: blur(4px) !important;
-    border-radius: 6px !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.6) !important;
-    direction: rtl !important;
-    box-sizing: border-box !important;
-}
 
-/* السطر الأول: العنوان ومربع التيونر */
-#sat_osd_bar .sat-osd-header,
-.sat-osd-header {
-    margin: 0 0 2px 0 !important;
-    padding: 0 !important;
-    font-size: 8.5px !important;
-    line-height: 1.1 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-}
 
-/* السطر الثاني: بارات الجودة والإشارة */
-#sat_osd_bar .sat-osd-meters,
-#sat_osd_bar .sat-osd-row {
-    margin: 1px 0 !important;
-    padding: 0 !important;
-}
 
-#sat_osd_bar [class*="bar"],
-#sat_osd_bar [class*="track"],
-#sat_osd_bar .progress {
-    height: 3px !important;
-    margin: 1px 0 !important;
-}
 
-#sat_osd_bar span, #sat_osd_bar div, #sat_osd_bar b {
-    font-size: 8px !important;
-    line-height: 1.1 !important;
-}
 
-/* السطر الثالث: الفوتر */
-#sat_osd_bar .sat-osd-footer,
-.sat-osd-footer {
-    margin: 2px 0 0 0 !important;
-    padding: 0 !important;
-    font-size: 7.5px !important;
-    line-height: 1.1 !important;
-    display: flex !important;
-    justify-content: space-between !important;
-}
-
-@media (max-width: 768px) {
-    #sat_osd_bar, .sat-osd-container {
-        max-width: 95% !important;
-        width: 95% !important;
-        bottom: 5px !important;
-        padding: 2px 6px !important;
-    }
-}
-</style>
 
 
 
@@ -3380,18 +3217,14 @@ function copyMPV(url) {
         <div class="player-content">
             <div class="player-header" id="player_header_bar">
                 <div class="clean-player-top-bar">
-                    <div class="clean-top-group">
-                        <button onclick="closeWebPlayer()" class="player-close clean-top-btn btn-close-red" title="إغلاق المشغل">✕</button>
-                        <button id="btn_player_wa" onclick="shareCurrentLiveFromPlayer()" class="clean-top-btn btn-wa-green" title="مشاركة البث عبر واتساب" style="display:none;">📲</button>
-                        <button id="quick_browse_btn" onclick="window.enableMiniPlayerMode(event)" class="clean-top-btn" title="تصغير المشغل وتصفح القنوات">📺 القنوات</button>
-                        <button id="aspect_ratio_btn" onclick="window.cycleAspectRatio(false)" class="clean-top-btn" title="تغيير أبعاد الفيديو">📐 ملء</button>
-                    </div>
-                    <span id="player_title" style="display:none;">مشغل الفيديو</span>
-                    <div class="clean-top-group">
-                        <button onclick="playStepChannel(1)" class="clean-top-btn btn-zapper-nav" title="القناة التالية">⏭</button>
-                        <button onclick="playStepChannel(-1)" class="clean-top-btn btn-zapper-nav" title="القناة السابقة">⏮</button>
-                    </div>
+                    <button onclick="playStepChannel(-1)" class="clean-top-btn btn-zapper-nav" title="القناة السابقة">⏮</button>
+                    <button onclick="playStepChannel(1)" class="clean-top-btn btn-zapper-nav" title="القناة التالية">⏭</button>
+                    <button id="aspect_ratio_btn" onclick="window.cycleAspectRatio(false)" class="clean-top-btn" title="تغيير أبعاد الفيديو">📐 تلقائي</button>
+                    <button id="quick_browse_btn" onclick="window.enableMiniPlayerMode(event)" class="clean-top-btn" title="تصغير المشغل وتصفح القنوات">📺 القنوات</button>
+                    <button id="btn_player_wa" onclick="shareCurrentLiveFromPlayer()" class="clean-top-btn btn-wa-green" title="مشاركة البث عبر واتساب" style="display:none;">📲</button>
+                    <button onclick="closeWebPlayer()" class="player-close clean-top-btn btn-close-red" title="إغلاق المشغل">✕</button>
                 </div>
+                <span id="player_title" style="display:none;">مشغل الفيديو</span>
                 <div id="media_tracks_controls" style="display:none; grid-template-columns:1fr 1fr; gap:8px; width:100%; max-width:500px; margin:6px auto 0 auto;">
                     <select id="audio_track_select" onchange="onAudioTrackChange(this.value)" style="width:100%; background:#0B0E14; color:#38BDF8; border:1px solid #334155; border-radius:6px; padding:5px 8px; font-size:11px; font-weight:bold; outline:none; cursor:pointer; text-overflow:ellipsis;">
                         <option value="default">🔊 الصوت الافتراضي (سريع)</option>
@@ -3404,8 +3237,8 @@ function copyMPV(url) {
 
             <div id="artplayer-container"></div>
 
-            <!-- الكبسولة السفلية المختصرة: الدائرة الملونة + اسم القناة فقط -->
-            <div id="sat_osd_bar" class="clean-channel-capsule visible">
+            <!-- الشريط السفلي العريض والواضح: الدائرة الملونة + اسم القناة بخط كبير ومقروء من بعيد -->
+            <div id="albasem_channel_banner" class="clean-channel-capsule visible">
                 <span id="channel_status_dot" class="status-dot yellow"></span>
                 <span id="sat_osd_channel_name" class="clean-channel-title">اسم القناة</span>
             </div>
@@ -4760,202 +4593,213 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
 
 
 <style id="clean-minimal-player-hud-style">
-/* تنسيق البار العلوي المختصر والكبسولة السفلية لاسم القناة والدائرة الملونة */
+/* 1. البار العلوي للمشغل: صف واحد موحد بدون أي تداخل أو قص للأزرار */
 #player_header_bar {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
     width: 100vw !important;
-    padding: 10px 14px !important;
-    background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 70%, transparent 100%) !important;
+    padding: 10px 12px !important;
+    background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.45) 75%, transparent 100%) !important;
     z-index: 85 !important;
     border: none !important;
+    box-sizing: border-box !important;
     transition: opacity 0.25s ease, visibility 0.25s ease !important;
 }
 .clean-player-top-bar {
     display: flex !important;
+    align-items: center !important;
     justify-content: space-between !important;
-    align-items: center !important;
     width: 100% !important;
-    gap: 8px !important;
-    direction: ltr !important;
-}
-.clean-top-group {
-    display: flex !important;
-    align-items: center !important;
+    max-width: 900px !important;
+    margin: 0 auto !important;
     gap: 6px !important;
+    direction: rtl !important;
+    flex-wrap: nowrap !important;
 }
-.clean-top-btn {
-    height: 32px !important;
-    padding: 0 11px !important;
-    border-radius: 8px !important;
-    font-size: 12px !important;
+#player_header_bar .clean-top-btn,
+#player_header_bar #quick_browse_btn,
+#player_header_bar #aspect_ratio_btn {
+    height: 34px !important;
+    padding: 0 12px !important;
+    margin: 0 !important;
+    border-radius: 9px !important;
+    font-size: 12.5px !important;
     font-weight: 800 !important;
-    background: rgba(15, 23, 42, 0.82) !important;
+    background: rgba(15, 23, 42, 0.88) !important;
     color: #38BDF8 !important;
-    border: 1px solid rgba(56, 189, 248, 0.5) !important;
+    border: 1.5px solid rgba(56, 189, 248, 0.55) !important;
     cursor: pointer !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 4px !important;
+    gap: 5px !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    white-space: nowrap !important;
     backdrop-filter: blur(6px) !important;
     -webkit-backdrop-filter: blur(6px) !important;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.45) !important;
-    transition: all 0.2s ease !important;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.5) !important;
 }
-.clean-top-btn:active, .clean-top-btn:hover {
-    transform: scale(1.04) !important;
-}
-.btn-zapper-nav {
-    background: rgba(2, 132, 199, 0.88) !important;
+#player_header_bar .btn-zapper-nav {
+    background: rgba(2, 132, 199, 0.9) !important;
     color: #fff !important;
     border-color: #38BDF8 !important;
-    width: 36px !important;
-    padding: 0 !important;
-    font-size: 14px !important;
-}
-.btn-close-red {
-    background: rgba(239, 68, 68, 0.25) !important;
-    color: #EF4444 !important;
-    border-color: rgba(239, 68, 68, 0.55) !important;
-    width: 34px !important;
+    flex: 0 0 40px !important;
+    width: 40px !important;
     padding: 0 !important;
     font-size: 15px !important;
 }
-.btn-wa-green {
+#player_header_bar .btn-wa-green {
     background: rgba(37, 211, 102, 0.22) !important;
     color: #25D366 !important;
-    border-color: rgba(37, 211, 102, 0.55) !important;
-    width: 34px !important;
+    border-color: rgba(37, 211, 102, 0.6) !important;
+    flex: 0 0 38px !important;
+    width: 38px !important;
     padding: 0 !important;
-    font-size: 14px !important;
+    font-size: 15px !important;
+}
+#player_header_bar .btn-close-red {
+    background: rgba(239, 68, 68, 0.25) !important;
+    color: #EF4444 !important;
+    border-color: rgba(239, 68, 68, 0.6) !important;
+    flex: 0 0 38px !important;
+    width: 38px !important;
+    padding: 0 !important;
+    font-size: 16px !important;
 }
 
-/* الكبسولة السفلية الأنيقة: الدائرة + اسم القناة فقط */
-#sat_osd_bar.clean-channel-capsule {
+/* 2. الشريط السفلي العريض والواضح جدا من بعيد */
+#albasem_channel_banner.clean-channel-capsule {
     position: fixed !important;
-    bottom: 22px !important;
+    bottom: 54px !important;
     left: 50% !important;
     right: auto !important;
     transform: translateX(-50%) !important;
-    width: auto !important;
-    max-width: 88vw !important;
-    min-width: 180px !important;
-    padding: 8px 20px !important;
-    background: rgba(10, 15, 26, 0.88) !important;
-    border: 1.5px solid rgba(255, 255, 255, 0.14) !important;
-    border-radius: 50px !important;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.8) !important;
+    width: 90vw !important;
+    max-width: 680px !important;
+    padding: 11px 22px !important;
+    background: linear-gradient(90deg, rgba(10, 15, 28, 0.94) 0%, rgba(17, 24, 39, 0.96) 50%, rgba(10, 15, 28, 0.94) 100%) !important;
+    border: 1.5px solid rgba(56, 189, 248, 0.4) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85) !important;
     backdrop-filter: blur(10px) !important;
     -webkit-backdrop-filter: blur(10px) !important;
-    display: inline-flex !important;
+    display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 11px !important;
+    gap: 14px !important;
     z-index: 88 !important;
     direction: rtl !important;
     pointer-events: none !important;
+    box-sizing: border-box !important;
     transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease !important;
 }
-#sat_osd_bar.clean-channel-capsule.hidden {
-    opacity: 0 !important;
-    visibility: hidden !important;
-    transform: translate(-50%, 14px) !important;
-}
-.auto-hide-hud #sat_osd_bar.clean-channel-capsule {
+#albasem_channel_banner.clean-channel-capsule.hidden,
+.auto-hide-hud #albasem_channel_banner.clean-channel-capsule,
+#player_modal.mini-player-mode #albasem_channel_banner {
     opacity: 0 !important;
     visibility: hidden !important;
     transform: translate(-50%, 14px) !important;
 }
 
-/* الدائرة المضيئة لحالة الاستقبال */
-.status-dot {
-    width: 13px !important;
-    height: 13px !important;
-    min-width: 13px !important;
-    min-height: 13px !important;
+/* الدائرة المضيئة الكبيرة لحالة الاستقبال */
+#albasem_channel_banner .status-dot {
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
     border-radius: 50% !important;
     display: inline-block !important;
     flex-shrink: 0 !important;
-    transition: background-color 0.25s ease, box-shadow 0.25s ease !important;
 }
-.status-dot.green {
+#albasem_channel_banner .status-dot.green {
     background-color: #10B981 !important;
-    box-shadow: 0 0 12px #10B981, 0 0 22px rgba(16, 185, 129, 0.65) !important;
+    box-shadow: 0 0 14px #10B981, 0 0 26px rgba(16, 185, 129, 0.8) !important;
 }
-.status-dot.yellow {
+#albasem_channel_banner .status-dot.yellow {
     background-color: #F59E0B !important;
-    box-shadow: 0 0 12px #F59E0B, 0 0 22px rgba(245, 158, 11, 0.65) !important;
-    animation: pulseStatusDot 1.1s infinite alternate !important;
+    box-shadow: 0 0 14px #F59E0B, 0 0 26px rgba(245, 158, 11, 0.8) !important;
+    animation: pulseStatusDot 1s infinite alternate !important;
 }
-.status-dot.red {
+#albasem_channel_banner .status-dot.red {
     background-color: #EF4444 !important;
-    box-shadow: 0 0 12px #EF4444, 0 0 22px rgba(239, 68, 68, 0.7) !important;
-    animation: pulseStatusDot 0.7s infinite alternate !important;
+    box-shadow: 0 0 14px #EF4444, 0 0 26px rgba(239, 68, 68, 0.85) !important;
+    animation: pulseStatusDot 0.65s infinite alternate !important;
 }
 @keyframes pulseStatusDot {
-    0% { transform: scale(0.88); opacity: 0.75; }
-    100% { transform: scale(1.12); opacity: 1; }
+    0% { transform: scale(0.85); opacity: 0.75; }
+    100% { transform: scale(1.15); opacity: 1; }
 }
 
-/* خط اسم القناة السفلي الواضح والفخم */
-.clean-channel-title {
+/* اسم القناة بخط كبير وعريض ومقروء بوضوح تام من بعيد */
+#albasem_channel_banner #sat_osd_channel_name.clean-channel-title {
     font-family: "Cairo", sans-serif !important;
-    font-size: 16.5px !important;
+    font-size: 21px !important;
     font-weight: 900 !important;
     color: #FFFFFF !important;
-    letter-spacing: 0.3px !important;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95) !important;
+    letter-spacing: 0.4px !important;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95) !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     direction: ltr !important;
     unicode-bidi: plaintext !important;
-    line-height: 1.3 !important;
+    line-height: 1.35 !important;
+    text-align: center !important;
 }
 
+/* ضبط متناسق لشاشات الجوال */
 @media (max-width: 640px) {
     #player_header_bar {
-        padding: 8px 10px !important;
+        padding: 8px 8px !important;
     }
-    .clean-top-btn {
-        height: 29px !important;
-        padding: 0 9px !important;
-        font-size: 11px !important;
+    .clean-player-top-bar {
+        gap: 5px !important;
     }
-    .btn-zapper-nav, .btn-close-red, .btn-wa-green {
-        width: 31px !important;
+    #player_header_bar .clean-top-btn,
+    #player_header_bar #quick_browse_btn,
+    #player_header_bar #aspect_ratio_btn {
+        height: 32px !important;
+        padding: 0 8px !important;
+        font-size: 11.5px !important;
+        border-radius: 8px !important;
+        gap: 3px !important;
     }
-    #sat_osd_bar.clean-channel-capsule {
-        bottom: 16px !important;
-        padding: 6px 16px !important;
-        gap: 9px !important;
-        max-width: 92vw !important;
-    }
-    .clean-channel-title {
+    #player_header_bar .btn-zapper-nav,
+    #player_header_bar .btn-wa-green,
+    #player_header_bar .btn-close-red {
+        flex: 0 0 34px !important;
+        width: 34px !important;
         font-size: 14px !important;
     }
-    .status-dot {
-        width: 11px !important;
-        height: 11px !important;
-        min-width: 11px !important;
-        min-height: 11px !important;
+    #albasem_channel_banner.clean-channel-capsule {
+        bottom: 50px !important;
+        width: 94vw !important;
+        padding: 9px 16px !important;
+        border-radius: 14px !important;
+        gap: 11px !important;
+    }
+    #albasem_channel_banner #sat_osd_channel_name.clean-channel-title {
+        font-size: 17.5px !important;
+    }
+    #albasem_channel_banner .status-dot {
+        width: 14px !important;
+        height: 14px !important;
+        min-width: 14px !important;
+        min-height: 14px !important;
     }
 }
 </style>
 
 <script id="sat_telemetry_engine">
-    // ========================================================
-    // 🎯 مؤشر الاستقبال المبسط: دائرة (خضراء / صفراء / حمراء) + اسم القناة فقط
-    // ========================================================
     window.satTelemetryInterval = null;
     window.satLastTimeVal = -1;
     window.satStallTicks = 0;
 
     window.showSatSignalOsd = function(title) {
-        const osd = document.getElementById("sat_osd_bar");
+        const osd = document.getElementById("albasem_channel_banner");
         const titleEl = document.getElementById("sat_osd_channel_name");
         const dotEl = document.getElementById("channel_status_dot");
 
@@ -4979,7 +4823,7 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
     };
 
     window.hideSatSignalOsd = function() {
-        const osd = document.getElementById("sat_osd_bar");
+        const osd = document.getElementById("albasem_channel_banner");
         if (osd) {
             osd.classList.remove("visible");
             osd.classList.add("hidden");
@@ -4987,7 +4831,7 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
     };
 
     window.toggleSatSignalOsd = function() {
-        const osd = document.getElementById("sat_osd_bar");
+        const osd = document.getElementById("albasem_channel_banner");
         if (!osd) return;
         if (osd.classList.contains("hidden")) {
             osd.classList.remove("hidden");
@@ -5025,7 +4869,6 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
         const curTime = video.currentTime || 0;
         const readyState = video.readyState || 0;
 
-        // فحص ما إذا كانت الصورة تتحرك فعليا
         if (!video.paused && curTime > 0 && curTime !== window.satLastTimeVal && readyState >= 2) {
             window.satLastTimeVal = curTime;
             window.satStallTicks = 0;
@@ -5034,7 +4877,6 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
             dotEl.className = "status-dot yellow";
         } else {
             window.satStallTicks++;
-            // في أول 5 ثوان من فتح القناة تكون الدائرة صفراء (جاري التحميل)، وإذا طال التوقف تتحول إلى حمراء
             if (window.satStallTicks <= 12) {
                 dotEl.className = "status-dot yellow";
             } else {
