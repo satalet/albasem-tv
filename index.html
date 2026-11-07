@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-512.png">
     <meta charset="UTF-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -10,7 +12,7 @@
     
     <meta name="theme-color" content="#0B0E14">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <!-- تم إزالة Tesseract لاعتماد محرك Gemini Vision السحابي -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
     <style>
@@ -1599,10 +1601,7 @@
             setTimeout(safeResizeArt, 80);
             setTimeout(safeResizeArt, 350);
             window.showHudAndAutoHide(4500);
-            if (!historyPushed) {
-                history.pushState({ albasemPlayerOpen: true }, '');
-                historyPushed = true;
-            }
+            historyPushed = true;
         } else {
             modal.classList.remove('mini-player-mode');
             exitSystemFullscreenIfNeeded();
@@ -2019,6 +2018,43 @@ var ADMIN_PIN = "2000";
 }
 </style>
 
+
+<style id="app-header-fix">
+  html, body {
+    -webkit-text-size-adjust: 100% !important;
+    text-size-adjust: 100% !important;
+  }
+  .v3-nav-actions-top {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 4px 4px !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    scrollbar-width: none !important;
+  }
+  .v3-nav-actions-top::-webkit-scrollbar {
+    display: none !important;
+  }
+  .v3-nav-right-btns, .v3-nav-left-btns {
+    display: flex !important;
+    align-items: center !important;
+    gap: 3px !important;
+    flex-shrink: 0 !important;
+  }
+  .v3-btn-back, .v3-btn-home, .v3-btn-share, .v3-btn-lock {
+    height: 27px !important;
+    padding: 0 6px !important;
+    font-size: 10px !important;
+    gap: 2px !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+  }
+</style>
+
 </head>
 
 
@@ -2304,7 +2340,6 @@ var ADMIN_PIN = "2000";
             document.getElementById("tab_movies").addEventListener("click", () => switchSection("movies"));
             document.getElementById("tab_series").addEventListener("click", () => switchSection("series"));
 
-            loadFetchSettings();
             loadFetchSettings();
             // فحص إذا كان الرابط مرسلاً كمشاهدة فورية ومباشرة
             const directPlay = urlParams.get('play');
@@ -2780,17 +2815,44 @@ var ADMIN_PIN = "2000";
         
     let currentSeriesData = null;
 
+    window.playingFromSeriesModal = false;
+    window.lastSeriesModalCloseTime = 0;
+
     async function openSeriesModal(item) {
         window.currentViewingSeries = item;
+        window.playingFromSeriesModal = false;
+
+        // فتح باقة المسلسل بالخلفية تلقائياً حتى لا يتوه الزبون
+        if (item && item.group && window.v3ViewMode === "packages") {
+            currentTab = "series";
+            currentGroup = item.group;
+            window.v3ViewMode = "channels";
+            if (typeof buildPackagesBar === "function") buildPackagesBar();
+            if (typeof renderItems === "function") renderItems();
+        }
+
         const modal = document.getElementById("series_modal");
         const titleEl = document.getElementById("series_modal_title");
         const seasonsBar = document.getElementById("series_seasons_bar");
         const epList = document.getElementById("series_episodes_list");
 
+        const wasClosed = !modal || modal.style.display === "none";
         titleEl.innerText = "🎬 " + item.name;
         seasonsBar.innerHTML = "";
         epList.innerHTML = "<div style='color:#38BDF8; text-align:center; grid-column:1/-1; padding:20px;'>⏳ جاري جلب المواسم والحلقات من السيرفر...</div>";
         modal.style.display = "flex";
+
+        if (wasClosed) {
+            try { window.history.pushState({ albasemSeriesModal: true }, "", window.location.href); } catch(e){}
+        }
+
+        const closeBtn = modal.querySelector(".modal-close");
+        if (closeBtn) {
+            closeBtn.onclick = function(e) {
+                if (e) e.stopPropagation();
+                closeSeriesModal(true);
+            };
+        }
 
         let mainUrl = document.getElementById("iptv_url").value.trim() || localStorage.getItem("albasem_url");
 
@@ -2812,8 +2874,19 @@ var ADMIN_PIN = "2000";
         }
     }
 
-    function closeSeriesModal() {
-        document.getElementById("series_modal").style.display = "none";
+    function closeSeriesModal(forceByUser = false) {
+        // منع إغلاق نافذة الحلقات بالخطأ أثناء أو بعد إغلاق مشغل الفيديو مباشرة
+        if (!forceByUser) {
+            const pModal = document.getElementById("player_modal");
+            const isPlayerActive = pModal && pModal.style.display !== "none" && !pModal.classList.contains("mini-player-mode");
+            if (isPlayerActive || window.playingFromSeriesModal || (Date.now() - (window.lastPlayerCloseTime || 0) < 700)) {
+                return;
+            }
+        }
+        window.playingFromSeriesModal = false;
+        window.lastSeriesModalCloseTime = Date.now();
+        const modal = document.getElementById("series_modal");
+        if (modal) modal.style.display = "none";
     }
 
     function renderSeriesSeasons(seasons, seriesTitle) {
@@ -2842,14 +2915,15 @@ var ADMIN_PIN = "2000";
         const epList = document.getElementById("series_episodes_list");
         epList.innerHTML = "";
 
-        eps.forEach(ep => {
+        eps.forEach((ep, epIdx) => {
             const btn = document.createElement("button");
             btn.className = "btn-system-play";
-            btn.style.cssText = "padding:10px; font-size:12px; border-radius:8px; cursor:pointer; background:#1E293B; border:1px solid #334155;";
             const epRow = document.createElement("div");
-            epRow.style.cssText = "display:flex; align-items:center; gap:6px; min-width:140px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:3px 6px; box-sizing:border-box;";
+            epRow.className = "series-ep-row";
+            epRow.style.cssText = "display:flex; align-items:center; gap:6px; min-width:140px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:3px 6px; box-sizing:border-box; transition:0.2s;";
 
-            btn.innerText = "▶ " + (ep.title || "الحلقة " + ep.episode_num);
+            const epLabel = ep.title || ("الحلقة " + ep.episode_num);
+            btn.innerText = "▶ " + epLabel;
             btn.style.cssText = "flex:1; background:transparent; border:none; color:#38bdf8; font-weight:bold; font-size:12px; cursor:pointer; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:6px 0;";
 
             const shareEpBtn = document.createElement("button");
@@ -2864,21 +2938,32 @@ var ADMIN_PIN = "2000";
             epRow.appendChild(btn);
             epRow.appendChild(shareEpBtn);
             btn.onclick = () => {
+                document.querySelectorAll("#series_episodes_list .series-ep-row").forEach(r => {
+                    r.style.background = "rgba(255,255,255,0.06)";
+                    r.style.borderColor = "rgba(255,255,255,0.12)";
+                });
+                epRow.style.background = "rgba(16, 185, 129, 0.24)";
+                epRow.style.borderColor = "#10B981";
+                btn.style.color = "#10B981";
+                btn.innerText = "✅ " + epLabel;
+
                 window.activePlaylist = eps.map(e => ({
                     url: e.url,
                     name: `${seriesTitle} - S${sNum} E${e.episode_num}`
                 }));
-                closeSeriesModal();
+                window.activePlayIndex = epIdx;
+                window.playingFromSeriesModal = true;
+
+                // إبقاء نافذة الحلقات مفتوحة بالخلفية تماماً
+                const sModal = document.getElementById("series_modal");
+                if (sModal) sModal.style.display = "flex";
+
                 openWebPlayer(ep.url, `${seriesTitle} - S${sNum} E${ep.episode_num}`);
             };
             epList.appendChild(epRow);
         });
     }
 
-    
-    // ==========================================
-    // 🧠 محرك البحث الذكي الذاتي (Smart Fuzzy & Aliases Search)
-    // ==========================================
     const searchAliasesMap = {
         "بين": ["bein", "sport"],
         "سبورت": ["sport", "sports", "bein"],
@@ -3410,59 +3495,109 @@ function playStepChannel(step) {
         }
     }
 
+    window.playerSessionId = 0;
+    window.playerRetryTimer = null;
+
+    function resolveStreamEndpoint(rawUrl, isLive, forceTs = false) {
+        if (!rawUrl) return { url: "", type: "auto" };
+        let target = rawUrl.trim();
+
+        if (forceTs && target.includes(".m3u8")) {
+            target = target.replace(/\.m3u8(\?|$)/, ".ts$1");
+        } else if (!forceTs && isLive && target.includes(".ts")) {
+            target = target.replace(/\.ts(\?|$)/, ".m3u8$1");
+        }
+
+        if (target.startsWith("http://")) {
+            const finalProxyUrl = "https://albasem-tv.duckdns.org/proxy?url=" + encodeURIComponent(target);
+            const sType = (target.includes(".ts") && !target.includes(".m3u8")) ? "ts" : (isLive || target.includes(".m3u8") ? "m3u8" : "auto");
+            return { url: finalProxyUrl, type: sType };
+        }
+
+        if (target.includes(".m3u8")) return { url: target, type: "m3u8" };
+        if (target.includes(".ts")) return { url: target, type: "ts" };
+        return { url: target, type: isLive ? "m3u8" : "auto" };
+    }
+
+    function destroyActivePlayerEngine() {
+        window.playerSessionId = (window.playerSessionId || 0) + 1;
+        clearTimeout(window.playerRetryTimer);
+        window.playerRetryTimer = null;
+
+        if (window.art) {
+            try {
+                if (window.art.hls) {
+                    window.art.hls.stopLoad();
+                    window.art.hls.detachMedia();
+                    window.art.hls.destroy();
+                    window.art.hls = null;
+                }
+            } catch(e){}
+            try {
+                if (window.art.mpegts) {
+                    window.art.mpegts.unload();
+                    window.art.mpegts.detachMediaElement();
+                    window.art.mpegts.destroy();
+                    window.art.mpegts = null;
+                }
+            } catch(e){}
+            try {
+                window.art.pause();
+                window.art.destroy(true);
+            } catch(e){}
+            window.art = null;
+        }
+
+        const container = document.getElementById("artplayer-container");
+        if (container) {
+            const vids = container.querySelectorAll("video");
+            vids.forEach(v => {
+                try {
+                    v.pause();
+                    v.removeAttribute("src");
+                    v.load();
+                    v.remove();
+                } catch(e){}
+            });
+            container.innerHTML = "";
+        }
+    }
+
     function openWebPlayer(rawUrl, title) {
+        const pModalEl = document.getElementById("player_modal");
+        const wasClosed = !pModalEl || pModalEl.style.display === "none";
+        if (wasClosed) {
+            window.v3LastScrollInChannels = window.scrollY || 0;
+        }
+
+        destroyActivePlayerEngine();
+        const sessionId = window.playerSessionId;
         currentRawStreamUrl = rawUrl;
-        // إظهار زر مشاركة البث فقط للمحطات المباشرة وإخفاؤه للأفلام والمسلسلات
+        currentStreamTitle = title;
+
+        const isMovieOrSeries = (typeof currentTab !== "undefined" && (currentTab === "movies" || currentTab === "series")) || 
+                                (rawUrl && (String(rawUrl).includes("/movie") || String(rawUrl).includes("/series/")));
+        const isLive = !isMovieOrSeries && ((typeof currentTab !== "undefined" && currentTab === "live") || (rawUrl && String(rawUrl).includes("/live/")));
+
         const waPlayerBtn = document.getElementById("btn_player_wa");
         if (waPlayerBtn) {
-            const isMovieOrSeries = (typeof currentTab !== "undefined" && (currentTab === "movies" || currentTab === "series")) || 
-                                    (rawUrl && (String(rawUrl).includes("/movie") || String(rawUrl).includes("/series/")));
-            const isLive = !isMovieOrSeries && ((typeof currentTab !== "undefined" && currentTab === "live") || (rawUrl && String(rawUrl).includes("/live/")));
             waPlayerBtn.style.display = isLive ? "flex" : "none";
         }
-        currentStreamTitle = title;
-        closeWebPlayer();
-        let url = rawUrl;
-        if (url && url.startsWith("http://")) {
-            let playTarget = rawUrl;
-            if (playTarget && playTarget.includes(".ts")) {
-                playTarget = playTarget.replace(/\.ts(\?|$)/, ".m3u8$1");
-            }
-            url = "https://albasem-tv.duckdns.org/proxy?url=" + encodeURIComponent(playTarget);
-        }
+
         document.getElementById("player_title").innerText = "🎬 " + title;
-        if (typeof showSatSignalOsd === 'function') showSatSignalOsd(title);
-        document.getElementById("player_modal").style.display = "flex";
+        if (typeof showSatSignalOsd === "function") showSatSignalOsd(title);
 
-        if (art) {
-            art.destroy();
-            art = null;
+        if (pModalEl) pModalEl.style.display = "flex";
+        if (wasClosed) {
+            try { window.history.pushState({ albasemPlayerOpen: true }, "", window.location.href); } catch(e){}
         }
 
-        const isLive = rawUrl.includes("/live/");
-        let streamUrl = rawUrl;
-        
-        if (isLive && streamUrl.endsWith(".m3u8")) {
-            streamUrl = streamUrl.replace(".m3u8", ".ts");
-        }
-
-        let playerUrl = streamUrl;
-        if (playerUrl && playerUrl.startsWith("http://")) {
-            let playTarget2 = streamUrl;
-            if (playTarget2 && playTarget2.includes(".ts")) {
-                playTarget2 = playTarget2.replace(/\.ts(\?|$)/, ".m3u8$1");
-            }
-            playerUrl = "https://albasem-tv.duckdns.org/proxy?url=" + encodeURIComponent(playTarget2);
-        }
-
-        let streamType = "auto";
-        if (playerUrl.includes(".m3u8") || streamUrl.includes(".m3u8") || isLive) {
-            streamType = "m3u8";
-        } else if (playerUrl.includes(".ts") || streamUrl.includes(".ts")) {
-            streamType = "ts";
-        }
+        const resolved = resolveStreamEndpoint(rawUrl, isLive, false);
+        const playerUrl = resolved.url;
+        const streamType = resolved.type;
 
         probeEmbeddedTracks(rawUrl, isLive);
+
         window.art = new Artplayer({
             subtitle: {
                 style: {
@@ -3488,20 +3623,58 @@ function playStepChannel(step) {
             customType: {
                 m3u8: function(video, url, art) {
                     if (Hls.isSupported()) {
-                        const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+                        const hls = new Hls({
+                            enableWorker: true,
+                            lowLatencyMode: true,
+                            backBufferLength: 30,
+                            maxBufferLength: 25
+                        });
                         hls.loadSource(url);
                         hls.attachMedia(video);
                         art.hls = hls;
+
+                        let mediaRecoveries = 0;
+                        let netRetries = 0;
+                        hls.on(Hls.Events.ERROR, function(event, data) {
+                            if (sessionId !== window.playerSessionId) return;
+                            if (data.fatal) {
+                                if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                                    if (netRetries < 2) {
+                                        netRetries++;
+                                        setTimeout(() => {
+                                            if (sessionId === window.playerSessionId && art.hls) art.hls.startLoad();
+                                        }, 800);
+                                    } else if (isLive && mpegts.isSupported()) {
+                                        try { hls.destroy(); art.hls = null; } catch(e){}
+                                        const tsResolved = resolveStreamEndpoint(rawUrl, true, true);
+                                        if (art.option && art.option.customType && art.option.customType.ts) {
+                                            art.option.customType.ts(video, tsResolved.url, art);
+                                        }
+                                    }
+                                } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR && mediaRecoveries < 2) {
+                                    mediaRecoveries++;
+                                    hls.recoverMediaError();
+                                }
+                            }
+                        });
                     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
                         video.src = url;
                     }
                 },
                 ts: function(video, url, art) {
                     if (mpegts.isSupported()) {
-                        let isReconnecting = false;
+                        let retryCount = 0;
+                        const maxRetries = 5;
+
                         function startStream() {
+                            if (sessionId !== window.playerSessionId) return;
                             if (art.mpegts) {
-                                try { art.mpegts.destroy(); } catch(e){}
+                                try {
+                                    art.mpegts.unload();
+                                    art.mpegts.detachMediaElement();
+                                    art.mpegts.destroy();
+                                } catch(e){}
+                                art.mpegts = null;
                             }
                             const player = mpegts.createPlayer({
                                 type: "mse",
@@ -3519,22 +3692,23 @@ function playStepChannel(step) {
                             player.play().catch(()=>{});
                             art.mpegts = player;
 
-                            player.on(mpegts.Events.ERROR, function(type, details, err) {
-                                console.warn("MpegTS Error, reconnecting...", type, details);
-                                reconnect();
+                            player.on(mpegts.Events.ERROR, function() {
+                                if (sessionId !== window.playerSessionId) return;
+                                scheduleReconnect();
                             });
                         }
 
-                        function reconnect() {
-                            if (isReconnecting) return;
-                            isReconnecting = true;
-                            setTimeout(() => {
-                                startStream();
-                                isReconnecting = false;
-                            }, 1000);
+                        function scheduleReconnect() {
+                            if (sessionId !== window.playerSessionId || retryCount >= maxRetries) return;
+                            clearTimeout(window.playerRetryTimer);
+                            const delay = Math.min(1000 * Math.pow(1.8, retryCount), 8000);
+                            retryCount++;
+                            window.playerRetryTimer = setTimeout(() => {
+                                if (sessionId === window.playerSessionId) startStream();
+                            }, delay);
                         }
 
-                        video.addEventListener("ended", reconnect);
+                        video.addEventListener("ended", scheduleReconnect);
                         startStream();
                     } else {
                         video.src = url;
@@ -3542,20 +3716,19 @@ function playStepChannel(step) {
                 }
             },
         });
-    
-        // حماية الأفلام من التقطيع والانهيار
+
         if (!isLive && window.art) {
             let lastValidTime = 0;
             let isHealing = false;
 
             window.art.on("video:timeupdate", () => {
-                if (window.art.currentTime > 2 && !isHealing) {
+                if (sessionId === window.playerSessionId && window.art && window.art.currentTime > 2 && !isHealing) {
                     lastValidTime = window.art.currentTime;
                 }
             });
 
             function resumePlayback() {
-                if (isHealing || !window.art) return;
+                if (sessionId !== window.playerSessionId || isHealing || !window.art) return;
                 isHealing = true;
                 const targetTime = lastValidTime;
                 showToast("⚡ جاري استئناف الفيلم بطلب نظيف...");
@@ -3566,6 +3739,7 @@ function playStepChannel(step) {
                 
                 const handler = () => {
                     v.removeEventListener("canplay", handler);
+                    if (sessionId !== window.playerSessionId) return;
                     if (targetTime > 3) {
                         v.currentTime = targetTime;
                     }
@@ -3576,64 +3750,32 @@ function playStepChannel(step) {
             }
 
             window.art.on("error", resumePlayback);
-
-            const container = document.getElementById("artplayer-container");
-            if (container) {
-                container.addEventListener("click", () => {
-                    const v = window.art ? window.art.video : null;
-                    if (v && (v.error || v.readyState === 0)) {
-                        resumePlayback();
-                    }
-                }, true);
-            }
         }
     }
 
     function closeWebPlayer() {
-        console.log("🛑 جاري إغلاق المشغل وإيقاف الصوت بالكامل...");
-        if (window.art) {
-            try {
-                if (window.art.hls) {
-                    window.art.hls.stopLoad();
-                    window.art.hls.detachMedia();
-                    window.art.hls.destroy();
-                    window.art.hls = null;
-                }
-            } catch(e){}
-            try {
-                if (window.art.mpegts) {
-                    window.art.mpegts.unload();
-                    window.art.mpegts.detachMediaElement();
-                    window.art.mpegts.destroy();
-                    window.art.mpegts = null;
-                }
-            } catch(e){}
-            try {
-                window.art.pause();
-                window.art.destroy(true);
-            } catch(e){}
-            window.art = null;
-        }
-
-        // تفريغ وقتل أي وسم video موجود بالصفحة داخل الحاوية
-        const container = document.getElementById("artplayer-container");
-        if (container) {
-            const vids = container.querySelectorAll("video");
-            vids.forEach(v => {
-                try {
-                    v.pause();
-                    v.src = "";
-                    v.load();
-                    v.remove();
-                } catch(e){}
-            });
-            container.innerHTML = "";
-        }
+        window.lastPlayerCloseTime = Date.now();
+        destroyActivePlayerEngine();
 
         const modal = document.getElementById("player_modal");
-        if (modal) modal.style.display = "none";
+        if (modal) {
+            modal.classList.remove("mini-player-mode");
+            modal.style.display = "none";
+        }
+
+        // إذا كان الزبون يشاهد حلقة مسلسل، نضمن بقاء نافذة حلقات المسلسل مفتوحة أمامه فوراً
+        if (window.playingFromSeriesModal) {
+            const sModal = document.getElementById("series_modal");
+            if (sModal) {
+                sModal.style.display = "flex";
+            }
+            window.playingFromSeriesModal = false;
+            if (typeof showToast === "function") {
+                showToast("🔙 العودة لقائمة حلقات المسلسل");
+            }
+        }
     }
-    
+
     // ==========================================
     // 🔗 إدارة مستودع السيرفرات والروابط (Links Hub)
     // ==========================================
@@ -4042,13 +4184,17 @@ function playStepChannel(step) {
 
         const endpoint = useDeepRadar ? `${VPS_BASE}/api/deep_check` : `${VPS_BASE}/api/links/check`;
 
-        async function performSingleFetch() {
+        async function performSingleFetch(timeoutMs = 32000) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
             try {
                 let res = await fetch(endpoint, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ url: cachedLinksList[index].url })
+                    body: JSON.stringify({ url: cachedLinksList[index].url }),
+                    signal: controller.signal
                 });
+                clearTimeout(timer);
                 if (!res.ok && useDeepRadar) {
                     res = await fetch(`${VPS_BASE}/api/links/check`, {
                         method: "POST",
@@ -4058,23 +4204,32 @@ function playStepChannel(step) {
                 }
                 return await res.json();
             } catch (e) {
-                return { status: "dead", online: false, reason: "❌ خطأ اتصال بالسيرفر", score: 0 };
+                clearTimeout(timer);
+                const isTimeout = e && e.name === "AbortError";
+                return {
+                    status: "dead",
+                    online: false,
+                    reason: isTimeout ? "❌ انتهت مهلة الفحص (تجاوز 32 ثانية)" : "❌ خطأ اتصال بالسيرفر",
+                    score: 0
+                };
             }
         }
 
-        let d = await performSingleFetch();
+        // المحاولة الأولى بمهلة كافية (32 ثانية) لفرز القنوات وقياس سرعة البث الحقيقية
+        let d = await performSingleFetch(32000);
         let st = d.status || (d.online ? "online" : "dead");
 
         const reasonStr = String(d.reason || d.conns || "");
         const isPermanentlyExpired = reasonStr.includes("منتهي") || reasonStr.includes("الحساب متوقف");
 
+        // إذا ظهر متوقفاً وليس منتهي الصلاحية، نمنحه فرصة تأكيد ثانية حتى لا يُظلم أي سيرفر شغال
         if (st === "dead" && !isPermanentlyExpired) {
             cachedLinksList[index].status = "checking";
             cachedLinksList[index].conns = "🔄 تأكيد الفحص (محاولة 2/2)...";
             renderLinksList(cachedLinksList);
 
-            await new Promise(r => setTimeout(r, 1500));
-            d = await performSingleFetch();
+            await new Promise(r => setTimeout(r, 1200));
+            d = await performSingleFetch(28000);
             st = d.status || (d.online ? "online" : "dead");
         }
 
@@ -4087,7 +4242,30 @@ function playStepChannel(step) {
 
         saveStatusToLocal();
         renderLinksList(cachedLinksList);
-        await new Promise(r => setTimeout(r, 350));
+    }
+
+    async function runBatchRadarScan(btnEl, progressPrefix) {
+        const total = cachedLinksList.length;
+        const concurrency = 2; // فحص سيرفرين معاً: يضاعف السرعة ويحافظ على كامل قوة الـ VPS ودقة الـ Mbps
+        let completed = 0;
+        let currentIndex = 0;
+
+        async function worker(workerId) {
+            if (workerId > 0) await new Promise(r => setTimeout(r, 400)); // فارق زمني بسيط لمنع تزاحم الطلبات
+            while (currentIndex < total) {
+                const idx = currentIndex++;
+                if (btnEl) btnEl.innerText = `${progressPrefix} (${completed + 1}/${total})...`;
+                await checkOneLink(idx, true);
+                completed++;
+                if (btnEl) btnEl.innerText = `${progressPrefix} (${completed}/${total})...`;
+            }
+        }
+
+        const workers = [];
+        for (let w = 0; w < Math.min(concurrency, total); w++) {
+            workers.push(worker(w));
+        }
+        await Promise.all(workers);
     }
 
     async function runFastCheck() {
@@ -4098,17 +4276,13 @@ function playStepChannel(step) {
             await loadSavedLinks(true);
         }
 
-        const total = cachedLinksList.length;
-        for (let i = 0; i < total; i++) {
-            if (btn) btn.innerText = `⏳ فحص (${i + 1}/${total})...`;
-            await checkOneLink(i, true);
-        }
+        await runBatchRadarScan(btn, "⏳ فحص دقيق");
 
         if (btn) {
             btn.disabled = false;
             btn.innerText = "⚡ فحص الكل";
         }
-        showToast("✅ اكتمل الفحص الميداني لكافة السيرفرات!");
+        showToast("✅ اكتمل الفحص الميداني الدقيق لكافة السيرفرات!");
     }
 
     window.runSmartRadar = async function() {
@@ -4123,13 +4297,9 @@ function playStepChannel(step) {
             await loadSavedLinks(true);
         }
 
-        const total = cachedLinksList.length;
-        showToast("🧠 بدأ رادار الباسم الذكي بفحص تدفق الفيديو الفعلي وترتيب الأبطال...");
+        showToast("🧠 بدأ رادار الباسم الذكي بفحص التدفق وترتيب الأبطال...");
 
-        for (let i = 0; i < total; i++) {
-            if (btn) btn.innerText = `🧠 جاري تحليل البث (${i + 1} من ${total})...`;
-            await checkOneLink(i, true);
-        }
+        await runBatchRadarScan(btn, "🧠 تحليل البث");
 
         cachedLinksList.sort((a, b) => {
             const rankStatus = (st) => st === "online" ? 2 : (st === "busy" ? 1 : 0);
@@ -4339,10 +4509,10 @@ function toggleLinksHub() {
     </script>
     <script>
     if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => {
-            for (let reg of regs) {
+        window.addEventListener("load", () => {
+            navigator.serviceWorker.register("/sw.js").then(reg => {
                 reg.update();
-            }
+            }).catch(err => console.warn("SW Register:", err));
         });
     }
     </script>
@@ -4407,18 +4577,20 @@ function toggleLinksHub() {
         let lastExitPress = 0;
 
         // حقن حالات وهمية في تاريخ المتصفح لمنع الخروج الفوري
+        let historyGuardActive = false;
         function ensureHistoryBuffer() {
             try {
-                if (window.history.length < 20) {
-                    for (let i = 0; i < 10; i++) {
-                        window.history.pushState({ albasem: i }, "", window.location.href);
-                    }
+                if (!historyGuardActive) {
+                    window.history.pushState({ albasemGuard: true }, "", window.location.href);
+                    historyGuardActive = true;
                 }
             } catch (err) {}
         }
 
         window.addEventListener("load", ensureHistoryBuffer);
-        document.addEventListener("click", ensureHistoryBuffer, true);
+        document.addEventListener("click", function() {
+            if (!historyGuardActive) ensureHistoryBuffer();
+        }, { passive: true });
 
         window.addEventListener("popstate", function(e) {
             ensureHistoryBuffer();
@@ -4429,55 +4601,69 @@ function toggleLinksHub() {
             const linksSec = document.getElementById("links_view_section");
             const searchInput = document.getElementById("search_input");
 
-            // 1. إذا كان المشغل مفتوحاً -> أغلقه
-            if (playerModal && playerModal.style.display === "flex") {
-                closeWebPlayer();
+            // حماية من القفز المزدوج إذا أُغلق المشغل للتو في نفس اللحظة
+            if (Date.now() - (window.lastPlayerCloseTime || 0) < 700 || Date.now() - (window.lastSeriesModalCloseTime || 0) < 700) {
+                e.stopImmediatePropagation();
+                e.stopPropagation();
                 return;
             }
 
-            // 2. إذا كانت نافذة المسلسلات مفتوحة -> أغلقها
+            // 1. إذا كان المشغل مفتوحاً -> أغلقه فقط وابقَ داخل نفس الباقة تماماً
+            if (playerModal && playerModal.style.display !== "none" && !playerModal.classList.contains("mini-player-mode")) {
+                e.stopImmediatePropagation();
+                e.stopPropagation();
+                const savedScroll = window.v3LastScrollInChannels || window.scrollY || 0;
+                closeWebPlayer();
+                setTimeout(() => {
+                    window.scrollTo({ top: savedScroll, behavior: "instant" });
+                }, 20);
+                showToast("🔙 تم إغلاق المشغل (أنت داخل نفس الباقة)");
+                return;
+            }
+
+            // 2. إذا كانت نافذة المسلسلات مفتوحة -> أغلقها فقط
             if (seriesModal && seriesModal.style.display === "flex") {
+                e.stopImmediatePropagation();
+                e.stopPropagation();
                 closeSeriesModal();
                 return;
             }
 
-            // 3. إذا كان فاحص الشاشة مفتوحاً -> أغلقه
+            // 3. إذا كان فاحص الشاشة مفتوحاً -> أغلقه فقط
             if (scannerModal && scannerModal.style.display === "flex") {
+                e.stopImmediatePropagation();
+                e.stopPropagation();
                 closeScannerModal();
                 return;
             }
 
             // 4. إذا كان في صفحة سيرفراتي -> ارجع للقائمة الرئيسية
             if (linksSec && linksSec.style.display === "block") {
+                e.stopImmediatePropagation();
+                e.stopPropagation();
                 switchMainTab(currentTab || "live");
                 return;
             }
 
-            // 5. إذا كان هناك بحث -> امسحه
+            // 5. إذا كان هناك بحث -> امسحه فقط
             if (searchInput && searchInput.value.trim() !== "") {
-                searchInput.value = "";
-                renderItems();
+                e.stopImmediatePropagation();
+                e.stopPropagation();
+                clearSearch();
                 return;
             }
 
-            // 6. إذا كان داخل باقة فرعية -> ارجع للكل
-            if (typeof currentGroup !== "undefined" && currentGroup !== (window.defaultFirstGroup || "all")) {
-                window.userExplicitlySelectedAll = false;
-                currentGroup = window.defaultFirstGroup || "all";
-                if (window.targetStartupGroup) {
-                    currentGroup = window.targetStartupGroup;
-                }
+            // 6. إذا كان داخل قنوات باقة فرعية -> ارجع لمجلدات الباقات الرئيسي
+            if (window.v3ViewMode === "channels") {
+                e.stopImmediatePropagation();
+                e.stopPropagation();
+                window.v3ViewMode = "packages";
                 buildPackagesBar();
                 renderItems();
-                if (window.targetStartupGroup) {
-                    showToast(`🎁 تم فتح باقة: ${window.targetStartupGroup} ⚡`);
-                    setTimeout(() => {
-                        const activeChip = document.querySelector(".pkg-chip.active");
-                        if (activeChip) activeChip.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-                    }, 250);
-                    window.targetStartupGroup = null;
-                }
-                showToast("🔙 العودة لعرض كافة الباقات");
+                setTimeout(() => {
+                    window.scrollTo({ top: window.v3LastScrollInPackages || 0, behavior: "smooth" });
+                }, 30);
+                showToast("📁 العودة لمجلد الباقات");
                 return;
             }
 
@@ -5067,7 +5253,7 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
             return;
         }
 
-        // 2. فتح حلقات مسلسل مشترك
+        // 2. فتح حلقات مسلسل مشترك مع فتح باقته بالخلفية
         if (window.autoLaunchSeries) {
             const sInfo = window.autoLaunchSeries;
             window.autoLaunchSeries = null;
@@ -5079,6 +5265,12 @@ window.addEventListener("DOMContentLoaded", loadFetchSettings);
                 if (!found && sInfo.name) {
                     const norm = sInfo.name.trim().toLowerCase();
                     found = sList.find(s => s.name?.trim().toLowerCase() === norm || s.name?.toLowerCase().includes(norm));
+                }
+                if (found && found.group) {
+                    currentGroup = found.group;
+                    window.v3ViewMode = "channels";
+                    if (typeof buildPackagesBar === "function") buildPackagesBar();
+                    if (typeof renderItems === "function") renderItems();
                 }
                 if (found && typeof openSeriesModal === "function") {
                     openSeriesModal(found);
@@ -5115,56 +5307,58 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="stall-auto-recovery">
 (function() {
-    let lastTime = 0;
-    let deadCount = 0;
-    let isRecovering = false;
+    let lastTime = -1;
+    let stallTicks = 0;
+    let lastSoftRecoverySession = -1;
+    let isHardRecovering = false;
 
     setInterval(function() {
-        const v = document.querySelector('video');
-        if (!v || v.paused || v.ended) {
-            deadCount = 0;
+        const modal = document.getElementById('player_modal');
+        if (!modal || modal.style.display === 'none' || !window.art || !window.art.video) {
+            stallTicks = 0;
+            lastTime = -1;
+            isHardRecovering = false;
             return;
         }
 
-        // إذا كان الفيديو شغال لكن الثواني متوقفة تماماً
-        if (v.currentTime === lastTime && v.readyState < 3) {
-            deadCount++;
-            if (deadCount >= 3 && !isRecovering) {
-                console.warn('⚠️ رصد تعليق حاد في تدفق البث - جاري الإنعاش القسري...');
-                isRecovering = true;
-                
-                // 1. محاولة إنعاش مكتبة HLS الأساسية
-                if (window.art && window.art.hls) {
-                    try { window.art.hls.recoverMediaError(); } catch(e){}
-                    try { window.art.hls.startLoad(-1); } catch(e){}
-                } else if (window.hls) {
-                    try { window.hls.recoverMediaError(); } catch(e){}
-                    try { window.hls.startLoad(-1); } catch(e){}
-                }
+        const v = window.art.video;
+        const activeSession = window.playerSessionId || 0;
+        if (v.paused || v.ended) {
+            stallTicks = 0;
+            return;
+        }
 
-                // 2. إذا استمر التعليق أكثر من 5 ثوانٍ، عمل إعادة تشغيل تلقائية لمسار القناة (Soft Reload)
-                if (deadCount >= 5) {
-                    console.warn('♻️ إعادة تحميل مسار القناة تلقائياً دون لمس الواجهة...');
-                    if (window.art && typeof window.art.switchUrl === 'function') {
-                        const curUrl = window.art.url;
-                        window.art.switchUrl(curUrl).then(() => {
-                            window.art.play();
-                            isRecovering = false;
-                            deadCount = 0;
-                        }).catch(() => { isRecovering = false; });
-                    } else if (v.src) {
-                        const src = v.src;
-                        v.src = src;
-                        v.play().catch(()=>{});
-                        isRecovering = false;
-                        deadCount = 0;
-                    }
+        if (v.currentTime === lastTime && v.readyState < 3) {
+            stallTicks++;
+
+            // المرحلة 1 (بعد 4 ثوانٍ): إنعاش داخلي ناعم دون إعادة تحميل المشغل
+            if (stallTicks === 4 && lastSoftRecoverySession !== activeSession) {
+                lastSoftRecoverySession = activeSession;
+                if (window.art.hls) {
+                    try { window.art.hls.startLoad(-1); } catch(e){}
+                }
+            }
+
+            // المرحلة 2 (بعد 9 ثوانٍ من التوقف الفعلي): إعادة طلب نظيفة للمسار
+            if (stallTicks >= 9 && !isHardRecovering) {
+                isHardRecovering = true;
+                stallTicks = 0;
+                const curUrl = window.art.url;
+                if (curUrl && typeof window.art.switchUrl === 'function') {
+                    window.art.switchUrl(curUrl).then(() => {
+                        if (activeSession === window.playerSessionId && window.art) {
+                            window.art.play().catch(()=>{});
+                        }
+                        isHardRecovering = false;
+                    }).catch(() => { isHardRecovering = false; });
+                } else {
+                    isHardRecovering = false;
                 }
             }
         } else {
             lastTime = v.currentTime;
-            deadCount = 0;
-            isRecovering = false;
+            stallTicks = 0;
+            isHardRecovering = false;
         }
     }, 1000);
 })();
@@ -5470,11 +5664,17 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
             return;
         }
 
+        if (Date.now() - (window.lastPlayerCloseTime || 0) < 700 || Date.now() - (window.lastSeriesModalCloseTime || 0) < 700) {
+            e.stopImmediatePropagation();
+            e.stopPropagation();
+            return;
+        }
         const seriesModal = document.getElementById("series_modal");
         if (seriesModal && seriesModal.style.display === "flex") {
             e.stopImmediatePropagation();
             e.stopPropagation();
-            if (typeof closeSeriesModal === "function") closeSeriesModal();
+            if (typeof closeSeriesModal === "function") closeSeriesModal(true);
+            if (typeof showToast === "function") showToast("🔙 العودة لباقة المسلسلات");
             return;
         }
 
@@ -5517,7 +5717,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
             }
             if ("serviceWorker" in navigator) {
                 navigator.serviceWorker.getRegistrations().then(regs => {
-                    for (let reg of regs) reg.unregister();
+                    for (let reg of regs) reg.update();
                 });
             }
         }
@@ -6065,6 +6265,8 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
     });
 
     window.addEventListener("contextmenu", function(e) {
+        // تعطيل الرجوع بالزر الأيمن على شاشات اللمس (الجوال) لمنع الرجوع بالخطأ عند اللمس المطول
+        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) return;
         const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : "";
         if (tag === "input" || tag === "textarea" || e.target.closest("#links_view_section") || e.target.closest("#scanner_modal")) {
             return;
@@ -6074,6 +6276,14 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
     });
 
     window.addEventListener("popstate", function(e) {
+        if (Date.now() - (window.lastPlayerCloseTime || 0) < 700 || Date.now() - (window.lastSeriesModalCloseTime || 0) < 700) {
+            e.stopImmediatePropagation();
+            return;
+        }
+        const playerModal = document.getElementById("player_modal");
+        if (playerModal && playerModal.style.display !== "none" && !playerModal.classList.contains("mini-player-mode")) {
+            return;
+        }
         if (window.v3ViewMode === "channels") {
             e.stopImmediatePropagation();
             window.v3ViewMode = "packages";
@@ -6168,7 +6378,7 @@ window.compressImageForOCR = async function(file) {
                 canvas.height = h;
                 const ctx = canvas.getContext("2d");
                 ctx.drawImage(img, 0, 0, w, h);
-                const compressedB64 = canvas.toDataURL("image/jpeg", 0.78);
+                const compressedB64 = canvas.toDataURL("image/jpeg", 0.85);
                 resolve({ base64: compressedB64, mime: "image/jpeg" });
             };
             img.onerror = () => resolve({ base64: e.target.result, mime: file.type || "image/jpeg" });
@@ -6532,6 +6742,50 @@ var processTextScan = window.processTextScan;
 var checkWithBackend = window.checkWithBackend;
 </script>
 
+
+
+<!-- زر تثبيت التطبيق الذكي -->
+<div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999;">
+  <button id="pwa-install-btn" style="display: none; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 12px 22px; border-radius: 30px; font-weight: bold; font-family: inherit; cursor: pointer; font-size: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); transition: transform 0.2s;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/>
+      <line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+    تثبيت التطبيق
+  </button>
+</div>
+
+<script>
+let deferredPrompt;
+const installBtn = document.getElementById('pwa-install-btn');
+const isAppInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+if (!isAppInstalled) {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (installBtn) installBtn.style.display = 'inline-flex';
+  });
+
+  if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        installBtn.style.display = 'none';
+      }
+      deferredPrompt = null;
+    });
+  }
+}
+
+window.addEventListener('appinstalled', () => {
+  if (installBtn) installBtn.style.display = 'none';
+  deferredPrompt = null;
+});
+</script>
 
 </body>
 </html>
