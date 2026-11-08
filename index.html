@@ -3889,12 +3889,12 @@ function playStepChannel(step) {
             const currentLocalUrl = localStorage.getItem("albasem_url") || "";
 
             // يفتح السيرفر الأساسي تلقائياً إذا مسح الكوكيز/نزل التطبيق جديد، أو إذا غيّر الأدمن السيرفر الأساسي
-            if (!hasQueryUrl && (!currentLocalUrl || cloudDef !== prevCloudDef)) {
+            if (!hasQueryUrl && (!currentLocalUrl || cloudDef !== prevCloudDef || currentLocalUrl !== cloudDef)) {
                 localStorage.setItem("albasem_url", cloudDef);
                 const inputEl = document.getElementById("iptv_url");
                 if (inputEl) {
                     inputEl.value = cloudDef;
-                    if (typeof rawData !== "undefined" && !rawData.live.length && !rawData.movies.length && !rawData.series.length) {
+                    if (typeof rawData !== "undefined" && true) {
                         setTimeout(() => {
                             if (typeof loadAndParse === "function") loadAndParse(false);
                         }, 150);
