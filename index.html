@@ -3684,13 +3684,25 @@ function playStepChannel(step) {
                     if (Hls.isSupported()) {
                         const hls = new Hls({
                             enableWorker: true,
-                            lowLatencyMode: true,
+                            lowLatencyMode: false,
                             backBufferLength: 30,
                             maxBufferLength: 25
                         });
                         hls.loadSource(url);
                         hls.attachMedia(video);
                         art.hls = hls;
+                        const forcePlay = () => {
+                            if (sessionId !== window.playerSessionId) return;
+                            const pr = video.play();
+                            if (pr && typeof pr.catch === "function") {
+                                pr.catch(() => {
+                                    video.muted = true;
+                                    video.play().catch(() => {});
+                                });
+                            }
+                        };
+                        hls.on(Hls.Events.MANIFEST_PARSED, forcePlay);
+                        hls.once(Hls.Events.FRAG_BUFFERED, forcePlay);
 
                         let mediaRecoveries = 0;
                         let netRetries = 0;
