@@ -3685,8 +3685,14 @@ function playStepChannel(step) {
                         const hls = new Hls({
                             enableWorker: true,
                             lowLatencyMode: false,
+                            progressive: true,
+                            startFragPrefetch: true,
                             backBufferLength: 30,
-                            maxBufferLength: 25
+                            maxBufferLength: 15,
+                            maxMaxBufferLength: 30,
+                            manifestLoadingRetryDelay: 250,
+                            levelLoadingRetryDelay: 250,
+                            fragLoadingRetryDelay: 250
                         });
                         hls.loadSource(url);
                         hls.attachMedia(video);
@@ -3714,7 +3720,7 @@ function playStepChannel(step) {
                                         netRetries++;
                                         setTimeout(() => {
                                             if (sessionId === window.playerSessionId && art.hls) art.hls.startLoad();
-                                        }, 800);
+                                        }, 250);
                                     } else if (isLive && mpegts.isSupported()) {
                                         try { hls.destroy(); art.hls = null; } catch(e){}
                                         const tsResolved = resolveStreamEndpoint(rawUrl, true, true);
