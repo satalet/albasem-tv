@@ -2196,7 +2196,7 @@ window.cleanChannelTitle = function(name) {
         <div class="filter-bar" style="margin: 8px auto 12px; max-width: 900px; width: 100%; box-sizing: border-box;">
             <!-- كبسولة البحث الموحدة هندسياً -->
             <div class="search-capsule" style="display: flex; align-items: center; height: 44px; background: rgba(15, 23, 42, 0.85); border-radius: 25px; padding: 0 5px 0 14px; box-sizing: border-box;">
-                <input type="search" enterkeyhint="search" id="search_input" placeholder="🔍 ابحث في هذا القسم أو الباقة..." style="flex: 1; height: 100%; border: none !important; background: transparent !important; box-shadow: none !important; outline: none !important; color: #fff; font-size: 13.5px; padding: 0 8px; min-width: 0; margin: 0;" />
+                <input type="search" enterkeyhint="search" id="search_input" name="albasem_channel_search_ filter" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="🔍 ابحث في هذا القسم أو الباقة..." style="flex: 1; height: 100%; border: none !important; background: transparent !important; box-shadow: none !important; outline: none !important; color: #fff; font-size: 13.5px; padding: 0 8px; min-width: 0; margin: 0;" />
                 <span id="btn_clear_search" onclick="clearSearch()" style="cursor: pointer; color: #94A3B8; font-size: 14px; display: none; padding: 0 10px; line-height: 1;">✖</span>
                 <button id="btn_do_search" onclick="executeSearch()" style="height: 34px; padding: 0 16px; border-radius: 20px; border: none; background: linear-gradient(135deg, #0284C7, #0369A1); color: #fff; font-size: 12.5px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; flex-shrink: 0; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35); margin: 0;">
                     بحث ⚡
@@ -5761,7 +5761,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "3.4.0";
+    window.ALBASEM_VERSION = "3.5.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -6974,6 +6974,15 @@ body:not(.albasem-admin-mode) #links_view_section {
 
 
 .card-actions-row { display: none !important; }
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #fff !important;
+    -webkit-box-shadow: 0 0 0px 1000px #0B0E14 inset !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+}
+
 .item-card { cursor: pointer !important; transition: transform 0.18s ease, border-color 0.18s ease !important; }
 .item-card:hover { transform: translateY(-3px) !important; border-color: #38BDF8 !important; }
 .gate-code-input:-webkit-autofill,
@@ -7078,8 +7087,8 @@ body:not(.albasem-admin-mode) #links_view_section {
             <button type="button" onclick="document.getElementById('admin_auth_modal').style.display='none'" style="background:rgba(239,68,68,0.2); border:1px solid #EF4444; color:#EF4444; border-radius:7px; width:28px; height:28px; font-weight:bold; cursor:pointer;">✕</button>
         </div>
         
-        <input type="email" id="admin_login_email" dir="ltr" placeholder="البريد الإلكتروني" autocomplete="off" style="width:100%; height:42px; background:#0B0E14; border:1px solid #334155; border-radius:9px; padding:0 12px; color:#fff; font-size:13.5px; margin-bottom:10px; outline:none;" />
-        <input type="password" id="admin_login_pass" dir="ltr" placeholder="كلمة المرور السرية..." style="width:100%; height:42px; background:#0B0E14; border:1px solid #334155; border-radius:9px; padding:0 12px; color:#FFB703; font-size:14px; margin-bottom:12px; outline:none;" />
+        <input type="text" id="admin_login_email" name="adm_usr_ custom" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" dir="ltr" placeholder="البريد الإلكتروني" autocomplete="off" style="width:100%; height:42px; background:#0B0E14; border:1px solid #334155; border-radius:9px; padding:0 12px; color:#fff; font-size:13.5px; margin-bottom:10px; outline:none;" />
+        <input type="text" id="admin_login_pass" name="adm_pwd_custom" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" dir="ltr" placeholder="كلمة المرور السرية..." style="-webkit-text-security:disc; width:100%; height:42px; background:#0B0E14; border:1px solid #334155; border-radius:9px; padding:0 12px; color:#FFB703; font-size:14px; margin-bottom:12px; outline:none;" />
         <button type="button" id="btn_do_admin_login" onclick="window.performAdminEmailLogin()" style="width:100%; height:42px; background:linear-gradient(135deg, #FFB703, #D97706); color:#000; border:none; border-radius:9px; font-weight:900; font-size:14px; cursor:pointer;">🔓 دخول وحفظ على جهازي</button>
         <div id="admin_login_err" style="display:none; margin-top:10px; color:#EF4444; font-size:12px; font-weight:bold;"></div>
     </div>
@@ -7548,6 +7557,21 @@ body:not(.albasem-admin-mode) #links_view_section {
 
     document.addEventListener("DOMContentLoaded", () => {
         injectAdminCodesButton();
+
+        const sInpGuard = document.getElementById("search_input");
+        if (sInpGuard) {
+            const cleanAutofillSearch = () => {
+                if (sInpGuard.value && (sInpGuard.value.includes("@") || sInpGuard.value.toLowerCase().includes("satalet"))) {
+                    sInpGuard.value = "";
+                    if (typeof clearSearch === "function") clearSearch();
+                }
+            };
+            cleanAutofillSearch();
+            setTimeout(cleanAutofillSearch, 150);
+            setTimeout(cleanAutofillSearch, 600);
+            sInpGuard.addEventListener("input", cleanAutofillSearch);
+        }
+
 
         const inp = document.getElementById("gate_code_input"); if (inp && !/^\d*$/.test(inp.value)) inp.value = "";
         if (inp) {
