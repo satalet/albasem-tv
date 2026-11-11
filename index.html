@@ -5761,7 +5761,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "3.5.0";
+    window.ALBASEM_VERSION = "3.6.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -7479,6 +7479,28 @@ input:-webkit-autofill:focus {
         }
     };
 
+    window.adminEditCodeDevices = async function(code, currentMax) {
+        const input = prompt("📺 أدخل عدد الأجهزة المسموحة لهذا الكود (" + code + "):", currentMax);
+        if (input === null) return;
+        const max_devices = parseInt(input);
+        if (isNaN(max_devices) || max_devices < 1) return alert("يرجى إدخال عدد أجهزة صحيح (1 أو أكثر)!");
+        const d = await callCodesAdminApi({ action: "update_devices", code, max_devices });
+        if (d && d.success) {
+            window.renderAdminCodesList(d.codes || []);
+            showToast("✅ تم تحديث عدد الأجهزة المسموحة للكود إلى (" + max_devices + ") أجهزة!");
+        }
+    };
+
+    window.adminEditCodeName = async function(code, currentName) {
+        const input = prompt("✏️ تعديل اسم المشترك للكود (" + code + "):", currentName);
+        if (input === null || !input.trim()) return;
+        const d = await callCodesAdminApi({ action: "update_name", code, customer_name: input.trim() });
+        if (d && d.success) {
+            window.renderAdminCodesList(d.codes || []);
+            showToast("✅ تم تحديث اسم المشترك بنجاح!");
+        }
+    };
+
     window.adminResetCodeDevices = async function(code) {
         const d = await callCodesAdminApi({ action: "reset_devices", code });
         if (d && d.success) {
@@ -7535,7 +7557,7 @@ input:-webkit-autofill:focus {
                 <div style="flex:1; min-width:210px;">
                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:4px;">
                         <span style="font-family:monospace; font-size:17px; font-weight:900; color:#FFB703; letter-spacing:1.5px; background:#1E293B; padding:2px 8px; border-radius:6px; border:1px solid #334155;">${c.code}</span>
-                        <b style="color:#fff; font-size:13.5px;">${c.customer_name || "مشترك"}</b>
+                        <b onclick="window.adminEditCodeName('${c.code}', '${safeName}')" style="color:#fff; font-size:13.5px; cursor:pointer; border-bottom:1px dashed #64748B;" title="اضغط لتعديل اسم الزبون">${c.customer_name || "مشترك"} ✏️</b>
                         <span style="background:${badgeBg}; color:${badgeColor}; border:1px solid ${badgeColor}; font-size:11px; font-weight:bold; padding:1px 8px; border-radius:6px;">${statusLabel}</span>
                     </div>
                     <div style="font-size:11.5px; color:#94A3B8; display:flex; gap:12px; flex-wrap:wrap;">
@@ -7546,7 +7568,8 @@ input:-webkit-autofill:focus {
                 <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
                     <button type="button" onclick="navigator.clipboard.writeText('${c.code}'); showToast('📋 تم نسخ الكود: ${c.code}');" style="background:#1E293B; color:#fff; border:1px solid #334155; border-radius:6px; padding:5px 8px; font-size:11.5px; cursor:pointer;">📋 نسخ</button>
                     <button type="button" onclick="window.sendCodeViaWhatsApp('${c.code}', '${safeName}', '${c.days_left || c.duration_days}')" style="background:rgba(37,211,102,0.18); color:#25D366; border:1px solid #25D366; border-radius:6px; padding:5px 8px; font-size:11.5px; font-weight:bold; cursor:pointer;">📲 واتس</button>
-                    <button type="button" onclick="window.adminEditCodeDays('${c.code}', ${c.days_left || c.duration_days})" style="background:rgba(56,189,248,0.18); color:#38BDF8; border:1px solid #38BDF8; border-radius:6px; padding:5px 8px; font-size:11.5px; font-weight:bold; cursor:pointer;">⏳ أيام</button>
+                    <button type="button" onclick="window.adminEditCodeDays('${c.code}', ${c.days_left || c.duration_days})" style="background:rgba(56,189,248,0.18); color:#38BDF8; border:1px solid #38BDF8; border-radius:6px; padding:5px 8px; font-size:11.5px; font-weight:bold; cursor:pointer;" title="تعديل أو تمديد الأيام">⏳ أيام</button>
+                    <button type="button" onclick="window.adminEditCodeDevices('${c.code}', ${c.max_devices})" style="background:rgba(16,185,129,0.18); color:#10B981; border:1px solid #10B981; border-radius:6px; padding:5px 8px; font-size:11.5px; font-weight:bold; cursor:pointer;" title="زيادة أو تعديل عدد الأجهزة المسموحة على نفس الكود">📺 أجهزة (${c.max_devices})</button>
                     <button type="button" onclick="window.adminResetCodeDevices('${c.code}')" style="background:rgba(139,92,246,0.18); color:#C4B5FD; border:1px solid #8B5CF6; border-radius:6px; padding:5px 8px; font-size:11.5px; cursor:pointer;">📱 تصفير</button>
                     <button type="button" onclick="window.adminToggleCodeActive('${c.code}')" style="background:rgba(245,158,11,0.18); color:#FCD34D; border:1px solid #F59E0B; border-radius:6px; padding:5px 8px; font-size:11.5px; cursor:pointer;">${c.is_active ? "⏸️ إيقاف" : "▶️ تفعيل"}</button>
                     <button type="button" onclick="window.adminDeleteCode('${c.code}')" style="background:rgba(239,68,68,0.2); color:#EF4444; border:1px solid #EF4444; border-radius:6px; padding:5px 8px; font-size:11.5px; cursor:pointer;">🗑️</button>
