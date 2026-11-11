@@ -5770,7 +5770,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "3.2.0";
+    window.ALBASEM_VERSION = "3.3.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -6858,9 +6858,10 @@ window.addEventListener('appinstalled', () => {
 
 
 
+
 <!-- ALBASEM_ACTIVE_CODES_V1_START -->
 <style>
-/* إخفاء شريط الإدارة والسيرفرات والرادار افتراضياً عن الزباين */
+/* إخفاء شريط الإدارة والسيرفرات والرادار عن الزباين بشكل قاطع */
 body:not(.albasem-admin-mode) .search-box,
 body:not(.albasem-admin-mode) .fetch-filter-box,
 body:not(.albasem-admin-mode) #links_view_section {
@@ -6884,73 +6885,100 @@ body:not(.albasem-admin-mode) #links_view_section {
     box-shadow: 0 4px 15px rgba(0,0,0,0.4);
 }
 
-/* شاشة القفل وإدخال كود الـ 10 أرقام */
+/* شاشة القفل وإدخال كود الـ 10 أرقام (تجنب كلمة card لمنع تداخل CSS) */
 #active_code_gate {
     display: flex;
     position: fixed;
     inset: 0;
     background: radial-gradient(circle at top, #151E30 0%, #080B10 100%);
-    z-index: 9999999;
+    z-index: 9999990;
     align-items: center;
     justify-content: center;
     padding: 15px;
     overflow-y: auto;
 }
-.gate-card {
-    background: rgba(21, 25, 34, 0.98);
-    border: 2px solid #38BDF8;
-    border-radius: 18px;
-    max-width: 430px;
-    width: 100%;
-    padding: 22px 18px;
-    text-align: center;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(56, 189, 248, 0.25);
+.albasem-gate-box {
+    background: rgba(21, 25, 34, 0.98) !important;
+    border: 2px solid #38BDF8 !important;
+    border-radius: 18px !important;
+    max-width: 420px !important;
+    width: 100% !important;
+    padding: 22px 18px !important;
+    text-align: center !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(56, 189, 248, 0.25) !important;
 }
 .gate-code-input {
-    width: 100%;
-    height: 54px;
-    background: #0B0E14;
-    border: 2px solid #334155;
-    border-radius: 12px;
-    color: #FFB703;
-    font-size: 24px;
-    font-weight: 900;
-    letter-spacing: 5px;
-    text-align: center;
-    outline: none;
-    margin: 12px 0 10px 0;
-    font-family: monospace;
+    width: 100% !important;
+    height: 54px !important;
+    background: #0B0E14 !important;
+    border: 2px solid #334155 !important;
+    border-radius: 12px !important;
+    color: #FFB703 !important;
+    font-size: 24px !important;
+    font-weight: 900 !important;
+    letter-spacing: 5px !important;
+    text-align: center !important;
+    outline: none !important;
+    margin: 12px 0 10px 0 !important;
+    font-family: monospace !important;
+    display: block !important;
 }
 .gate-code-input:focus {
-    border-color: #38BDF8;
-    box-shadow: 0 0 15px rgba(56, 189, 248, 0.35);
+    border-color: #38BDF8 !important;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.35) !important;
 }
-.gate-numpad {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin: 10px 0 14px 0;
-    direction: ltr;
+.gate-numpad-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+    margin: 10px 0 14px 0 !important;
+    direction: ltr !important;
+    width: 100% !important;
 }
 .numpad-btn {
-    height: 44px;
-    background: #1E293B;
-    border: 1px solid #334155;
-    border-radius: 10px;
-    color: #F8FAFC;
-    font-size: 18px;
-    font-weight: 900;
-    cursor: pointer;
-    transition: 0.15s;
+    height: 46px !important;
+    background: #1E293B !important;
+    border: 1px solid #334155 !important;
+    border-radius: 10px !important;
+    color: #F8FAFC !important;
+    font-size: 19px !important;
+    font-weight: 900 !important;
+    cursor: pointer !important;
+    transition: 0.15s !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 .numpad-btn:hover, .numpad-btn:focus-visible {
-    background: #0284C7;
-    border-color: #38BDF8;
-    outline: none;
-    transform: scale(1.03);
+    background: #0284C7 !important;
+    border-color: #38BDF8 !important;
+    outline: none !important;
 }
 .numpad-btn:active {
-    transform: scale(0.96);
+    transform: scale(0.96) !important;
+}
+
+/* نافذة تسجيل دخول الإدارة (إيميل + باسورد) */
+#admin_auth_modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.88);
+    backdrop-filter: blur(8px);
+    z-index: 9999999;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+}
+.admin-auth-box {
+    background: #151922;
+    border: 2px solid #FFB703;
+    border-radius: 16px;
+    max-width: 390px;
+    width: 100%;
+    padding: 20px 18px;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.95);
 }
 
 /* نافذة إدارة الكودات للأدمن */
@@ -6960,7 +6988,7 @@ body:not(.albasem-admin-mode) #links_view_section {
     inset: 0;
     background: rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(6px);
-    z-index: 999999;
+    z-index: 9999995;
     align-items: center;
     justify-content: center;
     padding: 12px;
@@ -6997,21 +7025,21 @@ body:not(.albasem-admin-mode) #links_view_section {
         <span style="color:#94A3B8; font-size:11.5px;" id="sub_banner_exp"></span>
     </div>
     <div style="display:flex; align-items:center; gap:6px;">
-        <button onclick="window.reloadCustomerChannels()" style="background:#0284C7; color:#fff; border:none; border-radius:7px; padding:5px 10px; font-size:11.5px; font-weight:bold; cursor:pointer;">🔄 تحديث القنوات</button>
-        <button onclick="window.logoutActiveCode()" style="background:rgba(239,68,68,0.18); color:#FCA5A5; border:1px solid rgba(239,68,68,0.4); border-radius:7px; padding:5px 10px; font-size:11.5px; font-weight:bold; cursor:pointer;">🔑 تبديل الكود</button>
-        <button onclick="window.promptAdminMasterLogin()" style="background:rgba(255,183,3,0.14); color:#FFB703; border:1px solid rgba(255,183,3,0.4); border-radius:7px; padding:5px 9px; font-size:11.5px; font-weight:bold; cursor:pointer;" title="دخول الإدارة">🔐</button>
+        <button type="button" onclick="window.reloadCustomerChannels()" style="background:#0284C7; color:#fff; border:none; border-radius:7px; padding:5px 10px; font-size:11.5px; font-weight:bold; cursor:pointer;">🔄 تحديث القنوات</button>
+        <button type="button" onclick="window.logoutActiveCode()" style="background:rgba(239,68,68,0.18); color:#FCA5A5; border:1px solid rgba(239,68,68,0.4); border-radius:7px; padding:5px 10px; font-size:11.5px; font-weight:bold; cursor:pointer;">🔑 تبديل الكود</button>
+        <button type="button" onclick="window.openAdminLoginModal()" style="background:rgba(255,183,3,0.14); color:#FFB703; border:1px solid rgba(255,183,3,0.4); border-radius:7px; padding:5px 9px; font-size:11.5px; font-weight:bold; cursor:pointer;" title="دخول الإدارة">🔐</button>
     </div>
 </div>
 
 <div id="active_code_gate">
-    <div class="gate-card">
+    <div class="albasem-gate-box">
         <div style="font-size:38px; margin-bottom:4px;">👑</div>
         <h2 style="color:#FFB703; font-size:20px; font-weight:900; margin-bottom:4px;">الباسم سات | تفعيل الاشتراك</h2>
-        <p style="color:#94A3B8; font-size:12.5px; margin-bottom:8px;">أدخل كود التفعيل المكون من <b style="color:#38BDF8;">10 أرقام</b> للمشاهدة</p>
+        <div style="color:#94A3B8; font-size:12.5px; margin-bottom:8px;">أدخل كود التفعيل المكون من <b style="color:#38BDF8;">10 أرقام</b> للمشاهدة</div>
 
         <input type="text" id="gate_code_input" class="gate-code-input" maxlength="10" inputmode="numeric" placeholder="----------" autocomplete="off" />
 
-        <div class="gate-numpad">
+        <div class="gate-numpad-grid">
             <button type="button" class="numpad-btn" onclick="window.gateAppendDigit('1')">1</button>
             <button type="button" class="numpad-btn" onclick="window.gateAppendDigit('2')">2</button>
             <button type="button" class="numpad-btn" onclick="window.gateAppendDigit('3')">3</button>
@@ -7021,12 +7049,12 @@ body:not(.albasem-admin-mode) #links_view_section {
             <button type="button" class="numpad-btn" onclick="window.gateAppendDigit('7')">7</button>
             <button type="button" class="numpad-btn" onclick="window.gateAppendDigit('8')">8</button>
             <button type="button" class="numpad-btn" onclick="window.gateAppendDigit('9')">9</button>
-            <button type="button" class="numpad-btn" style="background:rgba(239,68,68,0.2);color:#FCA5A5;font-size:13px;" onclick="window.gateClearDigits()">مسح</button>
+            <button type="button" class="numpad-btn" style="background:rgba(239,68,68,0.22) !important;color:#FCA5A5 !important;font-size:14px !important;" onclick="window.gateClearDigits()">مسح</button>
             <button type="button" class="numpad-btn" onclick="window.gateAppendDigit('0')">0</button>
-            <button type="button" class="numpad-btn" style="background:rgba(245,158,11,0.2);color:#FCD34D;font-size:15px;" onclick="window.gateBackspaceDigit()">⌫</button>
+            <button type="button" class="numpad-btn" style="background:rgba(245,158,11,0.22) !important;color:#FCD34D !important;font-size:16px !important;" onclick="window.gateBackspaceDigit()">⌫</button>
         </div>
 
-        <button id="btn_verify_code_submit" onclick="window.submitActiveCode()" style="width:100%; height:46px; background:linear-gradient(135deg, #10B981, #059669); color:#fff; border:none; border-radius:11px; font-size:15px; font-weight:900; cursor:pointer; box-shadow:0 4px 15px rgba(16,185,129,0.4);">
+        <button type="button" id="btn_verify_code_submit" onclick="window.submitActiveCode()" style="width:100%; height:46px; background:linear-gradient(135deg, #10B981, #059669); color:#fff; border:none; border-radius:11px; font-size:15px; font-weight:900; cursor:pointer; box-shadow:0 4px 15px rgba(16,185,129,0.4);">
             🚀 تفعيل ودخول للمنصة
         </button>
 
@@ -7034,8 +7062,23 @@ body:not(.albasem-admin-mode) #links_view_section {
 
         <div style="margin-top:14px; padding-top:10px; border-top:1px solid #222938; font-size:12px; color:#94A3B8; display:flex; justify-content:space-between; align-items:center;">
             <span>📞 لطلب كود اشتراك: <b style="color:#22C55E;">0534829927</b></span>
-            <button onclick="window.promptAdminMasterLogin()" style="background:rgba(255,183,3,0.15); border:1px solid #FFB703; color:#FFB703; border-radius:7px; padding:4px 10px; font-size:11.5px; font-weight:bold; cursor:pointer;">🔐 دخول الإدارة</button>
+            <button type="button" onclick="window.openAdminLoginModal()" style="background:rgba(255,183,3,0.15); border:1px solid #FFB703; color:#FFB703; border-radius:7px; padding:5px 11px; font-size:11.5px; font-weight:bold; cursor:pointer;">🔐 دخول الإدارة</button>
         </div>
+    </div>
+</div>
+
+<!-- نافذة تسجيل دخول الإدارة المحمية بالإيميل والباسورد -->
+<div id="admin_auth_modal">
+    <div class="admin-auth-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="color:#FFB703; font-size:16px; margin:0;">🔐 تسجيل دخول الإدارة</h3>
+            <button type="button" onclick="document.getElementById('admin_auth_modal').style.display='none'" style="background:rgba(239,68,68,0.2); border:1px solid #EF4444; color:#EF4444; border-radius:7px; width:28px; height:28px; font-weight:bold; cursor:pointer;">✕</button>
+        </div>
+        <div style="color:#94A3B8; font-size:12px; margin-bottom:12px;">خاص بالمهندس محمد (أبو باسم) — يُحفظ تلقائياً على جهازك</div>
+        <input type="email" id="admin_login_email" dir="ltr" placeholder="البريد الإلكتروني (satalet@gmail.com)" style="width:100%; height:42px; background:#0B0E14; border:1px solid #334155; border-radius:9px; padding:0 12px; color:#fff; font-size:13.5px; margin-bottom:10px; outline:none;" />
+        <input type="password" id="admin_login_pass" dir="ltr" placeholder="كلمة المرور السرية..." style="width:100%; height:42px; background:#0B0E14; border:1px solid #334155; border-radius:9px; padding:0 12px; color:#FFB703; font-size:14px; margin-bottom:12px; outline:none;" />
+        <button type="button" id="btn_do_admin_login" onclick="window.performAdminEmailLogin()" style="width:100%; height:42px; background:linear-gradient(135deg, #FFB703, #D97706); color:#000; border:none; border-radius:9px; font-weight:900; font-size:14px; cursor:pointer;">🔓 دخول وحفظ على جهازي</button>
+        <div id="admin_login_err" style="display:none; margin-top:10px; color:#EF4444; font-size:12px; font-weight:bold;"></div>
     </div>
 </div>
 
@@ -7043,7 +7086,7 @@ body:not(.albasem-admin-mode) #links_view_section {
     <div class="codes-modal-box">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #263147; padding-bottom:10px; margin-bottom:12px;">
             <h3 style="color:#FFB703; font-size:16px; margin:0;">🎟️ لوحة إدارة كودات المشتركين (10 أرقام)</h3>
-            <button onclick="document.getElementById('codes_admin_modal').style.display='none'" style="background:rgba(239,68,68,0.2); border:1px solid #EF4444; color:#EF4444; border-radius:8px; width:30px; height:30px; font-weight:bold; cursor:pointer;">✕</button>
+            <button type="button" onclick="document.getElementById('codes_admin_modal').style.display='none'" style="background:rgba(239,68,68,0.2); border:1px solid #EF4444; color:#EF4444; border-radius:8px; width:30px; height:30px; font-weight:bold; cursor:pointer;">✕</button>
         </div>
 
         <div style="background:#0B0E14; border:1px solid #263147; border-radius:12px; padding:12px; margin-bottom:14px;">
@@ -7052,15 +7095,15 @@ body:not(.albasem-admin-mode) #links_view_section {
                 <input type="text" id="new_code_customer" placeholder="اسم الزبون (مثال: أبو أحمد)" style="background:#151922; border:1px solid #334155; border-radius:8px; padding:8px 10px; color:#fff; font-size:12.5px; outline:none;" />
                 <input type="number" id="new_code_days" value="30" min="1" placeholder="المدة بالأيام (30)" style="background:#151922; border:1px solid #334155; border-radius:8px; padding:8px 10px; color:#FFB703; font-size:12.5px; font-weight:bold; outline:none;" />
                 <input type="number" id="new_code_devs" value="1" min="1" max="10" placeholder="عدد الأجهزة (1)" style="background:#151922; border:1px solid #334155; border-radius:8px; padding:8px 10px; color:#38BDF8; font-size:12.5px; font-weight:bold; outline:none;" />
-                <button onclick="window.adminCreateNewCode()" style="background:linear-gradient(135deg, #FFB703, #D97706); color:#000; border:none; border-radius:8px; font-weight:900; font-size:13px; cursor:pointer; padding:8px 12px;">⚡ توليد كود (10 أرقام)</button>
+                <button type="button" onclick="window.adminCreateNewCode()" style="background:linear-gradient(135deg, #FFB703, #D97706); color:#000; border:none; border-radius:8px; font-weight:900; font-size:13px; cursor:pointer; padding:8px 12px;">⚡ توليد كود (10 أرقام)</button>
             </div>
             <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
                 <span style="font-size:11px; color:#94A3B8;">مدد سريعة:</span>
-                <button onclick="document.getElementById('new_code_days').value=1" style="background:#1E293B; color:#E2E8F0; border:1px solid #334155; border-radius:6px; padding:2px 8px; font-size:11px; cursor:pointer;">تجريبي (1 يوم)</button>
-                <button onclick="document.getElementById('new_code_days').value=30" style="background:#1E293B; color:#E2E8F0; border:1px solid #334155; border-radius:6px; padding:2px 8px; font-size:11px; cursor:pointer;">شهر (30 يوم)</button>
-                <button onclick="document.getElementById('new_code_days').value=90" style="background:#1E293B; color:#E2E8F0; border:1px solid #334155; border-radius:6px; padding:2px 8px; font-size:11px; cursor:pointer;">3 شهور (90)</button>
-                <button onclick="document.getElementById('new_code_days').value=180" style="background:#1E293B; color:#E2E8F0; border:1px solid #334155; border-radius:6px; padding:2px 8px; font-size:11px; cursor:pointer;">6 شهور (180)</button>
-                <button onclick="document.getElementById('new_code_days').value=365" style="background:#1E293B; color:#E2E8F0; border:1px solid #334155; border-radius:6px; padding:2px 8px; font-size:11px; cursor:pointer;">سنة (365)</button>
+                <button type="button" onclick="document.getElementById('new_code_days').value=1" style="background:#1E293B; color:#E2E8F0; border:1px solid #334155; border-radius:6px; padding:2px 8px; font-size:11px; cursor:pointer;">تجريبي (1 يوم)</button>
+                <button type="button" onclick="document.getElementById('new_code_days').value=30" style="background:#1E293B; color:#E2E8F0; border:1px solid #334155; border-radius:6px; padding:2px 8px; font-size:11px; cursor:pointer;">شهر (30 يوم)</button>
+                <button type="button" onclick="document.getElementById('new_code_days').value=90" style="background:#1E293B; color:#E2E8F0; border:1px solid #334155; border-radius:6px; padding:2px 8px; font-size:11px; cursor:pointer;">3 شهور (90)</button>
+                <button type="button" onclick="document.getElementById('new_code_days').value=180" style="background:#1E293B; color:#E2E8F0; border:1px solid #334155; border-radius:6px; padding:2px 8px; font-size:11px; cursor:pointer;">6 شهور (180)</button>
+                <button type="button" onclick="document.getElementById('new_code_days').value=365" style="background:#1E293B; color:#E2E8F0; border:1px solid #334155; border-radius:6px; padding:2px 8px; font-size:11px; cursor:pointer;">سنة (365)</button>
             </div>
         </div>
 
@@ -7073,6 +7116,16 @@ body:not(.albasem-admin-mode) #links_view_section {
 <script>
 (function() {
     const CODES_API = "https://albasem-tv.duckdns.org/api/codes";
+
+    // ربط صلاحية الإدارة بالتوكن المشفر المحفوظ على جهازك
+    window.requireAdminAuth = function(actionName) {
+        if (localStorage.getItem("albasem_admin_token")) {
+            sessionStorage.setItem("albasem_admin_session", "unlocked");
+            return true;
+        }
+        window.openAdminLoginModal();
+        return false;
+    };
 
     function getDeviceFingerprint() {
         let devId = localStorage.getItem("albasem_device_fp");
@@ -7090,6 +7143,7 @@ body:not(.albasem-admin-mode) #links_view_section {
 
         const btn = document.createElement("button");
         btn.id = "btn_open_codes_admin";
+        btn.type = "button";
         btn.className = "btn-hub";
         btn.style.background = "linear-gradient(135deg, #FFB703, #D97706)";
         btn.style.color = "#000";
@@ -7100,19 +7154,18 @@ body:not(.albasem-admin-mode) #links_view_section {
 
         const lockBtn = document.createElement("button");
         lockBtn.id = "btn_lock_admin_view";
+        lockBtn.type = "button";
         lockBtn.className = "btn-hub";
         lockBtn.style.background = "#1E293B";
         lockBtn.style.border = "1px solid #38BDF8";
         lockBtn.style.color = "#38BDF8";
         lockBtn.innerHTML = "👁️ شاشة الزبون";
-        lockBtn.title = "إخفاء شريط الإدارة وتجربة شاشة الكود كما يراها الزبون";
+        lockBtn.title = "معاينة شاشة الكود كما يراها الزبون";
         lockBtn.onclick = function() {
-            sessionStorage.removeItem("albasem_admin_session");
-            localStorage.removeItem("albasem_admin_permanent");
             document.body.classList.remove("albasem-admin-mode");
             const gate = document.getElementById("active_code_gate");
             if (gate) gate.style.display = "flex";
-            showToast("🔒 تم التحويل لوضع الزبون (شاشة الكود)");
+            showToast("👁️ وضع معاينة شاشة الزبون (اضغط دخول الإدارة للعودة فوراً)");
         };
         searchBox.appendChild(lockBtn);
 
@@ -7142,16 +7195,94 @@ body:not(.albasem-admin-mode) #links_view_section {
         if (err) err.style.display = "none";
     };
 
-    window.promptAdminMasterLogin = function() {
-        const pin = prompt("🔐 أدخل الرقم السري للإدارة (أبو باسم):");
-        if (pin && pin.trim() === "2000") {
-            localStorage.setItem("albasem_admin_permanent", "1");
-            sessionStorage.setItem("albasem_admin_session", "unlocked");
-            window.applyAccessMode({ is_admin: true });
-            showToast("👑 أهلاً بك يا أبو باسم! تم إظهار شريط الإدارة الكامل");
-        } else if (pin !== null) {
-            alert("❌ الرقم السري غير صحيح!");
+    window.openAdminLoginModal = function() {
+        // إذا كان التوكن محفوظاً مسبقاً على جهازك، يدخلك مباشرة بدون إعادة كتابة!
+        const savedToken = localStorage.getItem("albasem_admin_token");
+        if (savedToken) {
+            window.verifySavedAdminToken(savedToken, true);
+            return;
         }
+        const modal = document.getElementById("admin_auth_modal");
+        const err = document.getElementById("admin_login_err");
+        if (err) err.style.display = "none";
+        if (modal) modal.style.display = "flex";
+        setTimeout(() => {
+            const em = document.getElementById("admin_login_email");
+            if (em) em.focus();
+        }, 80);
+    };
+
+    window.performAdminEmailLogin = async function() {
+        const email = (document.getElementById("admin_login_email")?.value || "").trim();
+        const password = (document.getElementById("admin_login_pass")?.value || "").trim();
+        const err = document.getElementById("admin_login_err");
+        const btn = document.getElementById("btn_do_admin_login");
+
+        if (!email || !password) {
+            if (err) {
+                err.style.display = "block";
+                err.innerText = "⚠️ يرجى إدخال البريد الإلكتروني وكلمة المرور";
+            }
+            return;
+        }
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = "⏳ جاري التحقق...";
+        }
+        if (err) err.style.display = "none";
+
+        try {
+            const res = await fetch(CODES_API + "/admin_login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password })
+            });
+            const d = await res.json();
+            if (d && d.success && d.token) {
+                localStorage.setItem("albasem_admin_token", d.token);
+                localStorage.setItem("albasem_admin_email", email);
+                sessionStorage.setItem("albasem_admin_session", "unlocked");
+                document.getElementById("admin_auth_modal").style.display = "none";
+                window.applyAccessMode({ is_admin: true, default_server: d.default_server });
+                showToast("👑 أهلاً بك يا أبو باسم! تم حفظ دخول الإدارة على جهازك");
+            } else {
+                if (err) {
+                    err.style.display = "block";
+                    err.innerText = (d && d.message) ? d.message : "❌ بيانات الدخول غير صحيحة";
+                }
+            }
+        } catch (e) {
+            if (err) {
+                err.style.display = "block";
+                err.innerText = "❌ خطأ في الاتصال بالسيرفر";
+            }
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = "🔓 دخول وحفظ على جهازي";
+            }
+        }
+    };
+
+    window.verifySavedAdminToken = async function(token, showWelcome) {
+        try {
+            const res = await fetch(CODES_API + "/admin_login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token })
+            });
+            const d = await res.json();
+            if (d && d.success) {
+                sessionStorage.setItem("albasem_admin_session", "unlocked");
+                window.applyAccessMode({ is_admin: true, default_server: d.default_server });
+                if (showWelcome) showToast("👑 تم فتح وضع الإدارة المحفوظ على جهازك!");
+                return;
+            }
+        } catch (e) {}
+        localStorage.removeItem("albasem_admin_token");
+        const modal = document.getElementById("admin_auth_modal");
+        if (modal) modal.style.display = "flex";
     };
 
     window.applyAccessMode = function(authData) {
@@ -7201,18 +7332,10 @@ body:not(.albasem-admin-mode) #links_view_section {
         const btn = document.getElementById("btn_verify_code_submit");
         const rawCode = (typeof silentCode === "string" ? silentCode : (inp ? inp.value : "")).trim();
 
-        if (rawCode === "2000") {
-            localStorage.setItem("albasem_admin_permanent", "1");
-            sessionStorage.setItem("albasem_admin_session", "unlocked");
-            window.applyAccessMode({ is_admin: true });
-            showToast("👑 تم فتح وضع الإدارة الكامل!");
-            return;
-        }
-
         if (!/^\d{10}$/.test(rawCode)) {
             if (errBox) {
                 errBox.style.display = "block";
-                errBox.innerText = "⚠️ يرجى إدخال كود مكون من 10 أرقام بالضبط.";
+                errBox.innerText = "⚠️ يرجى إدخال كود تفعيل صحيح مكون من 10 أرقام.";
             }
             return;
         }
@@ -7263,8 +7386,6 @@ body:not(.albasem-admin-mode) #links_view_section {
 
     window.logoutActiveCode = function() {
         localStorage.removeItem("albasem_active_code");
-        localStorage.removeItem("albasem_admin_permanent");
-        sessionStorage.removeItem("albasem_admin_session");
         document.body.classList.remove("albasem-admin-mode");
         const inp = document.getElementById("gate_code_input");
         if (inp) inp.value = "";
@@ -7286,7 +7407,7 @@ body:not(.albasem-admin-mode) #links_view_section {
     };
 
     async function callCodesAdminApi(payload) {
-        payload.pin = "2000";
+        payload.token = localStorage.getItem("albasem_admin_token") || "";
         const res = await fetch(CODES_API + "/admin", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -7364,19 +7485,7 @@ body:not(.albasem-admin-mode) #links_view_section {
     };
 
     window.sendCodeViaWhatsApp = function(code, name, days) {
-        const msg = "👑 *الباسم سات | تفعيل الاشتراك الذكي* 👑
-
-أهلاً بك *" + name + "*
-تم تفعيل اشتراكك بنجاح!
-
-🔢 *كود التفعيل (10 أرقام):*
-*" + code + "*
-
-⏳ *مدة الاشتراك:* " + days + " يوم
-🌐 *رابط المنصة والتطبيق:*
-https://albasem-tv.pages.dev
-
-📞 للدعم الفني والتجديد (أبو باسم): 0534829927";
+        const msg = "👑 *الباسم سات | تفعيل الاشتراك الذكي* 👑\n\nأهلاً بك *" + name + "*\nتم تفعيل اشتراكك بنجاح!\n\n🔢 *كود التفعيل (10 أرقام):*\n*" + code + "*\n\n⏳ *مدة الاشتراك:* " + days + " يوم\n🌐 *رابط المنصة والتطبيق:*\nhttps://albasem-tv.pages.dev\n\n📞 للدعم الفني والتجديد (أبو باسم): 0534829927";
         window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(msg), "_blank");
     };
 
@@ -7384,7 +7493,7 @@ https://albasem-tv.pages.dev
         const box = document.getElementById("codes_admin_list");
         if (!box) return;
         if (!codes || codes.length === 0) {
-            box.innerHTML = "<div style="text-align:center; padding:25px; color:#94A3B8;">لا توجد كودات حالياً. قم بتوليد أول كود من الأعلى ⬆️</div>";
+            box.innerHTML = '<div style="text-align:center; padding:25px; color:#94A3B8;">لا توجد كودات حالياً. قم بتوليد أول كود من الأعلى ⬆️</div>';
             return;
         }
 
@@ -7423,12 +7532,12 @@ https://albasem-tv.pages.dev
                     </div>
                 </div>
                 <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
-                    <button onclick="navigator.clipboard.writeText('${c.code}'); showToast('📋 تم نسخ الكود: ${c.code}');" style="background:#1E293B; color:#fff; border:1px solid #334155; border-radius:6px; padding:5px 8px; font-size:11.5px; cursor:pointer;">📋 نسخ</button>
-                    <button onclick="window.sendCodeViaWhatsApp('${c.code}', '${safeName}', '${c.days_left || c.duration_days}')" style="background:rgba(37,211,102,0.18); color:#25D366; border:1px solid #25D366; border-radius:6px; padding:5px 8px; font-size:11.5px; font-weight:bold; cursor:pointer;">📲 واتس</button>
-                    <button onclick="window.adminEditCodeDays('${c.code}', ${c.days_left || c.duration_days})" style="background:rgba(56,189,248,0.18); color:#38BDF8; border:1px solid #38BDF8; border-radius:6px; padding:5px 8px; font-size:11.5px; font-weight:bold; cursor:pointer;">⏳ أيام</button>
-                    <button onclick="window.adminResetCodeDevices('${c.code}')" style="background:rgba(139,92,246,0.18); color:#C4B5FD; border:1px solid #8B5CF6; border-radius:6px; padding:5px 8px; font-size:11.5px; cursor:pointer;">📱 تصفير</button>
-                    <button onclick="window.adminToggleCodeActive('${c.code}')" style="background:rgba(245,158,11,0.18); color:#FCD34D; border:1px solid #F59E0B; border-radius:6px; padding:5px 8px; font-size:11.5px; cursor:pointer;">${c.is_active ? "⏸️ إيقاف" : "▶️ تفعيل"}</button>
-                    <button onclick="window.adminDeleteCode('${c.code}')" style="background:rgba(239,68,68,0.2); color:#EF4444; border:1px solid #EF4444; border-radius:6px; padding:5px 8px; font-size:11.5px; cursor:pointer;">🗑️</button>
+                    <button type="button" onclick="navigator.clipboard.writeText('${c.code}'); showToast('📋 تم نسخ الكود: ${c.code}');" style="background:#1E293B; color:#fff; border:1px solid #334155; border-radius:6px; padding:5px 8px; font-size:11.5px; cursor:pointer;">📋 نسخ</button>
+                    <button type="button" onclick="window.sendCodeViaWhatsApp('${c.code}', '${safeName}', '${c.days_left || c.duration_days}')" style="background:rgba(37,211,102,0.18); color:#25D366; border:1px solid #25D366; border-radius:6px; padding:5px 8px; font-size:11.5px; font-weight:bold; cursor:pointer;">📲 واتس</button>
+                    <button type="button" onclick="window.adminEditCodeDays('${c.code}', ${c.days_left || c.duration_days})" style="background:rgba(56,189,248,0.18); color:#38BDF8; border:1px solid #38BDF8; border-radius:6px; padding:5px 8px; font-size:11.5px; font-weight:bold; cursor:pointer;">⏳ أيام</button>
+                    <button type="button" onclick="window.adminResetCodeDevices('${c.code}')" style="background:rgba(139,92,246,0.18); color:#C4B5FD; border:1px solid #8B5CF6; border-radius:6px; padding:5px 8px; font-size:11.5px; cursor:pointer;">📱 تصفير</button>
+                    <button type="button" onclick="window.adminToggleCodeActive('${c.code}')" style="background:rgba(245,158,11,0.18); color:#FCD34D; border:1px solid #F59E0B; border-radius:6px; padding:5px 8px; font-size:11.5px; cursor:pointer;">${c.is_active ? "⏸️ إيقاف" : "▶️ تفعيل"}</button>
+                    <button type="button" onclick="window.adminDeleteCode('${c.code}')" style="background:rgba(239,68,68,0.2); color:#EF4444; border:1px solid #EF4444; border-radius:6px; padding:5px 8px; font-size:11.5px; cursor:pointer;">🗑️</button>
                 </div>
             </div>`;
         }).join("");
@@ -7447,11 +7556,27 @@ https://albasem-tv.pages.dev
             });
         }
 
+        const passInp = document.getElementById("admin_login_pass");
+        if (passInp) {
+            passInp.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    window.performAdminEmailLogin();
+                }
+            });
+        }
+
+        // 1. إذا كان أبو باسم مسجل دخول كأدمن على هذا الجهاز، يفتح وضع الإدارة تلقائياً
+        const savedAdminToken = localStorage.getItem("albasem_admin_token");
+        if (savedAdminToken) {
+            window.verifySavedAdminToken(savedAdminToken, false);
+            return;
+        }
+
+        // 2. إذا كان الزبون مفعل كود 10 أرقام، يتحقق منه ويدخله
         const savedCode = localStorage.getItem("albasem_active_code");
         if (savedCode && /^\d{10}$/.test(savedCode)) {
             window.submitActiveCode(savedCode);
-        } else if (localStorage.getItem("albasem_admin_permanent") === "1") {
-            window.applyAccessMode({ is_admin: true });
         } else {
             document.body.classList.remove("albasem-admin-mode");
             const gate = document.getElementById("active_code_gate");
