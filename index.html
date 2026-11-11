@@ -5770,7 +5770,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "3.0.0";
+    window.ALBASEM_VERSION = "3.2.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -6857,31 +6857,36 @@ window.addEventListener('appinstalled', () => {
 </script>
 
 
+
 <!-- ALBASEM_ACTIVE_CODES_V1_START -->
 <style>
-body.albasem-customer-mode .search-box,
-body.albasem-customer-mode .fetch-filter-box,
-body.albasem-customer-mode #links_view_section {
+/* إخفاء شريط الإدارة والسيرفرات والرادار افتراضياً عن الزباين */
+body:not(.albasem-admin-mode) .search-box,
+body:not(.albasem-admin-mode) .fetch-filter-box,
+body:not(.albasem-admin-mode) #links_view_section {
     display: none !important;
 }
 
+/* شريط اشتراك الزبون العلوي */
 #customer_sub_banner {
     display: none;
     max-width: 1225px;
     margin: 0 auto 12px auto;
-    padding: 8px 14px;
-    background: linear-gradient(90deg, rgba(15, 23, 42, 0.95), rgba(21, 25, 34, 0.95));
-    border: 1px solid rgba(56, 189, 248, 0.35);
+    padding: 9px 14px;
+    background: linear-gradient(90deg, rgba(15, 23, 42, 0.96), rgba(21, 25, 34, 0.96));
+    border: 1px solid rgba(56, 189, 248, 0.4);
     border-radius: 12px;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
     flex-wrap: wrap;
-    font-size: 12.5px;
+    font-size: 13px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
 }
 
+/* شاشة القفل وإدخال كود الـ 10 أرقام */
 #active_code_gate {
-    display: none;
+    display: flex;
     position: fixed;
     inset: 0;
     background: radial-gradient(circle at top, #151E30 0%, #080B10 100%);
@@ -6892,14 +6897,14 @@ body.albasem-customer-mode #links_view_section {
     overflow-y: auto;
 }
 .gate-card {
-    background: rgba(21, 25, 34, 0.96);
+    background: rgba(21, 25, 34, 0.98);
     border: 2px solid #38BDF8;
     border-radius: 18px;
     max-width: 430px;
     width: 100%;
     padding: 22px 18px;
     text-align: center;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(56, 189, 248, 0.2);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(56, 189, 248, 0.25);
 }
 .gate-code-input {
     width: 100%;
@@ -6948,6 +6953,7 @@ body.albasem-customer-mode #links_view_section {
     transform: scale(0.96);
 }
 
+/* نافذة إدارة الكودات للأدمن */
 #codes_admin_modal {
     display: none;
     position: fixed;
@@ -6986,13 +6992,14 @@ body.albasem-customer-mode #links_view_section {
 
 <div id="customer_sub_banner">
     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-        <span style="background:rgba(255,183,3,0.15); color:#FFB703; border:1px solid rgba(255,183,3,0.4); padding:3px 9px; border-radius:8px; font-weight:800;" id="sub_banner_name">👤 مشترك الباسم سات</span>
-        <span style="color:#10B981; font-weight:900;" id="sub_banner_days">⏳ باقي للاشتراك: -- يوم</span>
+        <span style="background:rgba(255,183,3,0.15); color:#FFB703; border:1px solid rgba(255,183,3,0.4); padding:3px 10px; border-radius:8px; font-weight:800;" id="sub_banner_name">👤 مشترك الباسم سات</span>
+        <span style="color:#10B981; font-weight:900; font-size:13.5px;" id="sub_banner_days">⏳ المتبقي باشتراكك: -- يوم</span>
         <span style="color:#94A3B8; font-size:11.5px;" id="sub_banner_exp"></span>
     </div>
     <div style="display:flex; align-items:center; gap:6px;">
         <button onclick="window.reloadCustomerChannels()" style="background:#0284C7; color:#fff; border:none; border-radius:7px; padding:5px 10px; font-size:11.5px; font-weight:bold; cursor:pointer;">🔄 تحديث القنوات</button>
-        <button onclick="window.logoutActiveCode()" style="background:rgba(239,68,68,0.18); color:#FCA5A5; border:1px solid rgba(239,68,68,0.4); border-radius:7px; padding:5px 10px; font-size:11.5px; font-weight:bold; cursor:pointer;">🔑 تغيير الكود</button>
+        <button onclick="window.logoutActiveCode()" style="background:rgba(239,68,68,0.18); color:#FCA5A5; border:1px solid rgba(239,68,68,0.4); border-radius:7px; padding:5px 10px; font-size:11.5px; font-weight:bold; cursor:pointer;">🔑 تبديل الكود</button>
+        <button onclick="window.promptAdminMasterLogin()" style="background:rgba(255,183,3,0.14); color:#FFB703; border:1px solid rgba(255,183,3,0.4); border-radius:7px; padding:5px 9px; font-size:11.5px; font-weight:bold; cursor:pointer;" title="دخول الإدارة">🔐</button>
     </div>
 </div>
 
@@ -7027,7 +7034,7 @@ body.albasem-customer-mode #links_view_section {
 
         <div style="margin-top:14px; padding-top:10px; border-top:1px solid #222938; font-size:12px; color:#94A3B8; display:flex; justify-content:space-between; align-items:center;">
             <span>📞 لطلب كود اشتراك: <b style="color:#22C55E;">0534829927</b></span>
-            <button onclick="window.promptAdminMasterLogin()" style="background:transparent; border:1px solid #334155; color:#64748B; border-radius:6px; padding:2px 8px; font-size:11px; cursor:pointer;">🔐 إدارة</button>
+            <button onclick="window.promptAdminMasterLogin()" style="background:rgba(255,183,3,0.15); border:1px solid #FFB703; color:#FFB703; border-radius:7px; padding:4px 10px; font-size:11.5px; font-weight:bold; cursor:pointer;">🔐 دخول الإدارة</button>
         </div>
     </div>
 </div>
@@ -7080,6 +7087,7 @@ body.albasem-customer-mode #links_view_section {
     function injectAdminCodesButton() {
         const searchBox = document.querySelector(".search-box");
         if (!searchBox || document.getElementById("btn_open_codes_admin")) return;
+
         const btn = document.createElement("button");
         btn.id = "btn_open_codes_admin";
         btn.className = "btn-hub";
@@ -7089,6 +7097,24 @@ body.albasem-customer-mode #links_view_section {
         btn.innerHTML = "🎟️ الكودات";
         btn.onclick = window.openCodesAdminModal;
         searchBox.appendChild(btn);
+
+        const lockBtn = document.createElement("button");
+        lockBtn.id = "btn_lock_admin_view";
+        lockBtn.className = "btn-hub";
+        lockBtn.style.background = "#1E293B";
+        lockBtn.style.border = "1px solid #38BDF8";
+        lockBtn.style.color = "#38BDF8";
+        lockBtn.innerHTML = "👁️ شاشة الزبون";
+        lockBtn.title = "إخفاء شريط الإدارة وتجربة شاشة الكود كما يراها الزبون";
+        lockBtn.onclick = function() {
+            sessionStorage.removeItem("albasem_admin_session");
+            localStorage.removeItem("albasem_admin_permanent");
+            document.body.classList.remove("albasem-admin-mode");
+            const gate = document.getElementById("active_code_gate");
+            if (gate) gate.style.display = "flex";
+            showToast("🔒 تم التحويل لوضع الزبون (شاشة الكود)");
+        };
+        searchBox.appendChild(lockBtn);
 
         const header = document.querySelector(".header");
         const banner = document.getElementById("customer_sub_banner");
@@ -7122,7 +7148,7 @@ body.albasem-customer-mode #links_view_section {
             localStorage.setItem("albasem_admin_permanent", "1");
             sessionStorage.setItem("albasem_admin_session", "unlocked");
             window.applyAccessMode({ is_admin: true });
-            showToast("👑 أهلاً بك يا أبو باسم! تم تفعيل وضع الإدارة الكامل");
+            showToast("👑 أهلاً بك يا أبو باسم! تم إظهار شريط الإدارة الكامل");
         } else if (pin !== null) {
             alert("❌ الرقم السري غير صحيح!");
         }
@@ -7134,12 +7160,12 @@ body.albasem-customer-mode #links_view_section {
         if (gate) gate.style.display = "none";
 
         if (authData.is_admin) {
-            document.body.classList.remove("albasem-customer-mode");
+            document.body.classList.add("albasem-admin-mode");
             if (banner) banner.style.display = "none";
             return;
         }
 
-        document.body.classList.add("albasem-customer-mode");
+        document.body.classList.remove("albasem-admin-mode");
         if (banner) {
             banner.style.display = "flex";
             const nameEl = document.getElementById("sub_banner_name");
@@ -7236,9 +7262,10 @@ body.albasem-customer-mode #links_view_section {
     };
 
     window.logoutActiveCode = function() {
-        if (!confirm("هل تريد الخروج من الكود الحالي لإدخال كود جديد؟")) return;
         localStorage.removeItem("albasem_active_code");
         localStorage.removeItem("albasem_admin_permanent");
+        sessionStorage.removeItem("albasem_admin_session");
+        document.body.classList.remove("albasem-admin-mode");
         const inp = document.getElementById("gate_code_input");
         if (inp) inp.value = "";
         const err = document.getElementById("gate_error_msg");
@@ -7420,16 +7447,13 @@ https://albasem-tv.pages.dev
             });
         }
 
-        if (localStorage.getItem("albasem_admin_permanent") === "1" || sessionStorage.getItem("albasem_admin_session") === "unlocked") {
-            window.applyAccessMode({ is_admin: true });
-            return;
-        }
-
         const savedCode = localStorage.getItem("albasem_active_code");
         if (savedCode && /^\d{10}$/.test(savedCode)) {
             window.submitActiveCode(savedCode);
+        } else if (localStorage.getItem("albasem_admin_permanent") === "1") {
+            window.applyAccessMode({ is_admin: true });
         } else {
-            document.body.classList.add("albasem-customer-mode");
+            document.body.classList.remove("albasem-admin-mode");
             const gate = document.getElementById("active_code_gate");
             if (gate) gate.style.display = "flex";
         }
