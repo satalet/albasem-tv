@@ -2183,9 +2183,6 @@ window.cleanChannelTitle = function(name) {
                         </button>
                     </div>
                     <div class="v3-nav-left-btns">
-                        <button id="btn_share_package" onclick="sharePackageToWhatsApp()" class="v3-btn-share">
-                            <span>📲</span> <span id="btn_share_package_label">مشاركة</span>
-                        </button>
                         <button id="btn_adult_lock" onclick="toggleAdultLock()" class="v3-btn-lock">🔒 عائلي</button>
                     </div>
                 </div>
@@ -2995,7 +2992,7 @@ window.cleanChannelTitle = function(name) {
             };
 
             epRow.appendChild(btn);
-            epRow.appendChild(shareEpBtn);
+            // تم إلغاء زر مشاركة الحلقة الخارجي
             btn.onclick = () => {
                 document.querySelectorAll("#series_episodes_list .series-ep-row").forEach(r => {
                     r.style.background = "rgba(255,255,255,0.06)";
@@ -3228,11 +3225,9 @@ window.cleanChannelTitle = function(name) {
                     <div class="card-actions-row">
                         ${itemType === "series" ? `
                             <button class="card-mini-btn btn-mini-mob" onclick="openSeriesModalByCard('${st.series_id || ""}', '${encodeURIComponent(st.name || "")}')" title="عرض كافة الحلقات والمواسم"><span class="btn-icon">🎬</span><span class="btn-text">حلقات</span></button>
-                            <button class="card-mini-btn btn-mini-wa" onclick="window.shareSeriesDirect('${st.series_id || ""}', '${encodeURIComponent(st.name || "")}', '${encodeURIComponent(st.group || "")}')" title="مشاركة المسلسل كاملاً بالواتس"><span class="btn-icon">📲</span><span class="btn-text">واتس</span></button>
                             <button class="card-mini-btn btn-mini-mpv" onclick="copySeriesTitle('${encodeURIComponent(st.name || "")}')" title="نسخ اسم المسلسل"><span class="btn-icon">📋</span><span class="btn-text">نسخ</span></button>
                         ` : `
                             <a class="card-mini-btn btn-mini-mob" href="${androidIntent}" title="تشغيل مباشر بالجوال"><span class="btn-icon">📱</span><span class="btn-text">جوال</span></a>
-                            <button class="card-mini-btn btn-mini-wa" onclick="shareToWhatsApp('${encodeURIComponent(streamUrl)}', '${encodeURIComponent(st.name)}')" title="مشاركة بالواتس"><span class="btn-icon">📲</span><span class="btn-text">واتس</span></button>
                             <button class="card-mini-btn btn-mini-mpv" onclick="copyMPV('${streamUrl}')" title="نسخ أمر MPV"><span class="btn-icon">📋</span><span class="btn-text">كالي</span></button>
                         `}
                     </div>
@@ -3640,7 +3635,7 @@ function playStepChannel(step) {
 
         const waPlayerBtn = document.getElementById("btn_player_wa");
         if (waPlayerBtn) {
-            waPlayerBtn.style.display = isLive ? "flex" : "none";
+            waPlayerBtn.style.display = "inline-flex";
         }
 
         document.getElementById("player_title").innerText = "🎬 " + title;
@@ -4600,9 +4595,6 @@ function toggleLinksHub() {
             <div class="modal-close" onclick="closeSeriesModal()">&times;</div>
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; padding-left:30px;">
                 <h3 id="series_modal_title" style="color:#FFB703; margin:0;">🎬 حلقات المسلسل</h3>
-                <button id="btn_modal_share_series" onclick="window.shareCurrentModalSeries()" style="background:rgba(37,211,102,0.18); border:1px solid #25D366; color:#25D366; border-radius:8px; padding:4px 10px; font-size:11px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 8px rgba(37,211,102,0.25);">
-                    <span>📲</span> <span>مشاركة المسلسل كاملاً بالواتس</span>
-                </button>
             </div>
             <div id="series_seasons_bar" style="display:flex; gap:8px; overflow-x:auto; margin-bottom:14px; padding-bottom:4px;"></div>
             <div id="series_episodes_list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:10px;">
@@ -6032,7 +6024,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
             shareBtn.title = `مشاركة باقة (${grp}) عبر واتساب`;
             shareBtn.innerHTML = "📲";
             shareBtn.onclick = (e) => window.shareSpecificPackageCard(grp, currentTab, e);
-            thumb.appendChild(shareBtn);
+            // تم إلغاء زر مشاركة المجلد الخارجي
 
             if (repImg) {
                 const img = document.createElement("img");
