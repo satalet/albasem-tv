@@ -5801,7 +5801,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "4.6.5";
+    window.ALBASEM_VERSION = "4.7.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -8215,123 +8215,53 @@ if (typeof origOpenPlayerForPing === "function") {
         }
     };
 
-    window.findAllMatchesInCurrentServer = function(favItem) {
-        const pool = (typeof rawData !== "undefined" && Array.isArray(rawData[favItem.type])) ? rawData[favItem.type] : [];
-        if (pool.length === 0) return [];
-
-        const targetExact = String(favItem.name || "").trim().toLowerCase();
-        const targetClean = String(favItem.clean_name || getCleanSearchKey(favItem.name)).toLowerCase();
-        if (!targetClean) return [];
-
-        const exactList = [];
-        const cleanList = [];
-        const partialList = [];
-
-        for (let i = 0; i < pool.length; i++) {
-            const x = pool[i];
-            if (!x || !x.url) continue;
-            const xName = String(x.name || "").trim().toLowerCase();
-            const xClean = getCleanSearchKey(x.name || "").toLowerCase();
-
-            if (xName === targetExact) exactList.push(x);
-            else if (xClean === targetClean) cleanList.push(x);
-            else if (targetClean.length >= 3 && xClean.includes(targetClean)) partialList.push(x);
-        }
-        return [...exactList, ...cleanList, ...partialList];
-    };
-
     window.launchSmartFavorite = async function(favItem) {
         if (!favItem) return;
         const curServer = (document.getElementById("iptv_url")?.value || localStorage.getItem("albasem_url") || "").trim();
         const sameServer = Boolean(curServer && favItem.origin_server && curServer === favItem.origin_server);
 
-        // للمسلسلات
-        if (favItem.type === "series") {
-            if (sameServer && favItem.series_id) {
+        if (sameServer) {
+            if (favItem.type === "series" && favItem.series_id) {
                 await fetchSeriesEpisodesDirect(curServer, favItem, false);
                 return;
             }
-            const sectionPool = (typeof rawData !== "undefined" && Array.isArray(rawData.series)) ? rawData.series : [];
-            if (sectionPool.length === 0 && curServer && typeof window.fetchSingleSectionSmart === "function") {
-                if (typeof showToast === "function") showToast("⚡ جاري فحص توفر المسلسل في السيرفر الجديد...");
-                const preserved = {
-                    live: Array.isArray(rawData.live) ? [...rawData.live] : [],
-                    movies: Array.isArray(rawData.movies) ? [...rawData.movies] : [],
-                    series: []
-                };
-                await window.fetchSingleSectionSmart(curServer, "series", preserved);
-            }
-            const matchSeries = findMatchInCurrentServer(favItem);
-            if (matchSeries) {
-                if (typeof showToast === "function") showToast("✨ المسلسل متوفر بالسيرفر الجديد! جاري فتح الحلقات...");
-                openSeriesModal(matchSeries);
+            if (favItem.url) {
+                openWebPlayer(favItem.url, favItem.name);
                 return;
             }
-            if (favItem.origin_server && favItem.series_id) {
+        }
+
+        const sectionPool = (typeof rawData !== "undefined" && Array.isArray(rawData[favItem.type])) ? rawData[favItem.type] : [];
+        if (sectionPool.length === 0 && curServer && typeof window.fetchSingleSectionSmart === "function") {
+            const preserved = {
+                live: Array.isArray(rawData.live) ? [...rawData.live] : [],
+                movies: Array.isArray(rawData.movies) ? [...rawData.movies] : [],
+                series: Array.isArray(rawData.series) ? [...rawData.series] : []
+            };
+            await window.fetchSingleSectionSmart(curServer, favItem.type, preserved);
+        }
+
+        const matchInCurrent = findMatchInCurrentServer(favItem);
+        if (matchInCurrent) {
+            if (favItem.type === "series") {
+                openSeriesModal(matchInCurrent);
+            } else {
+                openWebPlayer(matchInCurrent.url, matchInCurrent.name);
+            }
+            return;
+        }
+
+        if (favItem.origin_server) {
+            if (favItem.type === "series" && favItem.series_id) {
                 await fetchSeriesEpisodesDirect(favItem.origin_server, favItem, true);
                 return;
+            } else if (favItem.url) {
+                openWebPlayer(favItem.url, favItem.name);
+                return;
             }
-            await window.smartSearchFallback(favItem.clean_name || favItem.name, "series");
-            return;
         }
 
-        // للقنوات المباشرة والأفلام: جمع كل البدائل من السيرفر الحالي + الرابط الأصلي كاحتياط
-        const candidates = [];
-        const seenUrls = new Set();
-
-        const matchesNow = window.findAllMatchesInCurrentServer(favItem);
-        matchesNow.forEach(m => {
-            if (m.url && !seenUrls.has(m.url)) {
-                seenUrls.add(m.url);
-                candidates.push({ url: m.url, name: m.name, source: "السيرفر الحالي" });
-            }
-        });
-
-        if (favItem.url && !seenUrls.has(favItem.url)) {
-            seenUrls.add(favItem.url);
-            candidates.push({ url: favItem.url, name: favItem.name + " (المصدر الأصلي)", source: "المصدر الأصلي" });
-        }
-
-        if (candidates.length === 0) {
-            if (typeof showToast === "function") showToast("🔍 جاري البحث الذكي عن البدائل...");
-            await window.smartSearchFallback(favItem.clean_name || favItem.name, favItem.type);
-            return;
-        }
-
-        // حفظ طابور البدائل ليقفز المشغل تلقائياً للبديل التالي إذا كانت القناة الأولى متوقفة
-        window._favFailoverQueue = candidates;
-        window._favFailoverIdx = 0;
-
-        const first = candidates[0];
-        if (typeof showToast === "function") {
-            showToast(`▶ تشغيل (${first.name}) — متوفر ${candidates.length} بديل ذكي`);
-        }
-        openWebPlayer(first.url, first.name);
-
-        if (window._favFailoverTimer) clearTimeout(window._favFailoverTimer);
-        window.tryNextFavCandidate = function() {
-            if (!window._favFailoverQueue || window._favFailoverIdx + 1 >= window._favFailoverQueue.length) return;
-            const pModal = document.getElementById("player_modal");
-            if (!pModal || pModal.style.display === "none") return;
-
-            window._favFailoverIdx++;
-            const nextCand = window._favFailoverQueue[window._favFailoverIdx];
-            if (typeof showToast === "function") {
-                showToast(`🔄 القناة الأولى متوقفة، جاري التحويل للبديل (${ window._favFailoverIdx + 1 }/${ window._favFailoverQueue.length }): ${nextCand.name}`);
-            }
-            openWebPlayer(nextCand.url, nextCand.name);
-        };
-
-        // مراقبة ذكية: إذا لم يبدأ بث الفيديو خلال 8 ثوانٍ يقفز للبديل الثاني تلقائياً
-        window._favFailoverTimer = setTimeout(() => {
-            const vid = document.querySelector("#artplayer_container video") || document.getElementById("html5_video_player");
-            const pModal = document.getElementById("player_modal");
-            if (pModal && pModal.style.display !== "none") {
-                if (!vid || vid.readyState < 2 || vid.paused && vid.currentTime === 0) {
-                    window.tryNextFavCandidate();
-                }
-            }
-        }, 8000);
+        await window.smartSearchFallback(favItem.clean_name || favItem.name, favItem.type);
     };
 
     window.openFavoritesView = function() {
@@ -8980,39 +8910,6 @@ if (typeof origOpenPlayerForPing === "function") {
 
 </script>
 <script>
-
-// === ALBASEM_LIVE_STREAM_STABILITY_GUARD_START ===
-(function() {
-    const origFetch = window.fetch;
-    window.fetch = function(url, options) {
-        if (typeof url === "string" && url.includes("/api/media_tracks")) {
-            const isVod = (typeof currentTab !== "undefined") && (currentTab === "movies" || currentTab === "series");
-            if (!isVod) {
-                return Promise.resolve(new Response(JSON.stringify({ success: false, skipped_live: true }), {
-                    status: 200,
-                    headers: { "Content-Type": "application/json" }
-                }));
-            }
-        }
-        return origFetch.apply(this, arguments);
-    };
-
-    if (window.mpegts && window.mpegts.createPlayer) {
-        const origCreate = window.mpegts.createPlayer;
-        window.mpegts.createPlayer = function(mediaDataSource, config) {
-            const safeMedia = Object.assign({}, mediaDataSource, { isLive: true, cors: true });
-            const safeConfig = Object.assign({}, config, {
-                enableWorker: true,
-                enableStashBuffer: true,
-                stashInitialSize: 512 * 1024,
-                liveBufferLatencyChasing: false,
-                autoCleanupSourceBuffer: true
-            });
-            return origCreate.call(window.mpegts, safeMedia, safeConfig);
-        };
-    }
-})();
-// === ALBASEM_LIVE_STREAM_STABILITY_GUARD_END ===
 
 </script>
 <!-- ALBASEM_SMART_FAVORITES_END -->
