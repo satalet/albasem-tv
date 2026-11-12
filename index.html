@@ -3490,10 +3490,10 @@ function copyMPV(url) {
         subSel.innerHTML = '<option value="off">⏳ فحص الترجمة...</option>';
 
         try {
-            const res = await (currentTab === "live" || /\.(ts|m3u8)(\?|$)/i.test(rawUrl) || !/\/(movie|series)\//i.test(rawUrl) ? Promise.resolve({ok:false, json:()=>Promise.resolve({success:false})}) : fetch("https://albasem-tv.duckdns.org/api/media_tracks", {
+            const res = await fetch("https://albasem-tv.duckdns.org/api/media_tracks", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: rawUrl }))
+                body: JSON.stringify({ url: rawUrl })
             });
             const d = await res.json();
 
@@ -5801,7 +5801,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "4.6.0";
+    window.ALBASEM_VERSION = "4.6.5";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -8322,17 +8322,16 @@ if (typeof origOpenPlayerForPing === "function") {
             openWebPlayer(nextCand.url, nextCand.name);
         };
 
-        // مراقبة هادئة: لا تقاطع البث أبداً إذا بدأ الفيديو بالعمل أو التحميل
+        // مراقبة ذكية: إذا لم يبدأ بث الفيديو خلال 8 ثوانٍ يقفز للبديل الثاني تلقائياً
         window._favFailoverTimer = setTimeout(() => {
             const vid = document.querySelector("#artplayer_container video") || document.getElementById("html5_video_player");
             const pModal = document.getElementById("player_modal");
             if (pModal && pModal.style.display !== "none") {
-                const isWorking = vid && (vid.currentTime > 0 || vid.readyState >= 2 || !vid.paused);
-                if (!isWorking) {
+                if (!vid || vid.readyState < 2 || vid.paused && vid.currentTime === 0) {
                     window.tryNextFavCandidate();
                 }
             }
-        }, 12000);
+        }, 8000);
     };
 
     window.openFavoritesView = function() {
@@ -8984,7 +8983,6 @@ if (typeof origOpenPlayerForPing === "function") {
 
 // === ALBASEM_LIVE_STREAM_STABILITY_GUARD_START ===
 (function() {
-    // إيقاف أي طلبات media_tracks أثناء البث المباشر لمنع فصل السيرفر (Single Connection Servers)
     const origFetch = window.fetch;
     window.fetch = function(url, options) {
         if (typeof url === "string" && url.includes("/api/media_tracks")) {
@@ -8999,14 +8997,10 @@ if (typeof origOpenPlayerForPing === "function") {
         return origFetch.apply(this, arguments);
     };
 
-    // زيادة سماحية البافر في mpegts.js لمنع التقطيع (الروبوت) في قنوات FHD الثقيلة
     if (window.mpegts && window.mpegts.createPlayer) {
         const origCreate = window.mpegts.createPlayer;
         window.mpegts.createPlayer = function(mediaDataSource, config) {
-            const safeMedia = Object.assign({}, mediaDataSource, {
-                isLive: true,
-                cors: true
-            });
+            const safeMedia = Object.assign({}, mediaDataSource, { isLive: true, cors: true });
             const safeConfig = Object.assign({}, config, {
                 enableWorker: true,
                 enableStashBuffer: true,
