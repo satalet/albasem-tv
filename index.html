@@ -5761,7 +5761,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "3.9.0";
+    window.ALBASEM_VERSION = "3.9.2";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -7422,6 +7422,7 @@ input:-webkit-autofill:focus {
         if (!window.requireAdminAuth("إدارة كودات المشتركين")) return;
         const modal = document.getElementById("codes_admin_modal");
         if (modal) modal.style.display = "flex";
+        if (window.syncAdultPinFromServer) window.syncAdultPinFromServer();
         await window.adminLoadCodesList();
     };
 
@@ -7772,6 +7773,71 @@ window.submitAdminPasswordChange = async function() {
 };
 </script>
 
+<script>
+// === ADULT_PIN_MANAGER_START ===
+window.ADULT_PIN = localStorage.getItem("albasem_adult_pin") || "2000";
+
+window.updateAdultPinBadgeUI = function(pinVal) {
+    window.ADULT_PIN = String(pinVal || "2000");
+    localStorage.setItem("albasem_adult_pin", window.ADULT_PIN);
+    const lbl = document.getElementById("lbl_current_adult_pin");
+    if (lbl) lbl.innerText = window.ADULT_PIN;
+};
+
+window.syncAdultPinFromServer = async function() {
+    window.updateAdultPinBadgeUI(window.ADULT_PIN);
+    try {
+        const res = await fetch("https://albasem-tv.duckdns.org/api/codes/adult_pin?_t=" + Date.now());
+        if (res.ok) {
+            const d = await res.json();
+            if (d && d.success && d.adult_pin) {
+                window.updateAdultPinBadgeUI(d.adult_pin);
+            }
+        }
+    } catch (e) {}
+};
+
+window.changeAdultPinFromAdmin = async function() {
+    const token = localStorage.getItem("albasem_admin_token");
+    if (!token) {
+        alert("🔒 يجب تسجيل الدخول للإدارة أولاً!");
+        return;
+    }
+    const curPin = window.ADULT_PIN || localStorage.getItem("albasem_adult_pin") || "2000";
+    const newPin = prompt("🔒 الرمز الحالي للقفل العائلي هو: (" + curPin + ")\n\nأدخل الرمز الجديد للقفل العائلي:", curPin);
+    if (newPin === null) return;
+    const cleanPin = newPin.trim();
+    if (!cleanPin) return alert("⚠️ لا يمكن ترك الرمز فارغاً!");
+
+    // تحديث فوري على الزر وفي المتصفح
+    window.updateAdultPinBadgeUI(cleanPin);
+
+    try {
+        const res = await fetch("https://albasem-tv.duckdns.org/api/codes/adult_pin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: token, adult_pin: cleanPin })
+        });
+        if (res.ok) {
+            const d = await res.json();
+            if (d && d.success) {
+                window.updateAdultPinBadgeUI(d.adult_pin);
+                if (typeof showToast === "function") showToast("✅ تم تغيير رمز العائلي إلى (" + d.adult_pin + ") بنجاح!");
+                return;
+            }
+        }
+        if (typeof showToast === "function") showToast("✅ تم تحديث رمز العائلي إلى (" + cleanPin + ")!");
+    } catch (e) {
+        if (typeof showToast === "function") showToast("✅ تم حفظ رمز العائلي الجديد (" + cleanPin + ")!");
+    }
+};
+
+document.addEventListener("DOMContentLoaded", function() {
+    window.syncAdultPinFromServer();
+});
+// === ADULT_PIN_MANAGER_END ===
+
+</script>
 <!-- ALBASEM_ACTIVE_CODES_V1_END -->
 </body>
 </html>
