@@ -974,6 +974,7 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0B0E14">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <style>
@@ -2105,6 +2106,25 @@ var ADMIN_PIN = "2000";
 }
 </style>
 <script>
+
+window.sanitizeChannelLogoUrl = function(rawLogo) {
+    if (!rawLogo || typeof rawLogo !== "string") return "";
+    const u = rawLogo.trim();
+    if (!u.startsWith("http://") && !u.startsWith("https://")) return "";
+
+    // استبعاد دومينات اللوغوهات الميتة المعروفة لتجنب أخطاء ERR_NAME_NOT_RESOLVED بالكونسول
+    if (/(icon-tmdb\.me|logodntv\.ddns\.net|xplatinmedia\.com|mytvservices\.us|logo\.iptveditor\.com|bsboxoffice\.com|trastras\.eu|esozu\.com|futboleiros\.tv)/i.test(u)) {
+        return "";
+    }
+
+    // تمرير روابط http أو الروابط التي تحتوي بورتات غير قياسية أو IP مباشر عبر بروكسي wsrv مع صورة افتراضية صامتة (لا تعطي 404)
+    const fallbackBlank = "https://wsrv.nl/?url=https://raw.githubusercontent.com/satalet/albasem-tv/main/icon-192.png&w=80&h=80";
+    if (u.startsWith("http://") || /https:\/\/(\d+\.\d+\.\d+\.\d+|[^/]+:\d+)/.test(u)) {
+        return "https://wsrv.nl/?url=" + encodeURIComponent(u) + "&w=160&default=" + encodeURIComponent(fallbackBlank);
+    }
+    return u;
+};
+
 window.cleanChannelTitle = function(name) {
     if (!name) return "";
     var t = String(name).trim();
@@ -3179,10 +3199,7 @@ window.cleanChannelTitle = function(name) {
 
                 const defaultIcon = itemType === "movies" ? "🎬" : (itemType === "series" ? "🍿" : "📺");
 
-                let logoSrc = st.logo || "";
-                if (logoSrc && logoSrc.startsWith("http://")) {
-                    logoSrc = "https://wsrv.nl/?url=" + encodeURIComponent(logoSrc) + "&default=1";
-                }
+                let logoSrc = window.sanitizeChannelLogoUrl ? window.sanitizeChannelLogoUrl(st.logo) : (st.logo || "");
 
                 if (logoSrc) {
                     const img = document.createElement("img");
@@ -5761,7 +5778,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "4.0.0";
+    window.ALBASEM_VERSION = "4.1.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -5800,12 +5817,8 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
         if (!Array.isArray(itemsInGroup)) return "";
         for (let i = 0; i < itemsInGroup.length; i++) {
             const logo = (itemsInGroup[i].logo || "").trim();
-            if (logo && (logo.startsWith("http://") || logo.startsWith("https://"))) {
-                if (logo.startsWith("http://")) {
-                    return "https://wsrv.nl/?url=" + encodeURIComponent(logo) + "&default=1";
-                }
-                return logo;
-            }
+            const cleanLogo = window.sanitizeChannelLogoUrl ? window.sanitizeChannelLogoUrl(logo) : logo;
+            if (cleanLogo) return cleanLogo;
         }
         return "";
     }
