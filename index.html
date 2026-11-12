@@ -2227,7 +2227,7 @@ window.cleanChannelTitle = function(name) {
             <!-- شريط نطاق البحث الشامل الموحد بسطر واحد -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding: 0 10px; font-size: 12px; white-space: nowrap;">
                 <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: #94A3B8; user-select: none; font-size: 12px; font-weight: 500;">
-                    <input type="checkbox" id="chk_global_search" onchange="toggleGlobalSearchMode()" style="accent-color: #38BDF8; width: 14px; height: 14px; cursor: pointer; margin: 0;">
+                    <input type="checkbox" id="chk_global_search" checked onchange="toggleGlobalSearchMode()" style="accent-color: #38BDF8; width: 14px; height: 14px; cursor: pointer; margin: 0;">
                     <span id="txt_global_search_label" style="color: #94A3B8;">🌐 بحث شامل (الكل)</span>
                 </label>
                 <span style="color: #64748B; font-size: 11px; background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);">↵ إدخال</span>
@@ -5801,7 +5801,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "4.2.5";
+    window.ALBASEM_VERSION = "4.3.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -8022,7 +8022,7 @@ if (typeof origOpenPlayerForPing === "function") {
 
     function getCleanSearchKey(name) {
         let base = window.cleanChannelTitle ? window.cleanChannelTitle(name) : String(name || "");
-        return base.replace(/\(.*?\)|\[.*?\]/g, "")
+        return base.replace(/\(.*?\)|\[.*?\]|\|.*?\|/g, "").replace(/^[a-zA-Z]{2,4}[\s:\-_]+/g, "")
             .replace(/\b(4k|uhd|fhd|hd|sd|hevc|h265|1080p|720p|ar|ara|en|multi|sub|dub|مترجم|مدبلج|جودة|عالية)\b/gi, "")
             .replace(/[\-_:|]+/g, " ")
             .replace(/\s+/g, " ")
@@ -8470,6 +8470,83 @@ if (typeof origOpenPlayerForPing === "function") {
         window.updateFavoritesBadgeCount();
     });
 })();
+</script>
+<script>
+
+// === ALBASEM_DEFAULT_GLOBAL_SEARCH_AND_BANNER_FIX_START ===
+window.hideStuckAiSearchBanner = function() {
+    const sInp = document.getElementById("search_input");
+    const hasQuery = sInp && sInp.value.trim().length > 0;
+    if (hasQuery) return;
+
+    // إخفاء أي شريط ذكاء اصطناعي أو نتيجة بحث عالقة عندما يكون مربع البحث فارغاً
+    document.querySelectorAll("div, span, p").forEach(el => {
+        if (el.children.length <= 3 && el.innerText && el.innerText.includes("فهم الذكاء نيتك:")) {
+            el.style.display = "none";
+        }
+    });
+    const clearBtn = document.getElementById("btn_clear_search");
+    if (clearBtn) clearBtn.style.display = "none";
+};
+
+window.enforceDefaultGlobalSearch = function() {
+    const chk = document.getElementById("chk_global_search");
+    if (chk && !chk.checked) {
+        chk.checked = true;
+    }
+    if (typeof isGlobalSearch !== "undefined") {
+        isGlobalSearch = true;
+    }
+    const sInp = document.getElementById("search_input");
+    if (sInp) {
+        sInp.placeholder = "🌐 ابحث في كل الأقسام (مباشر، أفلام، مسلسلات)...";
+    }
+};
+
+window.resetSearchCompletely = function() {
+    const sInp = document.getElementById("search_input");
+    if (sInp) sInp.value = "";
+    if (typeof clearSearch === "function") {
+        try { clearSearch(); } catch (e) {}
+    }
+    window.enforceDefaultGlobalSearch();
+    window.hideStuckAiSearchBanner();
+    setTimeout(window.hideStuckAiSearchBanner, 60);
+};
+
+document.addEventListener("DOMContentLoaded", function() {
+    window.enforceDefaultGlobalSearch();
+    window.hideStuckAiSearchBanner();
+
+    const sInp = document.getElementById("search_input");
+    if (sInp) {
+        sInp.addEventListener("input", function() {
+            if (!this.value.trim()) {
+                window.hideStuckAiSearchBanner();
+            }
+        });
+    }
+
+    // تصفير البحث العالق تلقائياً عند تغيير السيرفر (فرز وتشغيل)
+    const origLoadAndParse = window.loadAndParse;
+    if (typeof origLoadAndParse === "function") {
+        window.loadAndParse = async function(forceRefresh) {
+            window.resetSearchCompletely();
+            return await origLoadAndParse.apply(this, arguments);
+        };
+    }
+
+    // تصفير الشريط الأخضر العالق عند فتح المفضلة أو الرجوع للباقات
+    const origOpenFav = window.openFavoritesView;
+    if (typeof origOpenFav === "function") {
+        window.openFavoritesView = function() {
+            window.resetSearchCompletely();
+            return origOpenFav.apply(this, arguments);
+        };
+    }
+});
+// === ALBASEM_DEFAULT_GLOBAL_SEARCH_AND_BANNER_FIX_END ===
+
 </script>
 <!-- ALBASEM_SMART_FAVORITES_END -->
 </body>
