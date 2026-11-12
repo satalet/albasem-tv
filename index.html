@@ -5801,7 +5801,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "4.3.0";
+    window.ALBASEM_VERSION = "4.4.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -8473,78 +8473,449 @@ if (typeof origOpenPlayerForPing === "function") {
 </script>
 <script>
 
-// === ALBASEM_DEFAULT_GLOBAL_SEARCH_AND_BANNER_FIX_START ===
-window.hideStuckAiSearchBanner = function() {
-    const sInp = document.getElementById("search_input");
-    const hasQuery = sInp && sInp.value.trim().length > 0;
-    if (hasQuery) return;
 
-    // إخفاء أي شريط ذكاء اصطناعي أو نتيجة بحث عالقة عندما يكون مربع البحث فارغاً
-    document.querySelectorAll("div, span, p").forEach(el => {
-        if (el.children.length <= 3 && el.innerText && el.innerText.includes("فهم الذكاء نيتك:")) {
-            el.style.display = "none";
+
+</script>
+<script>
+
+// === ALBASEM_DEFAULT_GLOBAL_SEARCH_AND_BANNER_FIX_START ===
+(function() {
+    // قاموس الذكاء الفوري ثنائي اللغة (يربط الأسماء العربية المختصرة والكاملة بأسمائها الإنجليزية على السيرفرات)
+    const SMART_MEDIA_DICTIONARY = [
+        { keys: ["الحبار", "حبار", "لعبة الحبار", "لعبه الحبار", "سكويد جيم", "سكويد غيم", "squid game"], label: "مسلسل لعبة الحبار | Squid Game", terms: ["squid game", "لعبة الحبار", "لعبه الحبار"] },
+        { keys: ["باب الحارة", "باب الحاره", "حارة الضبع"], label: "مسلسل باب الحارة | Bab Al Hara", terms: ["باب الحارة", "باب الحاره", "bab al hara"] },
+        { keys: ["البروفيسور", "لا كاسا", "لاكاسا", "سرقة المال", "بيت الورق", "la casa", "money heist"], label: "مسلسل البروفيسور | La Casa De Papel", terms: ["la casa de papel", "money heist", "البروفيسور", "لا كاسا"] },
+        { keys: ["صراع العروش", "حرب العروش", "جيم اوف ثرونز", "غيم اوف ثرونز", "game of thrones"], label: "صراع العروش | Game of Thrones", terms: ["game of thrones", "صراع العروش"] },
+        { keys: ["بيت التنين", "آل التنين", "هاوس اوف دراجون", "house of the dragon"], label: "بيت التنين | House of the Dragon", terms: ["house of the dragon", "بيت التنين"] },
+        { keys: ["بريكنج باد", "بريكنغ باد", "والتر وايت", "اختلال ضال", "breaking bad"], label: "Breaking Bad | بريكنج باد", terms: ["breaking bad", "بريكنج باد"] },
+        { keys: ["بيكي بلايندرز", "توماس شيلبي", "اقنعة بيكي", "peaky blinders"], label: "Peaky Blinders | بيكي بلايندرز", terms: ["peaky blinders", "بيكي بلايندرز"] },
+        { keys: ["فايكنج", "فايكنغ", "راغنار", "vikings"], label: "Vikings | الفايكنج", terms: ["vikings", "فايكنج", "الفايكنج"] },
+        { keys: ["الموتى السائرون", "ووكينج ديد", "walking dead"], label: "The Walking Dead | الموتى السائرون", terms: ["walking dead", "الموتى السائرون"] },
+        { keys: ["سترينجر", "اشياء غريبة", "اشياء غريبه", "stranger things"], label: "Stranger Things | أشياء غريبة", terms: ["stranger things", "أشياء غريبة", "اشياء غريبه"] },
+        { keys: ["بريزون بريك", "الهروب من السجن", "مايكل سكوفيلد", "prison break"], label: "Prison Break | الهروب من السجن", terms: ["prison break", "الهروب من السجن", "بريزون بريك"] },
+        { keys: ["فروم", "مسلسل من", "from"], label: "مسلسل From", terms: ["from"] },
+        { keys: ["دارك", "مسلسل ظلام", "dark"], label: "مسلسل Dark | دارك", terms: ["dark", "دارك"] },
+        { keys: ["ذا بويز", "الرفاق", "the boys"], label: "The Boys | ذا بويز", terms: ["the boys", "ذا بويز"] },
+        { keys: ["بلاك ميرور", "المرآة السوداء", "black mirror"], label: "Black Mirror | بلاك ميرور", terms: ["black mirror", "بلاك ميرور"] },
+        { keys: ["ارطغرل", "أرطغرل", "قيامة ارطغرل", "ertugrul"], label: "قيامة أرطغرل | Dirilis Ertugrul", terms: ["ارطغرل", "أرطغرل", "ertugrul"] },
+        { keys: ["المؤسس عثمان", "عثمان", "قيامة عثمان", "kurulus osman"], label: "المؤسس عثمان | Kurulus Osman", terms: ["عثمان", "osman"] },
+        { keys: ["الحفرة", "الحفره", "ياماش", "cukur"], label: "مسلسل الحفرة | Cukur", terms: ["الحفرة", "الحفره", "cukur"] },
+        { keys: ["وادي الذئاب", "مراد علمدار", "kurtlar vadisi"], label: "وادي الذئاب | Kurtlar Vadisi", terms: ["وادي الذئاب", "kurtlar vadisi"] },
+        { keys: ["جون ويك", "john wick"], label: "سلسلة أفلام John Wick", terms: ["john wick", "جون ويك"] },
+        { keys: ["هجوم العمالقة", "هجوم العمالقه", "اتاك اون تايتن", "attack on titan"], label: "هجوم العمالقة | Attack on Titan", terms: ["attack on titan", "shingeki", "هجوم العمالقة", "هجوم العمالقه"] },
+        { keys: ["ون بيس", "لوفي", "one piece"], label: "One Piece | ون بيس", terms: ["one piece", "ون بيس"] },
+        { keys: ["سولو ليفلينج", "سولو ليفيلينغ", "solo leveling"], label: "Solo Leveling | سولو ليفلينج", terms: ["solo leveling", "سولو ليفلينج"] },
+        { keys: ["بين سبورت", "بي ان", "بين", "bein"], label: "قنوات beIN Sports", terms: ["bein sport", "bein"] },
+        { keys: ["ام بي سي", "mbc"], label: "قنوات MBC", terms: ["mbc", "ام بي سي"] },
+        { keys: ["شاهد", "shahid"], label: "باقة شاهد VIP | Shahid", terms: ["shahid", "شاهد"] },
+        { keys: ["روتانا", "rotana"], label: "قنوات روتانا | Rotana", terms: ["rotana", "روتانا"] }
+    ];
+
+    function fastNorm(str) {
+        if (!str) return "";
+        return String(str)
+            .toLowerCase()
+            .replace(/[أإآ]/g, "ا")
+            .replace(/ة/g, "ه")
+            .replace(/ى/g, "ي")
+            .replace(/ؤ/g, "و")
+            .replace(/ئ/g, "ي")
+            .replace(/[\u064B-\u065F\u0640]/g, "")
+            .replace(/[|_\-.:،,()\[\]]+/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    // تجهيز شريط الذكاء الاصطناعي وإصلاح أي عنصر مخفي بداخله
+    function getOrCreateAiBanner() {
+        let bar = document.getElementById("albasem_smart_ai_bar");
+        if (!bar) {
+            // إخفاء أي شريط قديم معطوب يحتوي على 🧠✨ فارغة
+            document.querySelectorAll("div").forEach(el => {
+                if (el.id !== "albasem_smart_ai_bar" && el.children.length <= 3 && (el.innerText || "").includes("🧠")) {
+                    el.style.display = "none";
+                }
+            });
+            bar = document.createElement("div");
+            bar.id = "albasem_smart_ai_bar";
+            bar.style.cssText = "display:none; margin:8px auto 12px auto; padding:8px 14px; border-radius:10px; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.45); color:#10B981; font-size:12.5px; font-weight:800; text-align:center; max-width:960px;";
+            const searchBox = document.getElementById("search_input")?.closest(".v3-search-wrap") || document.getElementById("search_input")?.parentElement?.parentElement;
+            if (searchBox && searchBox.parentElement) {
+                searchBox.insertAdjacentElement("afterend", bar);
+            }
+        }
+        return bar;
+    }
+
+    window.showAiIntentBanner = function(text) {
+        const bar = getOrCreateAiBanner();
+        if (!bar) return;
+        // إخفاء أي شريط ذكاء قديم لمنع ظهور 🧠✨ فارغة
+        const oldBanner = document.getElementById("ai_search_banner") || document.getElementById("ai_intent_banner");
+        if (oldBanner) oldBanner.style.display = "none";
+
+        if (!text) {
+            bar.style.display = "none";
+            bar.innerHTML = "";
+        } else {
+            bar.innerHTML = `🧠✨ <span style="color:#34D399;">فهم الذكاء نيتك:</span> <span style="color:#F8FAFC;">${text}</span>`;
+            bar.style.display = "block";
+        }
+    };
+
+    window.enforceDefaultGlobalSearch = function() {
+        const chk = document.getElementById("chk_global_search");
+        if (chk && !chk.checked) chk.checked = true;
+        if (typeof isGlobalSearch !== "undefined") isGlobalSearch = true;
+        const sInp = document.getElementById("search_input");
+        if (sInp) sInp.placeholder = "🌐 ابحث في كل الأقسام (مباشر، أفلام، مسلسلات)...";
+    };
+
+    // مطابقة القاموس المحلي الذكي فوراً (0ms)
+    function expandQueryLocally(normQ) {
+        const phrases = [normQ];
+        let matchedLabels = [];
+
+        for (let i = 0; i < SMART_MEDIA_DICTIONARY.length; i++) {
+            const entry = SMART_MEDIA_DICTIONARY[i];
+            const hit = entry.keys.some(k => {
+                const nk = fastNorm(k);
+                return nk === normQ || (normQ.length >= 3 && (nk.includes(normQ) || normQ.includes(nk)));
+            });
+            if (hit) {
+                matchedLabels.push(entry.label);
+                entry.terms.forEach(t => {
+                    const nt = fastNorm(t);
+                    if (nt && !phrases.includes(nt)) phrases.push(nt);
+                });
+            }
+        }
+
+        // إذا كتب "لعبة X" أو "مسلسل X" أو "فيلم X"، نضيف أيضاً اسم العمل بدون الكلمة الأولى كعبارة مساعدة
+        const stripped = normQ.replace(/^(مسلسل|فيلم|فلم|برنامج|قناة|قناه|باقة|باقه)\s+/i, "").trim();
+        if (stripped && stripped !== normQ && !phrases.includes(stripped)) {
+            phrases.push(stripped);
+        }
+
+        return {
+            phrases: phrases,
+            bannerText: matchedLabels.length > 0 ? matchedLabels.join(" • ") : ""
+        };
+    }
+
+    // البحث الفائق السرعة عبر الكاش المفهرس (_norm) بدون تجميد المتصفح حتى مع 200,000 عنصر
+    function scanPoolsFast(phrases, pools) {
+        const phraseTokenSets = phrases
+            .map(p => p.split(" ").filter(Boolean))
+            .filter(arr => arr.length > 0);
+
+        if (phraseTokenSets.length === 0) return [];
+
+        const scoredMatches = [];
+        const MAX_COLLECT = 400; // سقف ذكي يمنع تجميد المتصفح عند البحث العام
+
+        for (let pIdx = 0; pIdx < pools.length; pIdx++) {
+            const poolObj = pools[pIdx];
+            const arr = poolObj.items;
+            const itemType = poolObj.type;
+            if (!Array.isArray(arr)) continue;
+
+            const len = arr.length;
+            for (let i = 0; i < len; i++) {
+                const item = arr[i];
+                if (!item) continue;
+
+                // فهرسة الاسم لمرة واحدة فقط في الذاكرة
+                if (item._normTitle === undefined) {
+                    const cleanT = window.cleanChannelTitle ? window.cleanChannelTitle(item.name || "") : (item.name || "");
+                    item._normTitle = fastNorm(cleanT);
+                    item._normRaw = fastNorm((item.name || "") + " " + (item.group || ""));
+                }
+
+                const nTitle = item._normTitle;
+                const nRaw = item._normRaw;
+
+                let bestScore = 0;
+
+                for (let sIdx = 0; sIdx < phraseTokenSets.length; sIdx++) {
+                    const tokens = phraseTokenSets[sIdx];
+                    const fullPhrase = phrases[sIdx];
+
+                    // فحص سريع: هل كل كلمات هذه العبارة موجودة في اسم العنصر؟
+                    let allInTitle = true;
+                    for (let t = 0; t < tokens.length; t++) {
+                        if (!nRaw.includes(tokens[t])) {
+                            allInTitle = false;
+                            break;
+                        }
+                    }
+                    if (!allInTitle) continue;
+
+                    // حساب درجة التطابق لترتيب النتائج الأهم أولاً (مثل Squid Game في المركز الأول)
+                    let score = (sIdx === 0) ? 120 : 100;
+                    if (nTitle === fullPhrase) {
+                        score += 1000;
+                    } else if (nTitle.startsWith(fullPhrase + " ") || nTitle.endsWith(" " + fullPhrase)) {
+                        score += 500;
+                    } else if (nTitle.includes(fullPhrase)) {
+                        score += 300;
+                    }
+                    // تفضيل المسلسلات والأفلام عند البحث عن عمل درامي
+                    if (itemType === "series") score += 25;
+                    if (itemType === "movies") score += 15;
+
+                    if (score > bestScore) bestScore = score;
+                }
+
+                if (bestScore > 0) {
+                    scoredMatches.push({ item, itemType, score: bestScore });
+                    if (scoredMatches.length >= MAX_COLLECT && bestScore < 400) {
+                        // استمرار الفحص فقط للتطابقات القوية جداً لتجنب البطء
+                    }
+                }
+            }
+        }
+
+        scoredMatches.sort((a, b) => b.score - a.score);
+        return scoredMatches.slice(0, 180);
+    }
+
+    function renderFastSearchResults(queryRaw, scoredResults) {
+        const sec = document.getElementById("packages_section");
+        if (sec) {
+            sec.style.display = "block";
+            sec.classList.add("v3-in-packages-grid");
+        }
+        const backBtn = document.getElementById("v3_btn_back_folders");
+        if (backBtn) backBtn.style.display = "inline-flex";
+
+        const labelEl = document.getElementById("v3_breadcrumb_label");
+        if (labelEl) {
+            labelEl.innerHTML = `🔍 نتائج البحث عن: <span style="color:#FFB703;">"${queryRaw}"</span> <span style="color:#38BDF8; font-size:11.5px;">(${scoredResults.length} نتيجة)</span>`;
+        }
+
+        const container = document.getElementById("items_container");
+        if (!container) return;
+        container.classList.add("v3-mode-channels");
+        container.classList.remove("v3-mode-packages");
+        container.innerHTML = "";
+
+        if (scoredResults.length === 0) {
+            container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:35px; color:#94A3B8;">لا توجد عناصر مطابقة للبحث.</div>`;
+            return;
+        }
+
+        const frag = document.createDocumentFragment();
+        const unlockedAdult = (typeof isAdultUnlocked !== "undefined") ? isAdultUnlocked : false;
+
+        scoredResults.forEach(({ item: st, itemType }) => {
+            if (!unlockedAdult && typeof isAdultContent === "function" && isAdultContent(st.name + " " + st.group)) {
+                return;
+            }
+
+            const card = document.createElement("div");
+            card.className = "item-card";
+
+            const poster = document.createElement("div");
+            poster.className = "item-poster";
+            poster.style.position = "relative";
+            poster.onclick = () => {
+                if (itemType === "series") openSeriesModal(st);
+                else openWebPlayer(st.url, st.name);
+            };
+
+            const playBadge = document.createElement("div");
+            playBadge.className = "play-badge";
+            playBadge.innerText = "▶";
+            poster.appendChild(playBadge);
+
+            // نجمة المفضلة
+            const favStarBtn = document.createElement("button");
+            favStarBtn.type = "button";
+            favStarBtn.className = "albasem-fav-star";
+            const isFavNow = window.isItemInFavorites ? window.isItemInFavorites(st, itemType) : false;
+            favStarBtn.innerHTML = isFavNow ? "⭐" : "☆";
+            if (isFavNow) favStarBtn.classList.add("is-fav");
+            favStarBtn.onclick = (ev) => {
+                ev.preventDefault();
+                ev.stopPropagation();
+                if (window.toggleFavoriteItem) {
+                    const added = window.toggleFavoriteItem(st, itemType);
+                    favStarBtn.innerHTML = added ? "⭐" : "☆";
+                    favStarBtn.classList.toggle("is-fav", added);
+                }
+            };
+            poster.appendChild(favStarBtn);
+
+            // شارة القسم (مسلسل / فيلم / مباشر)
+            const typeBadge = document.createElement("span");
+            typeBadge.style.cssText = "position:absolute; top:6px; right:6px; padding:2px 7px; border-radius:6px; font-size:10px; font-weight:800; z-index:5; color:#fff;";
+            if (itemType === "series") {
+                typeBadge.style.background = "rgba(139,92,246,0.9)";
+                typeBadge.innerText = "🍿 مسلسل";
+            } else if (itemType === "movies") {
+                typeBadge.style.background = "rgba(245,158,11,0.9)";
+                typeBadge.style.color = "#000";
+                typeBadge.innerText = "🎬 فيلم";
+            } else {
+                typeBadge.style.background = "rgba(2,132,199,0.9)";
+                typeBadge.innerText = "📺 مباشر";
+            }
+            poster.appendChild(typeBadge);
+
+            const defaultIcon = itemType === "movies" ? "🎬" : (itemType === "series" ? "🍿" : "📺");
+            const cleanLogo = window.sanitizeChannelLogoUrl ? window.sanitizeChannelLogoUrl(st.logo) : (st.logo || "");
+            if (cleanLogo) {
+                const img = document.createElement("img");
+                img.src = cleanLogo;
+                img.loading = "lazy";
+                img.onerror = () => {
+                    img.style.display = "none";
+                    const nl = document.createElement("div");
+                    nl.className = "no-logo";
+                    nl.innerText = defaultIcon;
+                    poster.appendChild(nl);
+                };
+                poster.appendChild(img);
+            } else {
+                const nl = document.createElement("div");
+                nl.className = "no-logo";
+                nl.innerText = defaultIcon;
+                poster.appendChild(nl);
+            }
+
+            const info = document.createElement("div");
+            info.className = "item-info";
+            info.onclick = poster.onclick;
+            const cleanTitle = window.cleanChannelTitle ? window.cleanChannelTitle(st.name) : st.name;
+            info.innerHTML = `
+                <div class="item-title" title="${st.name}">${cleanTitle}</div>
+                <div style="font-size:10px; color:#FFB703; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">📁 ${st.group || "عام"}</div>
+            `;
+
+            card.appendChild(poster);
+            card.appendChild(info);
+            frag.appendChild(card);
+        });
+
+        container.appendChild(frag);
+    }
+
+    let activeSearchAbort = null;
+
+    window.executeSearch = async function() {
+        const sInp = document.getElementById("search_input");
+        const rawQ = (sInp ? sInp.value : "").trim();
+        const clearBtn = document.getElementById("btn_clear_search");
+
+        if (!rawQ) {
+            window.clearSearch();
+            return;
+        }
+        if (clearBtn) clearBtn.style.display = "flex";
+
+        window.v3ViewMode = "channels";
+        const normQ = fastNorm(rawQ);
+        const localExp = expandQueryLocally(normQ);
+
+        if (localExp.bannerText) {
+            window.showAiIntentBanner(localExp.bannerText);
+        } else {
+            window.showAiIntentBanner("");
+        }
+
+        const chkGlobal = document.getElementById("chk_global_search");
+        const globalMode = chkGlobal ? chkGlobal.checked : true;
+
+        const pools = globalMode
+            ? [
+                { type: "series", items: rawData.series || [] },
+                { type: "movies", items: rawData.movies || [] },
+                { type: "live", items: rawData.live || [] }
+              ]
+            : [{ type: currentTab || "live", items: rawData[currentTab || "live"] || [] }];
+
+        // 1. فحص فوري فائق السرعة (أقل من 15ms) بالقاموس المدمج
+        const initialHits = scanPoolsFast(localExp.phrases, pools);
+        renderFastSearchResults(rawQ, initialHits);
+
+        // 2. استشارة السيرفر الذكي بالخلفية فقط إذا لم تكن الكلمة في القاموس المباشر أو النتائج قليلة
+        if (activeSearchAbort) {
+            try { activeSearchAbort.abort(); } catch (e) {}
+        }
+        activeSearchAbort = new AbortController();
+
+        try {
+            const res = await fetch("https://albasem-tv.duckdns.org/api/ai_search?q=" + encodeURIComponent(rawQ), {
+                signal: activeSearchAbort.signal
+            });
+            const d = await res.json();
+            if (sInp && sInp.value.trim() !== rawQ) return;
+
+            if (d && Array.isArray(d.keywords) && d.keywords.length > 0) {
+                let addedNew = false;
+                const combinedPhrases = [...localExp.phrases];
+                d.keywords.forEach(kw => {
+                    const nkw = fastNorm(kw);
+                    if (nkw && nkw.length >= 2 && !combinedPhrases.includes(nkw)) {
+                        combinedPhrases.push(nkw);
+                        addedNew = true;
+                    }
+                });
+
+                const aiLabel = localExp.bannerText || d.keywords.slice(0, 5).join(" | ");
+                window.showAiIntentBanner(aiLabel);
+
+                if (addedNew) {
+                    const updatedHits = scanPoolsFast(combinedPhrases, pools);
+                    renderFastSearchResults(rawQ, updatedHits);
+                }
+            }
+        } catch (e) {}
+    };
+
+    window.clearSearch = function() {
+        if (activeSearchAbort) {
+            try { activeSearchAbort.abort(); } catch (e) {}
+        }
+        const sInp = document.getElementById("search_input");
+        if (sInp) sInp.value = "";
+        const clearBtn = document.getElementById("btn_clear_search");
+        if (clearBtn) clearBtn.style.display = "none";
+        window.showAiIntentBanner("");
+
+        if (window.v3ViewMode !== "favorites") {
+            window.v3ViewMode = "packages";
+            if (typeof buildPackagesBar === "function") buildPackagesBar();
+            if (typeof renderItems === "function") renderItems();
+        }
+    };
+
+    window.resetSearchCompletely = function() {
+        window.clearSearch();
+        window.enforceDefaultGlobalSearch();
+    };
+
+    document.addEventListener("DOMContentLoaded", function() {
+        window.enforceDefaultGlobalSearch();
+        window.showAiIntentBanner("");
+
+        const sInp = document.getElementById("search_input");
+        if (sInp) {
+            sInp.onkeydown = function(e) {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    window.executeSearch();
+                }
+            };
+            sInp.addEventListener("input", function() {
+                if (!this.value.trim()) {
+                    window.clearSearch();
+                }
+            });
         }
     });
-    const clearBtn = document.getElementById("btn_clear_search");
-    if (clearBtn) clearBtn.style.display = "none";
-};
-
-window.enforceDefaultGlobalSearch = function() {
-    const chk = document.getElementById("chk_global_search");
-    if (chk && !chk.checked) {
-        chk.checked = true;
-    }
-    if (typeof isGlobalSearch !== "undefined") {
-        isGlobalSearch = true;
-    }
-    const sInp = document.getElementById("search_input");
-    if (sInp) {
-        sInp.placeholder = "🌐 ابحث في كل الأقسام (مباشر، أفلام، مسلسلات)...";
-    }
-};
-
-window.resetSearchCompletely = function() {
-    const sInp = document.getElementById("search_input");
-    if (sInp) sInp.value = "";
-    if (typeof clearSearch === "function") {
-        try { clearSearch(); } catch (e) {}
-    }
-    window.enforceDefaultGlobalSearch();
-    window.hideStuckAiSearchBanner();
-    setTimeout(window.hideStuckAiSearchBanner, 60);
-};
-
-document.addEventListener("DOMContentLoaded", function() {
-    window.enforceDefaultGlobalSearch();
-    window.hideStuckAiSearchBanner();
-
-    const sInp = document.getElementById("search_input");
-    if (sInp) {
-        sInp.addEventListener("input", function() {
-            if (!this.value.trim()) {
-                window.hideStuckAiSearchBanner();
-            }
-        });
-    }
-
-    // تصفير البحث العالق تلقائياً عند تغيير السيرفر (فرز وتشغيل)
-    const origLoadAndParse = window.loadAndParse;
-    if (typeof origLoadAndParse === "function") {
-        window.loadAndParse = async function(forceRefresh) {
-            window.resetSearchCompletely();
-            return await origLoadAndParse.apply(this, arguments);
-        };
-    }
-
-    // تصفير الشريط الأخضر العالق عند فتح المفضلة أو الرجوع للباقات
-    const origOpenFav = window.openFavoritesView;
-    if (typeof origOpenFav === "function") {
-        window.openFavoritesView = function() {
-            window.resetSearchCompletely();
-            return origOpenFav.apply(this, arguments);
-        };
-    }
-});
+})();
 // === ALBASEM_DEFAULT_GLOBAL_SEARCH_AND_BANNER_FIX_END ===
 
 </script>
