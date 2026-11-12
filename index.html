@@ -2203,6 +2203,7 @@ window.cleanChannelTitle = function(name) {
                         </button>
                     </div>
                     <div class="v3-nav-left-btns">
+                        <button type="button" id="btn_open_favorites" onclick="window.openFavoritesView()" class="v3-btn-fav">⭐ المفضلة (<span id="fav_count_badge">0</span>)</button>
                         <button id="btn_adult_lock" onclick="toggleAdultLock()" class="v3-btn-lock">🔒 عائلي</button>
                     </div>
                 </div>
@@ -2914,6 +2915,7 @@ window.cleanChannelTitle = function(name) {
 
         const wasClosed = !modal || modal.style.display === "none";
         titleEl.innerText = "🎬 " + item.name;
+        if (window.syncSeriesModalFavBtn) window.syncSeriesModalFavBtn(item);
         seasonsBar.innerHTML = "";
         epList.innerHTML = "<div style='color:#38BDF8; text-align:center; grid-column:1/-1; padding:20px;'>⏳ جاري جلب المواسم والحلقات من السيرفر...</div>";
         modal.style.display = "flex";
@@ -3196,6 +3198,24 @@ window.cleanChannelTitle = function(name) {
                 playBadge.className = "play-badge";
                 playBadge.innerText = "▶";
                 poster.appendChild(playBadge);
+
+                const favStarBtn = document.createElement("button");
+                favStarBtn.type = "button";
+                favStarBtn.className = "albasem-fav-star";
+                const isFavNow = window.isItemInFavorites ? window.isItemInFavorites(st, itemType) : false;
+                favStarBtn.innerHTML = isFavNow ? "⭐" : "☆";
+                favStarBtn.title = isFavNow ? "إزالة من المفضلة" : "إضافة للمفضلة الذكية";
+                if (isFavNow) favStarBtn.classList.add("is-fav");
+                favStarBtn.onclick = (ev) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    if (window.toggleFavoriteItem) {
+                        const added = window.toggleFavoriteItem(st, itemType);
+                        favStarBtn.innerHTML = added ? "⭐" : "☆";
+                        favStarBtn.classList.toggle("is-fav", added);
+                    }
+                };
+                poster.appendChild(favStarBtn);
 
                 const defaultIcon = itemType === "movies" ? "🎬" : (itemType === "series" ? "🍿" : "📺");
 
@@ -4602,7 +4622,10 @@ function toggleLinksHub() {
         <div class="modal-content" style="max-width:750px; max-height:85vh; overflow-y:auto;">
             <div class="modal-close" onclick="closeSeriesModal()">&times;</div>
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; padding-left:30px;">
-                <h3 id="series_modal_title" style="color:#FFB703; margin:0;">🎬 حلقات المسلسل</h3>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <h3 id="series_modal_title" style="color:#FFB703; margin:0;">🎬 حلقات المسلسل</h3>
+                    <button type="button" id="btn_series_modal_fav" onclick="window.toggleCurrentModalSeriesFav()" style="background:rgba(255,183,3,0.15); border:1px solid #FFB703; color:#FFB703; border-radius:8px; padding:4px 10px; font-size:11.5px; font-weight:bold; cursor:pointer;">☆ أضف للمفضلة</button>
+                </div>
             </div>
             <div id="series_seasons_bar" style="display:flex; gap:8px; overflow-x:auto; margin-bottom:14px; padding-bottom:4px;"></div>
             <div id="series_episodes_list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:10px;">
@@ -5778,7 +5801,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "4.1.0";
+    window.ALBASEM_VERSION = "4.2.5";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -7901,5 +7924,553 @@ if (typeof origOpenPlayerForPing === "function") {
 
 </script>
 <!-- ALBASEM_ACTIVE_CODES_V1_END -->
+<!-- ALBASEM_SMART_FAVORITES_START -->
+<style>
+.v3-btn-fav {
+    height: 30px !important;
+    padding: 0 10px !important;
+    border-radius: 8px !important;
+    font-size: 11.5px !important;
+    font-weight: 800 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+    background: rgba(255, 183, 3, 0.16) !important;
+    color: #FFB703 !important;
+    border: 1px solid rgba(255, 183, 3, 0.45) !important;
+    transition: 0.2s !important;
+}
+.v3-btn-fav:hover, .v3-btn-fav.active {
+    background: #FFB703 !important;
+    color: #000 !important;
+}
+@media (max-width: 640px) {
+    .v3-btn-fav {
+        height: 27px !important;
+        padding: 0 7px !important;
+        font-size: 10.5px !important;
+        border-radius: 7px !important;
+    }
+}
+.albasem-fav-star {
+    position: absolute !important;
+    top: 6px !important;
+    left: 6px !important;
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    max-width: 30px !important;
+    border-radius: 8px !important;
+    background: rgba(11, 14, 20, 0.86) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    color: #CBD5E1 !important;
+    font-size: 15px !important;
+    line-height: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    z-index: 7 !important;
+    transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6) !important;
+}
+.albasem-fav-star:hover, .albasem-fav-star.is-fav {
+    border-color: #FFB703 !important;
+    color: #FFB703 !important;
+    background: rgba(255, 183, 3, 0.22) !important;
+    transform: scale(1.08) !important;
+}
+.albasem-fav-badge {
+    position: absolute !important;
+    bottom: 5px !important;
+    right: 5px !important;
+    font-size: 9.5px !important;
+    font-weight: 800 !important;
+    padding: 2px 6px !important;
+    border-radius: 5px !important;
+    z-index: 4 !important;
+    pointer-events: none !important;
+    width: auto !important;
+    max-width: 92% !important;
+}
+</style>
+
+<script>
+(function() {
+    const FAV_STORAGE_KEY = "albasem_smart_favorites_v1";
+
+    function getFavoritesList() {
+        try {
+            const parsed = JSON.parse(localStorage.getItem(FAV_STORAGE_KEY) || "[]");
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function saveFavoritesList(list) {
+        try {
+            localStorage.setItem(FAV_STORAGE_KEY, JSON.stringify(list));
+        } catch (e) {}
+        window.updateFavoritesBadgeCount();
+    }
+
+    function getCleanSearchKey(name) {
+        let base = window.cleanChannelTitle ? window.cleanChannelTitle(name) : String(name || "");
+        return base.replace(/\(.*?\)|\[.*?\]/g, "")
+            .replace(/\b(4k|uhd|fhd|hd|sd|hevc|h265|1080p|720p|ar|ara|en|multi|sub|dub|مترجم|مدبلج|جودة|عالية)\b/gi, "")
+            .replace(/[\-_:|]+/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    function getItemUniqueId(item, type) {
+        const clean = getCleanSearchKey(item.name || "").toLowerCase();
+        return `${type || "live"}::${clean || String(item.name || "").trim().toLowerCase()}`;
+    }
+
+    window.updateFavoritesBadgeCount = function() {
+        const count = getFavoritesList().length;
+        const badge = document.getElementById("fav_count_badge");
+        if (badge) badge.innerText = count;
+    };
+
+    window.isItemInFavorites = function(item, type) {
+        if (!item) return false;
+        const id = getItemUniqueId(item, type || currentTab);
+        return getFavoritesList().some(f => f.id === id);
+    };
+
+    window.toggleFavoriteItem = function(item, type) {
+        if (!item) return false;
+        const itemType = type || item.type || currentTab || "live";
+        const list = getFavoritesList();
+        const id = getItemUniqueId(item, itemType);
+        const idx = list.findIndex(f => f.id === id);
+
+        if (idx !== -1) {
+            list.splice(idx, 1);
+            saveFavoritesList(list);
+            if (typeof showToast === "function") showToast("🗑️ تمت الإزالة من المفضلة");
+            if (window.v3ViewMode === "favorites") window.openFavoritesView();
+            return false;
+        }
+
+        const currentServer = (document.getElementById("iptv_url")?.value || localStorage.getItem("albasem_url") || "").trim();
+        list.unshift({
+            id: id,
+            type: itemType,
+            name: item.name || "بدون اسم",
+            clean_name: getCleanSearchKey(item.name || ""),
+            logo: item.logo || "",
+            group: item.group || "عام",
+            url: item.url || "",
+            series_id: item.series_id || "",
+            origin_server: item.origin_server || currentServer,
+            added_at: Date.now()
+        });
+        saveFavoritesList(list);
+        if (typeof showToast === "function") showToast("⭐ تمت الإضافة إلى المفضلة الذكية!");
+        return true;
+    };
+
+    window.syncSeriesModalFavBtn = function(item) {
+        const btn = document.getElementById("btn_series_modal_fav");
+        if (!btn || !item) return;
+        const exists = window.isItemInFavorites(item, "series");
+        btn.innerHTML = exists ? "⭐ في المفضلة (إزالة)" : "☆ أضف للمفضلة";
+        btn.style.background = exists ? "rgba(255,183,3,0.28)" : "rgba(255,183,3,0.12)";
+    };
+
+    window.toggleCurrentModalSeriesFav = function() {
+        if (!window.currentViewingSeries) return;
+        window.toggleFavoriteItem(window.currentViewingSeries, "series");
+        window.syncSeriesModalFavBtn(window.currentViewingSeries);
+    };
+
+    function findMatchInCurrentServer(favItem) {
+        const pool = (typeof rawData !== "undefined" && Array.isArray(rawData[favItem.type])) ? rawData[favItem.type] : [];
+        if (pool.length === 0) return null;
+
+        const targetExact = String(favItem.name || "").trim().toLowerCase();
+        const targetClean = String(favItem.clean_name || getCleanSearchKey(favItem.name)).toLowerCase();
+
+        if (favItem.type === "series" && favItem.series_id) {
+            const curSrv = (document.getElementById("iptv_url")?.value || localStorage.getItem("albasem_url") || "").trim();
+            if (favItem.origin_server === curSrv) {
+                const byId = pool.find(x => String(x.series_id) === String(favItem.series_id));
+                if (byId) return byId;
+            }
+        }
+
+        let hit = pool.find(x => String(x.name || "").trim().toLowerCase() === targetExact);
+        if (hit) return hit;
+
+        if (targetClean && targetClean.length >= 2) {
+            hit = pool.find(x => getCleanSearchKey(x.name || "").toLowerCase() === targetClean);
+            if (hit) return hit;
+
+            hit = pool.find(x => getCleanSearchKey(x.name || "").toLowerCase().includes(targetClean));
+            if (hit) return hit;
+        }
+        return null;
+    }
+
+    function renderFallbackSearchBoxInModal(containerEl, searchName) {
+        if (!containerEl) return;
+        containerEl.innerHTML = "";
+        const wrap = document.createElement("div");
+        wrap.style.cssText = "grid-column:1/-1; text-align:center; padding:22px;";
+
+        const msg = document.createElement("div");
+        msg.style.cssText = "color:#EF4444; margin-bottom:12px; font-weight:bold; font-size:13px;";
+        msg.innerText = "⚠️ السيرفر القديم الذي حُفظ منه هذا المسلسل غير متاح حالياً.";
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.style.cssText = "background:linear-gradient(135deg,#0284C7,#0369A1); color:#fff; border:1px solid #38BDF8; border-radius:9px; padding:10px 18px; font-weight:bold; cursor:pointer; font-size:13px;";
+        btn.innerText = "🔍 بحث ذكي عن المسلسل في السيرفر الجديد";
+        btn.onclick = function() {
+            closeSeriesModal(true);
+            window.smartSearchFallback(searchName);
+        };
+
+        wrap.appendChild(msg);
+        wrap.appendChild(btn);
+        containerEl.appendChild(wrap);
+    }
+
+    async function fetchSeriesEpisodesDirect(serverUrl, favItem, isOriginFallback) {
+        const modal = document.getElementById("series_modal");
+        const titleEl = document.getElementById("series_modal_title");
+        const seasonsBar = document.getElementById("series_seasons_bar");
+        const epList = document.getElementById("series_episodes_list");
+
+        window.currentViewingSeries = favItem;
+        if (window.syncSeriesModalFavBtn) window.syncSeriesModalFavBtn(favItem);
+        if (titleEl) titleEl.innerText = "🎬 " + favItem.name + (isOriginFallback ? " (من المصدر الأصلي)" : "");
+        if (seasonsBar) seasonsBar.innerHTML = "";
+        if (epList) {
+            epList.innerHTML = `<div style='color:#38BDF8; text-align:center; grid-column:1/-1; padding:20px;'>⏳ ${isOriginFallback ? "المسلسل غير موجود بالسيرفر الجديد، جاري جلبه من السيرفر الأصلي..." : "جاري جلب المواسم والحلقات..."}</div>`;
+        }
+        if (modal) modal.style.display = "flex";
+
+        try {
+            const res = await fetch("https://albasem-tv.duckdns.org/api/series_info", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: serverUrl, series_id: favItem.series_id })
+            });
+            const d = await res.json();
+            if (d && d.success && d.episodes && Object.keys(d.episodes).length > 0) {
+                currentSeriesData = d.episodes;
+                renderSeriesSeasons(d.episodes, favItem.name);
+                if (typeof showToast === "function") {
+                    showToast(isOriginFallback ? "✅ تم استرجاع حلقات المسلسل من السيرفر الأصلي!" : "✅ تم فتح حلقات المسلسل!");
+                }
+                return true;
+            }
+        } catch (e) {}
+
+        renderFallbackSearchBoxInModal(epList, favItem.clean_name || favItem.name);
+        return false;
+    }
+
+    window.smartSearchFallback = async function(query, targetType) {
+        const cleanQ = String(query || "").trim();
+        if (!cleanQ) return;
+
+        const curServer = (document.getElementById("iptv_url")?.value || localStorage.getItem("albasem_url") || "").trim();
+        if (targetType && ["live", "movies", "series"].includes(targetType)) {
+            const pool = (typeof rawData !== "undefined" && Array.isArray(rawData[targetType])) ? rawData[targetType] : [];
+            if (pool.length === 0 && curServer && typeof window.fetchSingleSectionSmart === "function") {
+                const preserved = {
+                    live: Array.isArray(rawData.live) ? [...rawData.live] : [],
+                    movies: Array.isArray(rawData.movies) ? [...rawData.movies] : [],
+                    series: Array.isArray(rawData.series) ? [...rawData.series] : []
+                };
+                await window.fetchSingleSectionSmart(curServer, targetType, preserved);
+            }
+        }
+
+        window.v3ViewMode = "channels";
+        const favBtn = document.getElementById("btn_open_favorites");
+        if (favBtn) favBtn.classList.remove("active");
+
+        const chk = document.getElementById("chk_global_search");
+        if (chk) {
+            chk.checked = true;
+            if (typeof toggleGlobalSearchMode === "function") toggleGlobalSearchMode();
+        }
+        const sInp = document.getElementById("search_input");
+        if (sInp) {
+            sInp.removeAttribute("readonly");
+            sInp.value = cleanQ;
+            if (typeof executeSearch === "function") executeSearch();
+        }
+    };
+
+    window.launchSmartFavorite = async function(favItem) {
+        if (!favItem) return;
+        const curServer = (document.getElementById("iptv_url")?.value || localStorage.getItem("albasem_url") || "").trim();
+        const sameServer = Boolean(curServer && favItem.origin_server && curServer === favItem.origin_server);
+
+        // الحالة 1: السيرفر الحالي هو نفسه السيرفر الذي حُفظ منه العنصر -> تشغيل فوري مباشر حتى لو لم يُفرز القسم بعد
+        if (sameServer) {
+            if (favItem.type === "series" && favItem.series_id) {
+                await fetchSeriesEpisodesDirect(curServer, favItem, false);
+                return;
+            }
+            if (favItem.url) {
+                openWebPlayer(favItem.url, favItem.name);
+                return;
+            }
+        }
+
+        // الحالة 2: السيرفر الأساسي تغيّر -> نتأكد أولاً من سحب بيانات القسم في السيرفر الجديد إن كانت فارغة
+        const sectionPool = (typeof rawData !== "undefined" && Array.isArray(rawData[favItem.type])) ? rawData[favItem.type] : [];
+        if (sectionPool.length === 0 && curServer && typeof window.fetchSingleSectionSmart === "function") {
+            const tabAr = favItem.type === "movies" ? "الأفلام" : (favItem.type === "series" ? "المسلسلات" : "المحطات");
+            if (typeof showToast === "function") showToast(`⚡ جاري البحث عن (${favItem.clean_name || favItem.name}) في قسم ${tabAr} بالسيرفر الجديد...`);
+            const preserved = {
+                live: Array.isArray(rawData.live) ? [...rawData.live] : [],
+                movies: Array.isArray(rawData.movies) ? [...rawData.movies] : [],
+                series: Array.isArray(rawData.series) ? [...rawData.series] : []
+            };
+            await window.fetchSingleSectionSmart(curServer, favItem.type, preserved);
+        }
+
+        // فحص التطابق في السيرفر الجديد
+        const matchInCurrent = findMatchInCurrentServer(favItem);
+        if (matchInCurrent) {
+            if (favItem.type === "series") {
+                if (typeof showToast === "function") showToast("✨ وُجد المسلسل في السيرفر الجديد! جاري فتح الحلقات...");
+                openSeriesModal(matchInCurrent);
+            } else {
+                if (typeof showToast === "function") showToast("✨ جاري التشغيل من السيرفر الجديد...");
+                openWebPlayer(matchInCurrent.url, matchInCurrent.name);
+            }
+            return;
+        }
+
+        // الحالة 3: غير موجود في السيرفر الجديد -> جلبه تلقائياً من السيرفر الأصلي المحفوظ بالخلفية
+        if (favItem.origin_server) {
+            if (favItem.type === "series" && favItem.series_id) {
+                await fetchSeriesEpisodesDirect(favItem.origin_server, favItem, true);
+                return;
+            } else if (favItem.url) {
+                if (typeof showToast === "function") showToast("🔄 غير موجود بالسيرفر الجديد — جاري التشغيل من السيرفر الأصلي...");
+                openWebPlayer(favItem.url, favItem.name);
+                return;
+            }
+        }
+
+        // الحالة 4: البحث الذكي الشامل كخيار أخير
+        if (typeof showToast === "function") showToast("🔍 جاري البحث الذكي الشامل في السيرفر الجديد...");
+        await window.smartSearchFallback(favItem.clean_name || favItem.name, favItem.type);
+    };
+
+    window.openFavoritesView = function() {
+        const linksSec = document.getElementById("links_view_section");
+        if (linksSec && linksSec.style.display === "block" && typeof switchMainTab === "function") {
+            switchMainTab(currentTab || "live");
+        }
+
+        window.v3ViewMode = "favorites";
+        const favBtn = document.getElementById("btn_open_favorites");
+        if (favBtn) favBtn.classList.add("active");
+
+        const sec = document.getElementById("packages_section");
+        if (sec) {
+            sec.style.display = "block";
+            sec.classList.add("v3-in-packages-grid");
+        }
+        const backBtn = document.getElementById("v3_btn_back_folders");
+        if (backBtn) backBtn.style.display = "inline-flex";
+
+        const list = getFavoritesList();
+        const labelEl = document.getElementById("v3_breadcrumb_label");
+        if (labelEl) {
+            labelEl.innerHTML = `⭐ المفضلة الذكية المحفوظة <span style="color:#FFB703;">(${list.length} عنصر)</span>`;
+        }
+
+        const container = document.getElementById("items_container");
+        if (!container) return;
+        container.classList.add("v3-mode-channels");
+        container.classList.remove("v3-mode-packages");
+        container.innerHTML = "";
+
+        if (list.length === 0) {
+            container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:45px 15px; color:#94A3B8; background:var(--bg-card); border-radius:12px; border:1px solid var(--border);">
+                <div style="font-size:36px; margin-bottom:8px;">⭐</div>
+                <div style="font-weight:bold; color:#F8FAFC;">قائمة المفضلة فارغة حالياً</div>
+                <div style="font-size:12px; margin-top:6px; color:#64748B;">اضغط على النجمة (☆) أعلى أي قناة أو فيلم أو مسلسل لحفظه هنا والوصول إليه فوراً حتى لو تغيّر السيرفر.</div>
+            </div>`;
+            return;
+        }
+
+        const curServer = (document.getElementById("iptv_url")?.value || localStorage.getItem("albasem_url") || "").trim();
+
+        list.forEach(fav => {
+            const matchNow = findMatchInCurrentServer(fav);
+            const isSameOrigin = Boolean(curServer && fav.origin_server && curServer === fav.origin_server);
+
+            const card = document.createElement("div");
+            card.className = "item-card";
+
+            const poster = document.createElement("div");
+            poster.className = "item-poster";
+            poster.style.position = "relative";
+            poster.style.cursor = "pointer";
+            poster.onclick = () => window.launchSmartFavorite(fav);
+
+            const playBadge = document.createElement("div");
+            playBadge.className = "play-badge";
+            playBadge.innerText = "▶";
+            poster.appendChild(playBadge);
+
+            const remBtn = document.createElement("button");
+            remBtn.type = "button";
+            remBtn.className = "albasem-fav-star is-fav";
+            remBtn.innerHTML = "⭐";
+            remBtn.title = "إزالة من المفضلة";
+            remBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.toggleFavoriteItem(fav, fav.type);
+            };
+            poster.appendChild(remBtn);
+
+            const srcBadge = document.createElement("span");
+            srcBadge.className = "albasem-fav-badge";
+            const typeIcon = fav.type === "movies" ? "🎬 فيلم" : (fav.type === "series" ? "🍿 مسلسل" : "📺 قناة");
+            if (matchNow || isSameOrigin) {
+                srcBadge.style.background = "rgba(16, 185, 129, 0.9)";
+                srcBadge.style.color = "#fff";
+                srcBadge.innerText = `${typeIcon} • جاهز`;
+            } else {
+                srcBadge.style.background = "rgba(245, 158, 11, 0.92)";
+                srcBadge.style.color = "#000";
+                srcBadge.innerText = `${typeIcon} • استرجاع ذكي`;
+            }
+            poster.appendChild(srcBadge);
+
+            const defaultIcon = fav.type === "movies" ? "🎬" : (fav.type === "series" ? "🍿" : "📺");
+            const cleanLogo = window.sanitizeChannelLogoUrl ? window.sanitizeChannelLogoUrl(fav.logo) : (fav.logo || "");
+            if (cleanLogo) {
+                const img = document.createElement("img");
+                img.src = cleanLogo;
+                img.loading = "lazy";
+                img.onerror = () => {
+                    img.style.display = "none";
+                    const nl = document.createElement("div");
+                    nl.className = "no-logo";
+                    nl.innerText = defaultIcon;
+                    poster.appendChild(nl);
+                };
+                poster.appendChild(img);
+            } else {
+                const nl = document.createElement("div");
+                nl.className = "no-logo";
+                nl.innerText = defaultIcon;
+                poster.appendChild(nl);
+            }
+
+            const info = document.createElement("div");
+            info.className = "item-info";
+            info.style.cursor = "pointer";
+            info.onclick = () => window.launchSmartFavorite(fav);
+
+            const titleDiv = document.createElement("div");
+            titleDiv.className = "item-title";
+            titleDiv.title = fav.name;
+            titleDiv.innerText = window.cleanChannelTitle ? window.cleanChannelTitle(fav.name) : fav.name;
+
+            const subRow = document.createElement("div");
+            subRow.style.cssText = "display:flex; align-items:center; justify-content:space-between; gap:4px; margin-top:3px;";
+
+            const grpSpan = document.createElement("span");
+            grpSpan.style.cssText = "font-size:10px; color:#38BDF8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
+            grpSpan.innerText = "📁 " + (fav.group || "مفضلة");
+
+            const searchAltBtn = document.createElement("button");
+            searchAltBtn.type = "button";
+            searchAltBtn.title = "بحث عن بدائل لهذا الاسم في السيرفر الجديد";
+            searchAltBtn.style.cssText = "background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.4); color:#38BDF8; border-radius:5px; padding:1px 6px; font-size:10px; font-weight:bold; cursor:pointer; flex-shrink:0;";
+            searchAltBtn.innerText = "🔍 بدائل";
+            searchAltBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.smartSearchFallback(fav.clean_name || fav.name, fav.type);
+            };
+
+            subRow.appendChild(grpSpan);
+            subRow.appendChild(searchAltBtn);
+            info.appendChild(titleDiv);
+            info.appendChild(subRow);
+
+            card.appendChild(poster);
+            card.appendChild(info);
+            container.appendChild(card);
+        });
+    };
+
+    // ربط renderItems لحماية عرض المفضلة من الاختفاء العشوائي
+    const prevRenderItems = window.renderItems;
+    window.renderItems = function() {
+        const q = (document.getElementById("search_input")?.value || "").trim();
+        const favBtn = document.getElementById("btn_open_favorites");
+        if (!q && window.v3ViewMode === "favorites") {
+            if (favBtn) favBtn.classList.add("active");
+            window.openFavoritesView();
+            return;
+        }
+        if (favBtn) favBtn.classList.remove("active");
+        if (typeof prevRenderItems === "function") prevRenderItems();
+    };
+
+    // دعم الخروج من المفضلة عبر زر الرجوع أو زر الباقات
+    const prevV3StepBack = window.v3StepBack;
+    window.v3StepBack = function(fromRightClick) {
+        if (window.v3ViewMode === "favorites") {
+            window.v3ViewMode = "packages";
+            const favBtn = document.getElementById("btn_open_favorites");
+            if (favBtn) favBtn.classList.remove("active");
+            buildPackagesBar();
+            renderItems();
+            if (typeof showToast === "function") showToast("📁 العودة لمجلد الباقات");
+            return true;
+        }
+        return prevV3StepBack ? prevV3StepBack(fromRightClick) : false;
+    };
+
+    window.addEventListener("popstate", function(e) {
+        const playerModal = document.getElementById("player_modal");
+        const seriesModal = document.getElementById("series_modal");
+        if ((playerModal && playerModal.style.display !== "none") || (seriesModal && seriesModal.style.display === "flex")) {
+            return;
+        }
+        if (window.v3ViewMode === "favorites") {
+            e.stopImmediatePropagation();
+            window.v3ViewMode = "packages";
+            const favBtn = document.getElementById("btn_open_favorites");
+            if (favBtn) favBtn.classList.remove("active");
+            buildPackagesBar();
+            renderItems();
+            if (typeof showToast === "function") showToast("📁 العودة لمجلد الباقات");
+        }
+    }, true);
+
+    document.addEventListener("DOMContentLoaded", () => {
+        window.updateFavoritesBadgeCount();
+    });
+})();
+</script>
+<!-- ALBASEM_SMART_FAVORITES_END -->
 </body>
 </html>
