@@ -5801,7 +5801,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "4.4.0";
+    window.ALBASEM_VERSION = "4.4.2";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -8528,20 +8528,22 @@ if (typeof origOpenPlayerForPing === "function") {
 
     // تجهيز شريط الذكاء الاصطناعي وإصلاح أي عنصر مخفي بداخله
     function getOrCreateAiBanner() {
+        // استخدام الشريط الأصلي الموجود داخل قسم البحث إن وجد، أو إنشاؤه داخل #packages_section حصراً
+        let origBar = document.getElementById("ai_search_banner") || document.getElementById("ai_intent_banner");
+        if (origBar) {
+            return origBar;
+        }
         let bar = document.getElementById("albasem_smart_ai_bar");
         if (!bar) {
-            // إخفاء أي شريط قديم معطوب يحتوي على 🧠✨ فارغة
-            document.querySelectorAll("div").forEach(el => {
-                if (el.id !== "albasem_smart_ai_bar" && el.children.length <= 3 && (el.innerText || "").includes("🧠")) {
-                    el.style.display = "none";
-                }
-            });
             bar = document.createElement("div");
             bar.id = "albasem_smart_ai_bar";
             bar.style.cssText = "display:none; margin:8px auto 12px auto; padding:8px 14px; border-radius:10px; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.45); color:#10B981; font-size:12.5px; font-weight:800; text-align:center; max-width:960px;";
-            const searchBox = document.getElementById("search_input")?.closest(".v3-search-wrap") || document.getElementById("search_input")?.parentElement?.parentElement;
-            if (searchBox && searchBox.parentElement) {
-                searchBox.insertAdjacentElement("afterend", bar);
+            const sInp = document.getElementById("search_input");
+            const pkgSec = document.getElementById("packages_section");
+            if (sInp && sInp.parentElement) {
+                sInp.parentElement.insertAdjacentElement("afterend", bar);
+            } else if (pkgSec) {
+                pkgSec.prepend(bar);
             }
         }
         return bar;
@@ -8550,11 +8552,10 @@ if (typeof origOpenPlayerForPing === "function") {
     window.showAiIntentBanner = function(text) {
         const bar = getOrCreateAiBanner();
         if (!bar) return;
-        // إخفاء أي شريط ذكاء قديم لمنع ظهور 🧠✨ فارغة
-        const oldBanner = document.getElementById("ai_search_banner") || document.getElementById("ai_intent_banner");
-        if (oldBanner) oldBanner.style.display = "none";
+        const linksSec = document.getElementById("links_view_section");
+        const inLinksView = linksSec && linksSec.style.display === "block";
 
-        if (!text) {
+        if (!text || inLinksView) {
             bar.style.display = "none";
             bar.innerHTML = "";
         } else {
