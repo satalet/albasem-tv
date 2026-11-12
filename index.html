@@ -5761,7 +5761,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "3.7.0";
+    window.ALBASEM_VERSION = "3.8.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -7088,9 +7088,11 @@ input:-webkit-autofill:focus {
         </div>
         
         <input type="text" id="admin_login_email" name="adm_usr_ custom" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" dir="ltr" placeholder="البريد الإلكتروني" autocomplete="off" style="width:100%; height:42px; background:#0B0E14; border:1px solid #334155; border-radius:9px; padding:0 12px; color:#fff; font-size:13.5px; margin-bottom:10px; outline:none;" />
-        <input type="text" id="admin_login_pass" name="adm_pwd_custom" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" dir="ltr" placeholder="كلمة المرور السرية..." style="-webkit-text-security:disc; width:100%; height:42px; background:#0B0E14; border:1px solid #334155; border-radius:9px; padding:0 12px; color:#FFB703; font-size:14px; margin-bottom:12px; outline:none;" />
+        <div style="position:relative; width:100%; margin-bottom:12px;">
+            <input type="text" id="admin_login_pass" name="adm_pwd_custom" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" dir="ltr" placeholder="كلمة المرور السرية..." style="-webkit-text-security:disc; width:100%; height:42px; background:#0B0E14; border:1px solid #334155; border-radius:9px; padding:0 42px 0 12px; color:#FFB703; font-size:14px; outline:none;" />
+            <button type="button" onclick="window.toggleAdminPwdVis('admin_login_pass', this)" title="إظهار / إخفاء كلمة المرور" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.06); border:1px solid #334155; color:#94A3B8; border-radius:6px; width:30px; height:28px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center;">👁️</button>
+        </div>
         <button type="button" id="btn_do_admin_login" onclick="window.performAdminEmailLogin()" style="width:100%; height:42px; background:linear-gradient(135deg, #FFB703, #D97706); color:#000; border:none; border-radius:9px; font-weight:900; font-size:14px; cursor:pointer;">🔓 دخول وحفظ على جهازي</button>
-        <button type="button" onclick="window.openChangePassModal()" style="width:100%; height:34px; margin-top:8px; background:transparent; color:#38BDF8; border:1px solid rgba(56,189,248,0.4); border-radius:8px; font-weight:bold; font-size:12px; cursor:pointer;">🔑 تغيير كلمة المرور الحالية</button>
         <div id="admin_login_err" style="display:none; margin-top:10px; color:#EF4444; font-size:12px; font-weight:bold;"></div>
     </div>
 </div>
@@ -7647,8 +7649,17 @@ input:-webkit-autofill:focus {
             <h3 style="color:#38BDF8; font-size:15.5px; margin:0;">🔑 تغيير كلمة مرور الإدارة</h3>
             <button type="button" onclick="document.getElementById('change_pass_modal').style.display='none'" style="background:rgba(239,68,68,0.2); border:1px solid #EF4444; color:#EF4444; border-radius:7px; width:28px; height:28px; font-weight:bold; cursor:pointer;">✕</button>
         </div>
-        <input type="text" id="cp_old_pass" name="cp_old_custom" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" dir="ltr" placeholder="كلمة المرور الحالية..." style="-webkit-text-security:disc; width:100%; height:42px; background:#0B0E14; border:1px solid #334155; border-radius:9px; padding:0 12px; color:#fff; font-size:13.5px; margin-bottom:10px; outline:none;" />
-        <input type="text" id="cp_new_pass" name="cp_new_custom" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" dir="ltr" placeholder="كلمة المرور الجديدة..." style="-webkit-text-security:disc; width:100%; height:42px; background:#0B0E14; border:1px solid #38BDF8; border-radius:9px; padding:0 12px; color:#FFB703; font-size:13.5px; margin-bottom:10px; outline:none;" />
+
+        <div style="position:relative; width:100%; margin-bottom:10px;">
+            <input type="text" id="cp_old_pass" name="cp_old_custom" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" dir="ltr" placeholder="كلمة المرور الحالية..." style="-webkit-text-security:disc; width:100%; height:42px; background:#0B0E14; border:1px solid #334155; border-radius:9px; padding:0 42px 0 12px; color:#fff; font-size:13.5px; outline:none;" />
+            <button type="button" onclick="window.toggleAdminPwdVis('cp_old_pass', this)" title="إظهار / إخفاء" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.06); border:1px solid #334155; color:#94A3B8; border-radius:6px; width:30px; height:28px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center;">👁️</button>
+        </div>
+
+        <div style="position:relative; width:100%; margin-bottom:10px;">
+            <input type="text" id="cp_new_pass" name="cp_new_custom" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" dir="ltr" placeholder="كلمة المرور الجديدة..." style="-webkit-text-security:disc; width:100%; height:42px; background:#0B0E14; border:1px solid #38BDF8; border-radius:9px; padding:0 42px 0 12px; color:#FFB703; font-size:13.5px; outline:none;" />
+            <button type="button" onclick="window.toggleAdminPwdVis('cp_new_pass', this)" title="إظهار / إخفاء" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.06); border:1px solid #334155; color:#94A3B8; border-radius:6px; width:30px; height:28px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center;">👁️</button>
+        </div>
+
         <input type="text" id="cp_new_email" name="cp_email_custom" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" dir="ltr" placeholder="تعديل الإيميل (اختياري - اتركه فارغاً للإبقاء ع الحالي)" style="width:100%; height:40px; background:#0B0E14; border:1px solid #334155; border-radius:9px; padding:0 12px; color:#94A3B8; font-size:12px; margin-bottom:12px; outline:none;" />
         <button type="button" id="btn_save_new_pass" onclick="window.submitAdminPasswordChange()" style="width:100%; height:42px; background:linear-gradient(135deg, #10B981, #059669); color:#fff; border:none; border-radius:9px; font-weight:900; font-size:14px; cursor:pointer;">💾 حفظ واعتماد كلمة المرور الجديدة</button>
         <div id="cp_status_msg" style="display:none; margin-top:10px; font-size:12px; font-weight:bold;"></div>
@@ -7656,11 +7667,40 @@ input:-webkit-autofill:focus {
 </div>
 
 <script>
+window.toggleAdminPwdVis = function(inputId, btnEl) {
+    const inp = document.getElementById(inputId);
+    if (!inp) return;
+    const isHidden = (inp.style.webkitTextSecurity === "disc" || inp.type === "password");
+    if (isHidden) {
+        inp.type = "text";
+        inp.style.webkitTextSecurity = "none";
+        if (btnEl) {
+            btnEl.innerText = "🙈";
+            btnEl.style.borderColor = "#FFB703";
+            btnEl.style.color = "#FFB703";
+        }
+    } else {
+        inp.style.webkitTextSecurity = "disc";
+        if (btnEl) {
+            btnEl.innerText = "👁️";
+            btnEl.style.borderColor = "#334155";
+            btnEl.style.color = "#94A3B8";
+        }
+    }
+    inp.focus();
+};
+
 window.openChangePassModal = function() {
+    if (!localStorage.getItem("albasem_admin_token")) {
+        alert("🔒 يجب تسجيل الدخول للإدارة أولاً!");
+        return;
+    }
     const m = document.getElementById("change_pass_modal");
     if (!m) return;
-    document.getElementById("cp_old_pass").value = "";
-    document.getElementById("cp_new_pass").value = "";
+    const oldInp = document.getElementById("cp_old_pass");
+    const newInp = document.getElementById("cp_new_pass");
+    if (oldInp) { oldInp.value = ""; oldInp.style.webkitTextSecurity = "disc"; }
+    if (newInp) { newInp.value = ""; newInp.style.webkitTextSecurity = "disc"; }
     document.getElementById("cp_new_email").value = "";
     const msg = document.getElementById("cp_status_msg");
     if (msg) msg.style.display = "none";
