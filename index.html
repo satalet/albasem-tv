@@ -5717,7 +5717,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "5.2.0";
+    window.ALBASEM_VERSION = "5.3.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -8049,17 +8049,13 @@ if (typeof origOpenPlayerForPing === "function") {
 <!-- ALBASEM_SIMPLE_LIGHT_ADDON_END -->
 <!-- ALBASEM_TV_REMOTE_NAV_START -->
 <style>
-/* إطار واضح ومميز لعنصر التلفزيون المحدد بالريموت */
-.tv-remote-focused,
-.item-card:focus-visible,
-button:focus-visible,
-input:focus-visible {
+.tv-remote-focused {
     outline: 3px solid #FFB703 !important;
     outline-offset: 2px !important;
-    box-shadow: 0 0 0 4px rgba(255, 183, 3, 0.35), 0 8px 20px rgba(0, 0, 0, 0.7) !important;
+    box-shadow: 0 0 0 4px rgba(255, 183, 3, 0.4), 0 8px 22px rgba(0, 0, 0, 0.75) !important;
     transform: translateY(-2px) scale(1.02) !important;
-    transition: transform 0.14s ease, box-shadow 0.14s ease !important;
-    z-index: 25 !important;
+    transition: transform 0.12s ease, box-shadow 0.12s ease !important;
+    z-index: 30 !important;
 }
 .tv-numpad-flash {
     background: #FFB703 !important;
@@ -8075,10 +8071,9 @@ input:focus-visible {
         const style = window.getComputedStyle(el);
         if (style.display === "none" || style.visibility === "hidden" || parseFloat(style.opacity) === 0) return false;
         const r = el.getBoundingClientRect();
-        return r.width > 5 && r.height > 5;
+        return r.width > 4 && r.height > 4;
     }
 
-    // استخراج الرقم (0-9) من أي زر رقمي على ريموت التلفزيون أو الكيبورد
     function extractRemoteDigit(e) {
         if (e.key && /^[0-9]$/.test(e.key)) return e.key;
         if (e.code) {
@@ -8093,72 +8088,130 @@ input:focus-visible {
         return null;
     }
 
-    // تهيئة العناصر القابلة للتنقل بالريموت حسب الشاشة المفتوحة حالياً
-    function getNavigableElements() {
-        const gate = document.getElementById("active_code_gate");
-        const adminAuth = document.getElementById("admin_auth_modal");
-        const codesAdmin = document.getElementById("codes_admin_modal");
-        const seriesModal = document.getElementById("series_modal");
+    // تقسيم مجموعة عناصر (مثل شبكة الباقات أو القنوات) إلى صفوف أفقية مرتبة من اليمين لليسار
+    function groupElementsIntoVisualRows(elements, yTolerance = 32) {
+        const valid = (elements || []).filter(isVisible);
+        if (valid.length === 0) return [];
 
-        // 1. نافذة تسجيل دخول الإدارة
-        if (adminAuth && isVisible(adminAuth)) {
-            return Array.from(adminAuth.querySelectorAll("input, button")).filter(isVisible);
-        }
+        const itemsWithPos = valid.map(el => {
+            const r = el.getBoundingClientRect();
+            return {
+                el,
+                docY: r.top + window.scrollY + r.height / 2,
+                centerX: r.left + r.width / 2
+            };
+        });
 
-        // 2. نافذة تفعيل كود الاشتراك
-        if (gate && isVisible(gate)) {
-            return Array.from(gate.querySelectorAll("button, input")).filter(isVisible);
-        }
+        itemsWithPos.sort((a, b) => a.docY - b.docY);
 
-        // 3. لوحة إدارة الكودات
-        if (codesAdmin && isVisible(codesAdmin)) {
-            return Array.from(codesAdmin.querySelectorAll("button, input, select")).filter(isVisible);
-        }
-
-        // 4. نافذة حلقات المسلسل
-        if (seriesModal && isVisible(seriesModal)) {
-            return Array.from(seriesModal.querySelectorAll("button, [onclick], #series_seasons_bar > *, #series_episodes_list > *")).filter(isVisible);
-        }
-
-        // 5. الشاشة الرئيسية للمنصة
-        const selectors = [
-            // كروت الأقسام الثلاثة الكبرى (المحطات / الأفلام / المسلسلات)
-            "[onclick*='switchMainTab']",
-            // أزرار التحكم العلوية (لوحة الإدارة إن كانت ظاهرة)
-            ".header button",
-            "[onclick*='loadAndParse']",
-            "[onclick*='toggleLinksView']",
-            // شريط التنقل (الباقات، الرئيسية، المفضلة، القفل العائلي)
-            "#v3_btn_back_folders",
-            "[onclick*='v3GoHome']",
-            "#btn_open_favorites",
-            "#btn_adult_lock",
-            // شريط البحث
-            "#search_input",
-            "[onclick*='executeSearch']",
-            "#btn_clear_search",
-            "#chk_global_search",
-            // كروت الباقات والقنوات والأفلام والمسلسلات
-            "#items_container > .item-card",
-            // عناصر قائمة السيرفرات إن كانت مفتوحة
-            "#links_view_section button",
-            "#links_view_section input"
-        ];
-
-        const rawList = document.querySelectorAll(selectors.join(", "));
-        const result = [];
-        const seen = new Set();
-
-        rawList.forEach(el => {
-            if (!seen.has(el) && isVisible(el)) {
-                seen.add(el);
-                if (!el.hasAttribute("tabindex")) {
-                    el.setAttribute("tabindex", "0");
-                }
-                result.push(el);
+        const rows = [];
+        itemsWithPos.forEach(item => {
+            let lastRow = rows[rows.length - 1];
+            if (!lastRow || Math.abs(item.docY - lastRow.avgY) > yTolerance) {
+                rows.push({ avgY: item.docY, items: [item] });
+            } else {
+                lastRow.items.push(item);
+                lastRow.avgY = lastRow.items.reduce((sum, x) => sum + x.docY, 0) / lastRow.items.length;
             }
         });
-        return result;
+
+        // ترتيب كل صف من اليسار إلى اليمين حسب إحداثي X على الشاشة
+        return rows.map(r => {
+            r.items.sort((a, b) => a.centerX - b.centerX);
+            return r.items.map(x => x.el);
+        });
+    }
+
+    // بناء خريطة الصفوف الكاملة للشاشة المفتوحة حالياً بالترتيب المنطقي من الأعلى للأسفل
+    function buildNavigationRows() {
+        const adminAuth = document.getElementById("admin_auth_modal");
+        const changePass = document.getElementById("change_pass_modal");
+        const gate = document.getElementById("active_code_gate");
+        const codesAdmin = document.getElementById("codes_admin_modal");
+        const seriesModal = document.getElementById("series_modal");
+        const scannerModal = document.getElementById("scanner_modal");
+
+        // 1. في حال فتح أي نافذة منبثقة، نحصر التنقل بداخلها فقط
+        const activeModal = [changePass, adminAuth, codesAdmin, seriesModal, scannerModal, gate].find(m => m && isVisible(m));
+        if (activeModal) {
+            let modalEls = [];
+            if (activeModal.id === "series_modal") {
+                modalEls = Array.from(activeModal.querySelectorAll(".modal-close, #series_seasons_bar button, #series_episodes_list .series-ep-row button"));
+            } else {
+                modalEls = Array.from(activeModal.querySelectorAll("input, button, select, textarea, .modal-close"));
+            }
+            return groupElementsIntoVisualRows(modalEls, 24);
+        }
+
+        // 2. الشاشة الرئيسية: بناء الصفوف بالترتيب الثابت من أعلى الصفحة لأسفلها
+        const rows = [];
+
+        function pushExplicitRow(selectorList) {
+            const els = [];
+            selectorList.forEach(sel => {
+                document.querySelectorAll(sel).forEach(el => {
+                    if (isVisible(el) && !els.includes(el)) els.push(el);
+                });
+            });
+            if (els.length > 0) {
+                els.sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+                rows.push(els);
+            }
+        }
+
+        // الصف 1: شريط أدوات الإدارة العلوي أو شريط اشتراك الزبون
+        pushExplicitRow([
+            ".search-box #iptv_url",
+            ".search-box #btn_parse_trigger",
+            ".search-box #btn_hub_toggle",
+            ".search-box .btn-ocr-open",
+            ".search-box label.btn-file",
+            ".search-box #btn_open_codes_admin",
+            ".search-box #btn_lock_admin_view"
+        ]);
+        pushExplicitRow(["#customer_sub_banner button"]);
+
+        // الصف 2: خيارات السحب السريع (إن كانت ظاهرة)
+        pushExplicitRow(["#chk_fetch_live", "#chk_fetch_movies", "#chk_fetch_series"]);
+
+        // الصف 3: الكروت الثلاثة الرئيسية (المحطات / الأفلام / المسلسلات)
+        pushExplicitRow(["#tab_live", "#tab_movies", "#tab_series"]);
+
+        // إذا كانت قائمة (سيرفراتي) مفتوحة
+        const linksSec = document.getElementById("links_view_section");
+        if (linksSec && isVisible(linksSec)) {
+            const linkEls = Array.from(linksSec.querySelectorAll("input, button, span[onclick]"));
+            groupElementsIntoVisualRows(linkEls, 26).forEach(r => rows.push(r));
+            return rows;
+        }
+
+        // الصف 4: شريط التنقل (الباقات، الرئيسية، المفضلة، القفل العائلي)
+        pushExplicitRow([
+            "#v3_btn_back_folders",
+            "#v3_btn_top_home",
+            "#btn_open_favorites",
+            "#btn_adult_lock"
+        ]);
+
+        // الصف 5: شريط أزرار الباقات الأفقي (عند فتح باقة فرعية)
+        const pkgChips = Array.from(document.querySelectorAll("#packages_bar .pkg-chip")).filter(isVisible);
+        if (pkgChips.length > 0) {
+            pkgChips.sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+            rows.push(pkgChips);
+        }
+
+        // الصف 6: كبسولة البحث (مربع البحث + زر مسح + زر بحث)
+        pushExplicitRow(["#search_input", "#btn_clear_search", "#btn_do_search"]);
+
+        // الصف 7: خيار البحث الشامل
+        pushExplicitRow(["#chk_global_search"]);
+
+        // الصفوف 8 وما بعدها: جميع مجلدات الباقات (.pkg-folder-card) أو كروت القنوات والأفلام (.item-card)
+        const gridCards = Array.from(document.querySelectorAll("#items_container > .pkg-folder-card, #items_container > .item-card")).filter(isVisible);
+        const cardRows = groupElementsIntoVisualRows(gridCards, 38);
+        cardRows.forEach(r => rows.push(r));
+
+        return rows;
     }
 
     function setRemoteFocus(el) {
@@ -8166,140 +8219,142 @@ input:focus-visible {
         document.querySelectorAll(".tv-remote-focused").forEach(x => x.classList.remove("tv-remote-focused"));
         if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "0");
         el.classList.add("tv-remote-focused");
+
+        // عدم فتح الكيبورد التلقائي عند مجرد المرور بالأسهم فوق خانة البحث
+        const isTextInput = (el.tagName === "INPUT" && el.type !== "checkbox");
+        if (!isTextInput) {
+            if (document.activeElement && document.activeElement.tagName === "INPUT") {
+                try { document.activeElement.blur(); } catch (e) {}
+            }
+            try { el.focus({ preventScroll: true }); } catch (e) {}
+        }
+
+        // تمرير الشاشة بسلاسة ليظهر العنصر بوضوح
         try {
-            el.focus({ preventScroll: true });
-        } catch (e) {}
-        try {
-            el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+            const rect = el.getBoundingClientRect();
+            if (el.id === "tab_live" || el.id === "tab_movies" || el.id === "tab_series" || el.closest(".search-box")) {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            } else if (rect.top < 95 || rect.bottom > window.innerHeight - 30) {
+                el.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+            }
         } catch (e) {}
     }
 
-    // خوارزمية التنقل المكاني ثنائية الأبعاد (يمين، شمال، فوق، تحت)
-    function moveSpatialFocus(direction) {
-        const candidates = getNavigableElements();
-        if (candidates.length === 0) return;
+    function findCurrentPosition(rows) {
+        let cur = document.querySelector(".tv-remote-focused") || document.activeElement;
+        if (!cur || cur === document.body) return null;
 
-        let current = document.querySelector(".tv-remote-focused") || document.activeElement;
-        if (!current || !candidates.includes(current)) {
-            const insideCard = current && current.closest ? current.closest(".item-card, [onclick*='switchMainTab']") : null;
-            if (insideCard && candidates.includes(insideCard)) {
-                current = insideCard;
-            } else {
-                setRemoteFocus(candidates[0]);
-                return;
-            }
+        for (let r = 0; r < rows.length; r++) {
+            const c = rows[r].indexOf(cur);
+            if (c !== -1) return { r, c, el: cur };
         }
 
-        const rA = current.getBoundingClientRect();
-        const ax = rA.left + rA.width / 2;
-        const ay = rA.top + rA.height / 2;
-
-        if (direction === "left" || direction === "right") {
-            let bestSameRow = null;
-            let bestSameRowDist = Infinity;
-
-            for (const c of candidates) {
-                if (c === current) continue;
-                const rB = c.getBoundingClientRect();
-                const bx = rB.left + rB.width / 2;
-                const by = rB.top + rB.height / 2;
-
-                // التحقق من وجود العنصر في نفس الصف الأفقي تقريباً
-                const maxH = Math.max(rA.height, rB.height);
-                const sameRow = Math.abs(by - ay) <= maxH * 0.65;
-                if (!sameRow) continue;
-
-                if (direction === "left" && bx < ax - 4) {
-                    const d = (ax - bx) + Math.abs(by - ay) * 2;
-                    if (d < bestSameRowDist) {
-                        bestSameRowDist = d;
-                        bestSameRow = c;
-                    }
-                } else if (direction === "right" && bx > ax + 4) {
-                    const d = (bx - ax) + Math.abs(by - ay) * 2;
-                    if (d < bestSameRowDist) {
-                        bestSameRowDist = d;
-                        bestSameRow = c;
-                    }
-                }
+        const parentCard = cur.closest ? cur.closest(".pkg-folder-card, .item-card, .portal-card") : null;
+        if (parentCard) {
+            for (let r = 0; r < rows.length; r++) {
+                const c = rows[r].indexOf(parentCard);
+                if (c !== -1) return { r, c, el: parentCard };
             }
+        }
+        return null;
+    }
 
-            if (bestSameRow) {
-                setRemoteFocus(bestSameRow);
-                return;
-            }
+    function moveByRowGrid(direction) {
+        const rows = buildNavigationRows();
+        if (rows.length === 0) return;
 
-            // التفاف تلقائي للسطر التالي/السابق داخل شبكة الكروت عند الوصول لنهاية السطر
-            const idx = candidates.indexOf(current);
-            if (direction === "left" && idx + 1 < candidates.length) {
-                setRemoteFocus(candidates[idx + 1]);
-            } else if (direction === "right" && idx - 1 >= 0) {
-                setRemoteFocus(candidates[idx - 1]);
+        const pos = findCurrentPosition(rows);
+        if (!pos) {
+            // البداية الافتراضية على كرت المحطات إن وجد، وإلا أول عنصر
+            const liveTab = document.getElementById("tab_live");
+            if (liveTab && isVisible(liveTab)) {
+                setRemoteFocus(liveTab);
+            } else {
+                setRemoteFocus(rows[0][0]);
             }
             return;
         }
 
-        if (direction === "up" || direction === "down") {
-            const verticalCandidates = [];
+        const curRow = rows[pos.r];
+        const curRect = pos.el.getBoundingClientRect();
+        const curCenterX = curRect.left + curRect.width / 2;
 
-            for (const c of candidates) {
-                if (c === current) continue;
-                const rB = c.getBoundingClientRect();
-                const bx = rB.left + rB.width / 2;
-                const by = rB.top + rB.height / 2;
+        // يمين / شمال داخل نفس الصف (مرتب بصرياً من اليسار لليمين حسب إحداثيات الشاشة)
+        if (direction === "left") {
+            if (pos.c - 1 >= 0) {
+                setRemoteFocus(curRow[pos.c - 1]);
+            } else if (pos.r + 1 < rows.length && (pos.el.classList.contains("pkg-folder-card") || pos.el.classList.contains("item-card"))) {
+                // في شبكة القنوات: الانتقال لآخر عنصر بالصف التالي (بداية السطر الجديد بالعربي)
+                const nextRow = rows[pos.r + 1];
+                setRemoteFocus(nextRow[nextRow.length - 1]);
+            }
+            return;
+        }
 
-                if (direction === "down" && by > rA.bottom - rA.height * 0.25) {
-                    verticalCandidates.push({ el: c, bx, by, dy: by - ay, dx: Math.abs(bx - ax), h: rB.height });
-                } else if (direction === "up" && by < rA.top + rA.height * 0.25) {
-                    verticalCandidates.push({ el: c, bx, by, dy: ay - by, dx: Math.abs(bx - ax), h: rB.height });
+        if (direction === "right") {
+            if (pos.c + 1 < curRow.length) {
+                setRemoteFocus(curRow[pos.c + 1]);
+            } else if (pos.r - 1 >= 0 && (pos.el.classList.contains("pkg-folder-card") || pos.el.classList.contains("item-card"))) {
+                const prevRow = rows[pos.r - 1];
+                if (prevRow[0] && (prevRow[0].classList.contains("pkg-folder-card") || prevRow[0].classList.contains("item-card"))) {
+                    setRemoteFocus(prevRow[0]);
                 }
             }
-
-            if (verticalCandidates.length === 0) return;
-
-            // إيجاد أقرب صف عمودي أولاً ثم اختيار العنصر الأقرب أفقياً داخل ذلك الصف
-            verticalCandidates.sort((a, b) => a.dy - b.dy);
-            const nearestRowDy = verticalCandidates[0].dy;
-            const rowTolerance = Math.max(rA.height, verticalCandidates[0].h, 44) * 0.75;
-
-            const nearestRowItems = verticalCandidates.filter(item => item.dy <= nearestRowDy + rowTolerance);
-            nearestRowItems.sort((a, b) => (a.dx + a.dy * 0.35) - (b.dx + b.dy * 0.35));
-
-            if (nearestRowItems[0]) {
-                setRemoteFocus(nearestRowItems[0].el);
-            }
+            return;
         }
+
+        // فوق / تحت بين الصفوف المتتالية
+        const targetRowIdx = (direction === "up") ? pos.r - 1 : pos.r + 1;
+        if (targetRowIdx < 0 || targetRowIdx >= rows.length) return;
+
+        const targetRow = rows[targetRowIdx];
+        let bestEl = targetRow[0];
+        let bestDist = Infinity;
+
+        targetRow.forEach(candidate => {
+            const r = candidate.getBoundingClientRect();
+            const cx = r.left + r.width / 2;
+            const d = Math.abs(cx - curCenterX);
+            if (d < bestDist) {
+                bestDist = d;
+                bestEl = candidate;
+            }
+        });
+
+        setRemoteFocus(bestEl);
     }
 
-    // تنفيذ الضغطة (OK / Enter) على العنصر المحدد
     function triggerRemoteEnter(targetEl) {
         if (!targetEl) return false;
-        if (targetEl.tagName === "INPUT" && targetEl.type !== "checkbox") {
-            if (targetEl.id === "search_input" && typeof window.executeSearch === "function") {
-                window.executeSearch();
+
+        if (targetEl.tagName === "INPUT") {
+            if (targetEl.type === "checkbox") {
+                targetEl.click();
                 return true;
             }
-            return false;
+            // عند الضغط على OK فوق مربع البحث: إذا كان المستخدم يكتب بالفعل ينفذ البحث، وإلا يفتح الكتابة
+            if (document.activeElement === targetEl && (targetEl.value || "").trim().length > 0 && targetEl.id === "search_input") {
+                if (typeof window.executeSearch === "function") window.executeSearch();
+                return true;
+            }
+            targetEl.removeAttribute("readonly");
+            targetEl.focus();
+            return true;
         }
+
         if (targetEl.classList.contains("item-card")) {
             const poster = targetEl.querySelector(".item-poster");
-            if (poster && typeof poster.onclick === "function") {
+            if (poster) {
                 poster.click();
                 return true;
             }
-            const info = targetEl.querySelector(".item-info");
-            if (info && typeof info.onclick === "function") {
-                info.click();
-                return true;
-            }
         }
+
         targetEl.click();
         return true;
     }
 
-    // التقاط أزرار ريموت التلفزيون
     window.addEventListener("keydown", function(e) {
-        // إذا كان مشغل الفيديو مفتوحاً نترك التحكم الأصلي للمشغل بدون أي تدخل
         const playerModal = document.getElementById("player_modal");
         if (playerModal && isVisible(playerModal)) return;
 
@@ -8307,21 +8362,20 @@ input:focus-visible {
         const adminAuth = document.getElementById("admin_auth_modal");
         const gateOpen = gate && isVisible(gate) && (!adminAuth || !isVisible(adminAuth));
 
-        // أولاً: معالجة أرقام الريموت (0-9) والحذف والتفعيل في شاشة كود التفعيل
+        // 1. أرقام الريموت (0-9) والحذف والتفعيل الفوري في شاشة كود الاشتراك
         if (gateOpen) {
             const digit = extractRemoteDigit(e);
             if (digit !== null) {
                 e.preventDefault();
                 e.stopPropagation();
-                const btns = Array.from(gate.querySelectorAll("button"));
+                const btns = Array.from(gate.querySelectorAll(".numpad-btn"));
                 const numBtn = btns.find(b => b.innerText.trim() === digit);
                 if (numBtn) {
                     numBtn.classList.add("tv-numpad-flash");
                     setTimeout(() => numBtn.classList.remove("tv-numpad-flash"), 140);
                     numBtn.click();
-                } else {
-                    const inp = gate.querySelector("input");
-                    if (inp && inp.value.length < 10) inp.value += digit;
+                } else if (typeof window.gateAppendDigit === "function") {
+                    window.gateAppendDigit(digit);
                 }
                 return;
             }
@@ -8329,36 +8383,28 @@ input:focus-visible {
             if (e.key === "Backspace" || e.key === "Delete" || e.keyCode === 8 || e.keyCode === 46) {
                 e.preventDefault();
                 e.stopPropagation();
-                const btns = Array.from(gate.querySelectorAll("button"));
-                const delBtn = btns.find(b => b.innerText.includes("⌫") || b.innerText.includes("حذف"));
-                if (delBtn) delBtn.click();
+                if (typeof window.gateBackspaceDigit === "function") window.gateBackspaceDigit();
                 return;
             }
 
             if (e.key === "Enter" || e.keyCode === 13 || e.keyCode === 23) {
-                const focused = document.querySelector(".tv-remote-focused") || document.activeElement;
+                const focused = document.querySelector(".tv-remote-focused");
                 if (focused && gate.contains(focused) && focused.tagName === "BUTTON") {
                     e.preventDefault();
                     e.stopPropagation();
                     focused.click();
                     return;
                 }
-                // إذا كتب الرقم من الريموت وضغط OK مباشرة، نفعل زر الدخول للمنصة
-                const actBtn = Array.from(gate.querySelectorAll("button")).find(b => b.innerText.includes("تفعيل"));
-                if (actBtn) {
+                if (typeof window.submitActiveCode === "function") {
                     e.preventDefault();
                     e.stopPropagation();
-                    actBtn.click();
+                    window.submitActiveCode();
                     return;
                 }
             }
         }
 
-        // ثانياً: دعم أرقام الريموت في نافذة القفل العائلي إذا كانت تطلب رمز PIN
-        const activeTag = document.activeElement ? document.activeElement.tagName : "";
-        const isTypingText = activeTag === "INPUT" && document.activeElement.type !== "checkbox" && !gateOpen;
-
-        // ثالثاً: معالجة أسهم الريموت (يمين، شمال، فوق، تحت)
+        // 2. الأسهم الأربعة (فوق، تحت، يمين، شمال) + زر الإدخال OK
         const key = e.key || "";
         const kc = e.keyCode || e.which || 0;
 
@@ -8368,17 +8414,23 @@ input:focus-visible {
         const isRight = (key === "ArrowRight" || kc === 39 || kc === 22);
         const isEnter = (key === "Enter" || kc === 13 || kc === 23 || kc === 66);
 
+        const activeEl = document.activeElement;
+        const isActivelyTyping = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA") && activeEl.type !== "checkbox" && !gateOpen;
+
         if (isUp || isDown || isLeft || isRight) {
-            // السماح بتحريك المؤشر داخل مربع البحث فقط إذا كان فيه نص وضغط يمين/شمال
-            if (isTypingText && (isLeft || isRight) && (document.activeElement.value || "").length > 0) {
+            // إذا كان يكتب نصاً داخل البحث وضغط يمين/شمال لتحريك المؤشر داخل الكلمة نسمح له، أما فوق/تحت فيخرج فوراً للصف الأعلى أو الأسفل
+            if (isActivelyTyping && (isLeft || isRight) && (activeEl.value || "").length > 0) {
                 return;
+            }
+            if (isActivelyTyping && (isUp || isDown)) {
+                try { activeEl.blur(); } catch (err) {}
             }
             e.preventDefault();
             e.stopPropagation();
-            if (isUp) moveSpatialFocus("up");
-            else if (isDown) moveSpatialFocus("down");
-            else if (isLeft) moveSpatialFocus("left");
-            else if (isRight) moveSpatialFocus("right");
+            if (isUp) moveByRowGrid("up");
+            else if (isDown) moveByRowGrid("down");
+            else if (isLeft) moveByRowGrid("left");
+            else if (isRight) moveByRowGrid("right");
             return;
         }
 
@@ -8391,18 +8443,6 @@ input:focus-visible {
             }
         }
     }, true);
-
-    // مراقبة تحديث الكروت لإضافة قابلية التركيز (tabindex) تلقائياً
-    const observer = new MutationObserver(() => {
-        document.querySelectorAll("#items_container > .item-card, [onclick*='switchMainTab']").forEach(el => {
-            if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "0");
-        });
-    });
-
-    document.addEventListener("DOMContentLoaded", () => {
-        const root = document.body;
-        if (root) observer.observe(root, { childList: true, subtree: true });
-    });
 })();
 </script>
 <!-- ALBASEM_TV_REMOTE_NAV_END -->
