@@ -5781,7 +5781,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "5.0.0";
+    window.ALBASEM_VERSION = "5.0.1";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -8109,6 +8109,18 @@ if (typeof origOpenPlayerForPing === "function") {
         saveFavs(getFavs());
     });
 })();
+</script>
+<script>
+    // تحويل روابط الأفلام والمسلسلات التي تنتهي بـ .ts إلى .mp4 لتجنب انهيار mpegts.js
+    const origOpenWebPlayerVodFix = window.openWebPlayer;
+    if (typeof origOpenWebPlayerVodFix === "function") {
+        window.openWebPlayer = function(rawUrl, title) {
+            if (typeof rawUrl === "string" && /\/(movie|series)\//i.test(rawUrl) && /\.ts(\?|$)/i.test(rawUrl)) {
+                rawUrl = rawUrl.replace(/\.ts(\?|$)/i, ".mp4$1");
+            }
+            return origOpenWebPlayerVodFix.call(this, rawUrl, title);
+        };
+    }
 </script>
 <!-- ALBASEM_SIMPLE_LIGHT_ADDON_END -->
 </body>
