@@ -5385,70 +5385,6 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 
 
-<script id="stall-auto-recovery">
-(function() {
-    let lastTime = -1;
-    let stallTicks = 0;
-    let lastSoftRecoverySession = -1;
-    let isHardRecovering = false;
-
-    setInterval(function() {
-        const modal = document.getElementById('player_modal');
-        if (!modal || modal.style.display === 'none' || !window.art || !window.art.video) {
-            stallTicks = 0;
-            lastTime = -1;
-            isHardRecovering = false;
-            return;
-        }
-
-        const v = window.art.video;
-        const activeSession = window.playerSessionId || 0;
-        if (v.paused || v.ended) {
-            stallTicks = 0;
-            return;
-        }
-
-        if (v.currentTime === lastTime && v.readyState < 3) {
-            stallTicks++;
-
-            // المرحلة 1 (بعد 4 ثوانٍ): إنعاش داخلي ناعم دون إعادة تحميل المشغل
-            if (stallTicks === 4 && lastSoftRecoverySession !== activeSession) {
-                lastSoftRecoverySession = activeSession;
-                if (window.art.hls) {
-                    try { window.art.hls.startLoad(-1); } catch(e){}
-                }
-            }
-
-            // المرحلة 2 (بعد 9 ثوانٍ من التوقف الفعلي): إعادة طلب نظيفة للمسار
-            if (stallTicks >= 9 && !isHardRecovering) {
-                isHardRecovering = true;
-                stallTicks = 0;
-                const curUrl = window.art.url;
-                if (curUrl && typeof window.art.switchUrl === 'function') {
-                    window.art.switchUrl(curUrl).then(() => {
-                        if (activeSession === window.playerSessionId && window.art) {
-                            window.art.play().catch(()=>{});
-                        }
-                        isHardRecovering = false;
-                    }).catch(() => { isHardRecovering = false; });
-                } else {
-                    isHardRecovering = false;
-                }
-            }
-        } else {
-            lastTime = v.currentTime;
-            stallTicks = 0;
-            isHardRecovering = false;
-        }
-    }, 1000);
-})();
-</script>
-
-
-
-
-
-
 <script id="packages-touch-engine-js">
 (function() {
     function initPackagesTouchDrag() {
@@ -5781,7 +5717,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "5.0.1";
+    window.ALBASEM_VERSION = "5.1.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -8109,18 +8045,6 @@ if (typeof origOpenPlayerForPing === "function") {
         saveFavs(getFavs());
     });
 })();
-</script>
-<script>
-    // تحويل روابط الأفلام والمسلسلات التي تنتهي بـ .ts إلى .mp4 لتجنب انهيار mpegts.js
-    const origOpenWebPlayerVodFix = window.openWebPlayer;
-    if (typeof origOpenWebPlayerVodFix === "function") {
-        window.openWebPlayer = function(rawUrl, title) {
-            if (typeof rawUrl === "string" && /\/(movie|series)\//i.test(rawUrl) && /\.ts(\?|$)/i.test(rawUrl)) {
-                rawUrl = rawUrl.replace(/\.ts(\?|$)/i, ".mp4$1");
-            }
-            return origOpenWebPlayerVodFix.call(this, rawUrl, title);
-        };
-    }
 </script>
 <!-- ALBASEM_SIMPLE_LIGHT_ADDON_END -->
 </body>
