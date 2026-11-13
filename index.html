@@ -5717,7 +5717,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "5.1.0";
+    window.ALBASEM_VERSION = "5.2.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -8047,5 +8047,364 @@ if (typeof origOpenPlayerForPing === "function") {
 })();
 </script>
 <!-- ALBASEM_SIMPLE_LIGHT_ADDON_END -->
+<!-- ALBASEM_TV_REMOTE_NAV_START -->
+<style>
+/* إطار واضح ومميز لعنصر التلفزيون المحدد بالريموت */
+.tv-remote-focused,
+.item-card:focus-visible,
+button:focus-visible,
+input:focus-visible {
+    outline: 3px solid #FFB703 !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 4px rgba(255, 183, 3, 0.35), 0 8px 20px rgba(0, 0, 0, 0.7) !important;
+    transform: translateY(-2px) scale(1.02) !important;
+    transition: transform 0.14s ease, box-shadow 0.14s ease !important;
+    z-index: 25 !important;
+}
+.tv-numpad-flash {
+    background: #FFB703 !important;
+    color: #000 !important;
+    transform: scale(0.95) !important;
+}
+</style>
+
+<script>
+(function() {
+    function isVisible(el) {
+        if (!el || !el.getBoundingClientRect) return false;
+        const style = window.getComputedStyle(el);
+        if (style.display === "none" || style.visibility === "hidden" || parseFloat(style.opacity) === 0) return false;
+        const r = el.getBoundingClientRect();
+        return r.width > 5 && r.height > 5;
+    }
+
+    // استخراج الرقم (0-9) من أي زر رقمي على ريموت التلفزيون أو الكيبورد
+    function extractRemoteDigit(e) {
+        if (e.key && /^[0-9]$/.test(e.key)) return e.key;
+        if (e.code) {
+            if (e.code.startsWith("Digit")) return e.code.replace("Digit", "");
+            if (e.code.startsWith("Numpad") && /^[0-9]$/.test(e.code.replace("Numpad", ""))) {
+                return e.code.replace("Numpad", "");
+            }
+        }
+        const kc = e.keyCode || e.which || 0;
+        if (kc >= 48 && kc <= 57) return String(kc - 48);
+        if (kc >= 96 && kc <= 105) return String(kc - 96);
+        return null;
+    }
+
+    // تهيئة العناصر القابلة للتنقل بالريموت حسب الشاشة المفتوحة حالياً
+    function getNavigableElements() {
+        const gate = document.getElementById("active_code_gate");
+        const adminAuth = document.getElementById("admin_auth_modal");
+        const codesAdmin = document.getElementById("codes_admin_modal");
+        const seriesModal = document.getElementById("series_modal");
+
+        // 1. نافذة تسجيل دخول الإدارة
+        if (adminAuth && isVisible(adminAuth)) {
+            return Array.from(adminAuth.querySelectorAll("input, button")).filter(isVisible);
+        }
+
+        // 2. نافذة تفعيل كود الاشتراك
+        if (gate && isVisible(gate)) {
+            return Array.from(gate.querySelectorAll("button, input")).filter(isVisible);
+        }
+
+        // 3. لوحة إدارة الكودات
+        if (codesAdmin && isVisible(codesAdmin)) {
+            return Array.from(codesAdmin.querySelectorAll("button, input, select")).filter(isVisible);
+        }
+
+        // 4. نافذة حلقات المسلسل
+        if (seriesModal && isVisible(seriesModal)) {
+            return Array.from(seriesModal.querySelectorAll("button, [onclick], #series_seasons_bar > *, #series_episodes_list > *")).filter(isVisible);
+        }
+
+        // 5. الشاشة الرئيسية للمنصة
+        const selectors = [
+            // كروت الأقسام الثلاثة الكبرى (المحطات / الأفلام / المسلسلات)
+            "[onclick*='switchMainTab']",
+            // أزرار التحكم العلوية (لوحة الإدارة إن كانت ظاهرة)
+            ".header button",
+            "[onclick*='loadAndParse']",
+            "[onclick*='toggleLinksView']",
+            // شريط التنقل (الباقات، الرئيسية، المفضلة، القفل العائلي)
+            "#v3_btn_back_folders",
+            "[onclick*='v3GoHome']",
+            "#btn_open_favorites",
+            "#btn_adult_lock",
+            // شريط البحث
+            "#search_input",
+            "[onclick*='executeSearch']",
+            "#btn_clear_search",
+            "#chk_global_search",
+            // كروت الباقات والقنوات والأفلام والمسلسلات
+            "#items_container > .item-card",
+            // عناصر قائمة السيرفرات إن كانت مفتوحة
+            "#links_view_section button",
+            "#links_view_section input"
+        ];
+
+        const rawList = document.querySelectorAll(selectors.join(", "));
+        const result = [];
+        const seen = new Set();
+
+        rawList.forEach(el => {
+            if (!seen.has(el) && isVisible(el)) {
+                seen.add(el);
+                if (!el.hasAttribute("tabindex")) {
+                    el.setAttribute("tabindex", "0");
+                }
+                result.push(el);
+            }
+        });
+        return result;
+    }
+
+    function setRemoteFocus(el) {
+        if (!el) return;
+        document.querySelectorAll(".tv-remote-focused").forEach(x => x.classList.remove("tv-remote-focused"));
+        if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "0");
+        el.classList.add("tv-remote-focused");
+        try {
+            el.focus({ preventScroll: true });
+        } catch (e) {}
+        try {
+            el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+        } catch (e) {}
+    }
+
+    // خوارزمية التنقل المكاني ثنائية الأبعاد (يمين، شمال، فوق، تحت)
+    function moveSpatialFocus(direction) {
+        const candidates = getNavigableElements();
+        if (candidates.length === 0) return;
+
+        let current = document.querySelector(".tv-remote-focused") || document.activeElement;
+        if (!current || !candidates.includes(current)) {
+            const insideCard = current && current.closest ? current.closest(".item-card, [onclick*='switchMainTab']") : null;
+            if (insideCard && candidates.includes(insideCard)) {
+                current = insideCard;
+            } else {
+                setRemoteFocus(candidates[0]);
+                return;
+            }
+        }
+
+        const rA = current.getBoundingClientRect();
+        const ax = rA.left + rA.width / 2;
+        const ay = rA.top + rA.height / 2;
+
+        if (direction === "left" || direction === "right") {
+            let bestSameRow = null;
+            let bestSameRowDist = Infinity;
+
+            for (const c of candidates) {
+                if (c === current) continue;
+                const rB = c.getBoundingClientRect();
+                const bx = rB.left + rB.width / 2;
+                const by = rB.top + rB.height / 2;
+
+                // التحقق من وجود العنصر في نفس الصف الأفقي تقريباً
+                const maxH = Math.max(rA.height, rB.height);
+                const sameRow = Math.abs(by - ay) <= maxH * 0.65;
+                if (!sameRow) continue;
+
+                if (direction === "left" && bx < ax - 4) {
+                    const d = (ax - bx) + Math.abs(by - ay) * 2;
+                    if (d < bestSameRowDist) {
+                        bestSameRowDist = d;
+                        bestSameRow = c;
+                    }
+                } else if (direction === "right" && bx > ax + 4) {
+                    const d = (bx - ax) + Math.abs(by - ay) * 2;
+                    if (d < bestSameRowDist) {
+                        bestSameRowDist = d;
+                        bestSameRow = c;
+                    }
+                }
+            }
+
+            if (bestSameRow) {
+                setRemoteFocus(bestSameRow);
+                return;
+            }
+
+            // التفاف تلقائي للسطر التالي/السابق داخل شبكة الكروت عند الوصول لنهاية السطر
+            const idx = candidates.indexOf(current);
+            if (direction === "left" && idx + 1 < candidates.length) {
+                setRemoteFocus(candidates[idx + 1]);
+            } else if (direction === "right" && idx - 1 >= 0) {
+                setRemoteFocus(candidates[idx - 1]);
+            }
+            return;
+        }
+
+        if (direction === "up" || direction === "down") {
+            const verticalCandidates = [];
+
+            for (const c of candidates) {
+                if (c === current) continue;
+                const rB = c.getBoundingClientRect();
+                const bx = rB.left + rB.width / 2;
+                const by = rB.top + rB.height / 2;
+
+                if (direction === "down" && by > rA.bottom - rA.height * 0.25) {
+                    verticalCandidates.push({ el: c, bx, by, dy: by - ay, dx: Math.abs(bx - ax), h: rB.height });
+                } else if (direction === "up" && by < rA.top + rA.height * 0.25) {
+                    verticalCandidates.push({ el: c, bx, by, dy: ay - by, dx: Math.abs(bx - ax), h: rB.height });
+                }
+            }
+
+            if (verticalCandidates.length === 0) return;
+
+            // إيجاد أقرب صف عمودي أولاً ثم اختيار العنصر الأقرب أفقياً داخل ذلك الصف
+            verticalCandidates.sort((a, b) => a.dy - b.dy);
+            const nearestRowDy = verticalCandidates[0].dy;
+            const rowTolerance = Math.max(rA.height, verticalCandidates[0].h, 44) * 0.75;
+
+            const nearestRowItems = verticalCandidates.filter(item => item.dy <= nearestRowDy + rowTolerance);
+            nearestRowItems.sort((a, b) => (a.dx + a.dy * 0.35) - (b.dx + b.dy * 0.35));
+
+            if (nearestRowItems[0]) {
+                setRemoteFocus(nearestRowItems[0].el);
+            }
+        }
+    }
+
+    // تنفيذ الضغطة (OK / Enter) على العنصر المحدد
+    function triggerRemoteEnter(targetEl) {
+        if (!targetEl) return false;
+        if (targetEl.tagName === "INPUT" && targetEl.type !== "checkbox") {
+            if (targetEl.id === "search_input" && typeof window.executeSearch === "function") {
+                window.executeSearch();
+                return true;
+            }
+            return false;
+        }
+        if (targetEl.classList.contains("item-card")) {
+            const poster = targetEl.querySelector(".item-poster");
+            if (poster && typeof poster.onclick === "function") {
+                poster.click();
+                return true;
+            }
+            const info = targetEl.querySelector(".item-info");
+            if (info && typeof info.onclick === "function") {
+                info.click();
+                return true;
+            }
+        }
+        targetEl.click();
+        return true;
+    }
+
+    // التقاط أزرار ريموت التلفزيون
+    window.addEventListener("keydown", function(e) {
+        // إذا كان مشغل الفيديو مفتوحاً نترك التحكم الأصلي للمشغل بدون أي تدخل
+        const playerModal = document.getElementById("player_modal");
+        if (playerModal && isVisible(playerModal)) return;
+
+        const gate = document.getElementById("active_code_gate");
+        const adminAuth = document.getElementById("admin_auth_modal");
+        const gateOpen = gate && isVisible(gate) && (!adminAuth || !isVisible(adminAuth));
+
+        // أولاً: معالجة أرقام الريموت (0-9) والحذف والتفعيل في شاشة كود التفعيل
+        if (gateOpen) {
+            const digit = extractRemoteDigit(e);
+            if (digit !== null) {
+                e.preventDefault();
+                e.stopPropagation();
+                const btns = Array.from(gate.querySelectorAll("button"));
+                const numBtn = btns.find(b => b.innerText.trim() === digit);
+                if (numBtn) {
+                    numBtn.classList.add("tv-numpad-flash");
+                    setTimeout(() => numBtn.classList.remove("tv-numpad-flash"), 140);
+                    numBtn.click();
+                } else {
+                    const inp = gate.querySelector("input");
+                    if (inp && inp.value.length < 10) inp.value += digit;
+                }
+                return;
+            }
+
+            if (e.key === "Backspace" || e.key === "Delete" || e.keyCode === 8 || e.keyCode === 46) {
+                e.preventDefault();
+                e.stopPropagation();
+                const btns = Array.from(gate.querySelectorAll("button"));
+                const delBtn = btns.find(b => b.innerText.includes("⌫") || b.innerText.includes("حذف"));
+                if (delBtn) delBtn.click();
+                return;
+            }
+
+            if (e.key === "Enter" || e.keyCode === 13 || e.keyCode === 23) {
+                const focused = document.querySelector(".tv-remote-focused") || document.activeElement;
+                if (focused && gate.contains(focused) && focused.tagName === "BUTTON") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    focused.click();
+                    return;
+                }
+                // إذا كتب الرقم من الريموت وضغط OK مباشرة، نفعل زر الدخول للمنصة
+                const actBtn = Array.from(gate.querySelectorAll("button")).find(b => b.innerText.includes("تفعيل"));
+                if (actBtn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    actBtn.click();
+                    return;
+                }
+            }
+        }
+
+        // ثانياً: دعم أرقام الريموت في نافذة القفل العائلي إذا كانت تطلب رمز PIN
+        const activeTag = document.activeElement ? document.activeElement.tagName : "";
+        const isTypingText = activeTag === "INPUT" && document.activeElement.type !== "checkbox" && !gateOpen;
+
+        // ثالثاً: معالجة أسهم الريموت (يمين، شمال، فوق، تحت)
+        const key = e.key || "";
+        const kc = e.keyCode || e.which || 0;
+
+        const isUp = (key === "ArrowUp" || kc === 38 || kc === 19);
+        const isDown = (key === "ArrowDown" || kc === 40 || kc === 20);
+        const isLeft = (key === "ArrowLeft" || kc === 37 || kc === 21);
+        const isRight = (key === "ArrowRight" || kc === 39 || kc === 22);
+        const isEnter = (key === "Enter" || kc === 13 || kc === 23 || kc === 66);
+
+        if (isUp || isDown || isLeft || isRight) {
+            // السماح بتحريك المؤشر داخل مربع البحث فقط إذا كان فيه نص وضغط يمين/شمال
+            if (isTypingText && (isLeft || isRight) && (document.activeElement.value || "").length > 0) {
+                return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            if (isUp) moveSpatialFocus("up");
+            else if (isDown) moveSpatialFocus("down");
+            else if (isLeft) moveSpatialFocus("left");
+            else if (isRight) moveSpatialFocus("right");
+            return;
+        }
+
+        if (isEnter) {
+            const focused = document.querySelector(".tv-remote-focused") || document.activeElement;
+            if (focused && focused !== document.body) {
+                e.preventDefault();
+                e.stopPropagation();
+                triggerRemoteEnter(focused);
+            }
+        }
+    }, true);
+
+    // مراقبة تحديث الكروت لإضافة قابلية التركيز (tabindex) تلقائياً
+    const observer = new MutationObserver(() => {
+        document.querySelectorAll("#items_container > .item-card, [onclick*='switchMainTab']").forEach(el => {
+            if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "0");
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const root = document.body;
+        if (root) observer.observe(root, { childList: true, subtree: true });
+    });
+})();
+</script>
+<!-- ALBASEM_TV_REMOTE_NAV_END -->
 </body>
 </html>
