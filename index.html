@@ -2203,6 +2203,7 @@ window.cleanChannelTitle = function(name) {
                         </button>
                     </div>
                     <div class="v3-nav-left-btns">
+                        <button type="button" id="btn_open_favorites" onclick="window.openSimpleFavorites()" class="v3-btn-lock" style="background:rgba(255,183,3,0.16) !important; color:#FFB703 !important; border-color:rgba(255,183,3,0.45) !important;">⭐ المفضلة (<span id="fav_count_badge">0</span>)</button>
                         <button id="btn_adult_lock" onclick="toggleAdultLock()" class="v3-btn-lock">🔒 عائلي</button>
                     </div>
                 </div>
@@ -2226,7 +2227,7 @@ window.cleanChannelTitle = function(name) {
             <!-- شريط نطاق البحث الشامل الموحد بسطر واحد -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding: 0 10px; font-size: 12px; white-space: nowrap;">
                 <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: #94A3B8; user-select: none; font-size: 12px; font-weight: 500;">
-                    <input type="checkbox" id="chk_global_search" onchange="toggleGlobalSearchMode()" style="accent-color: #38BDF8; width: 14px; height: 14px; cursor: pointer; margin: 0;">
+                    <input type="checkbox" id="chk_global_search" checked onchange="toggleGlobalSearchMode()" style="accent-color: #38BDF8; width: 14px; height: 14px; cursor: pointer; margin: 0;">
                     <span id="txt_global_search_label" style="color: #94A3B8;">🌐 بحث شامل (الكل)</span>
                 </label>
                 <span style="color: #64748B; font-size: 11px; background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);">↵ إدخال</span>
@@ -3197,6 +3198,7 @@ window.cleanChannelTitle = function(name) {
                 playBadge.className = "play-badge";
                 playBadge.innerText = "▶";
                 poster.appendChild(playBadge);
+                if (window.attachSimpleFavStar) window.attachSimpleFavStar(poster, st, itemType);
 
                 const defaultIcon = itemType === "movies" ? "🎬" : (itemType === "series" ? "🍿" : "📺");
 
@@ -5779,7 +5781,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "4.8.0";
+    window.ALBASEM_VERSION = "5.0.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -7902,5 +7904,212 @@ if (typeof origOpenPlayerForPing === "function") {
 
 </script>
 <!-- ALBASEM_ACTIVE_CODES_V1_END -->
+<!-- ALBASEM_SIMPLE_LIGHT_ADDON_START -->
+<style>
+.simple-fav-star {
+    position: absolute !important;
+    top: 6px !important;
+    left: 6px !important;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    max-width: 28px !important;
+    border-radius: 7px !important;
+    background: rgba(11, 14, 20, 0.85) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    color: #CBD5E1 !important;
+    font-size: 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    z-index: 6 !important;
+    padding: 0 !important;
+}
+.simple-fav-star.on {
+    color: #FFB703 !important;
+    border-color: #FFB703 !important;
+    background: rgba(255, 183, 3, 0.2) !important;
+}
+</style>
+<script>
+(function() {
+    // 1. إجبار المنصة على سحب المحطات فقط بالبداية وإخفاء شريط تحديد الأفلام والمسلسلات
+    function enforceLiveOnlyStartup() {
+        localStorage.setItem("albasem_fetch_live", "1");
+        localStorage.setItem("albasem_fetch_movies", "0");
+        localStorage.setItem("albasem_fetch_series", "0");
+
+        const chkL = document.getElementById("chk_fetch_live");
+        const chkM = document.getElementById("chk_fetch_movies");
+        const chkS = document.getElementById("chk_fetch_series");
+        if (chkL) chkL.checked = true;
+        if (chkM) chkM.checked = false;
+        if (chkS) chkS.checked = false;
+
+        // إخفاء شريط تحديد أقسام السحب السريع حتى لا يفعل أحد سحب الأفلام والمسلسلات بالبداية
+        if (chkM) {
+            const bar = chkM.closest("div[style*='margin']") || chkM.parentElement?.parentElement;
+            if (bar) bar.style.display = "none";
+            const prevTitle = bar?.previousElementSibling;
+            if (prevTitle && (prevTitle.innerText || "").includes("تحديد أقسام السحب")) {
+                prevTitle.style.display = "none";
+            }
+        }
+
+        // تثبيت البحث الشامل كوضع افتراضي
+        const chkG = document.getElementById("chk_global_search");
+        if (chkG) chkG.checked = true;
+        if (typeof isGlobalSearch !== "undefined") isGlobalSearch = true;
+    }
+
+    enforceLiveOnlyStartup();
+    document.addEventListener("DOMContentLoaded", enforceLiveOnlyStartup);
+
+    // 2. نظام مفضلة عادي ومباشر جداً (يحفظ الرابط الأصلي ويشغله فوراً بدون أي عمليات خلفية)
+    const FAV_KEY = "albasem_simple_favs_v1";
+
+    function getFavs() {
+        try { return JSON.parse(localStorage.getItem(FAV_KEY) || "[]"); }
+        catch (e) { return []; }
+    }
+
+    function saveFavs(arr) {
+        localStorage.setItem(FAV_KEY, JSON.stringify(arr));
+        const b = document.getElementById("fav_count_badge");
+        if (b) b.innerText = arr.length;
+    }
+
+    function itemKey(st, type) {
+        return (type || "live") + "|" + (st.series_id || st.url || st.name || "");
+    }
+
+    window.attachSimpleFavStar = function(posterEl, st, itemType) {
+        if (!posterEl || !st) return;
+        const type = itemType || currentTab || "live";
+        const key = itemKey(st, type);
+        const btn = document.createElement("button");
+        btn.type = "button";
+        const exists = getFavs().some(x => x.k === key);
+        btn.className = "simple-fav-star" + (exists ? " on" : "");
+        btn.innerHTML = exists ? "⭐" : "☆";
+        btn.onclick = function(ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const list = getFavs();
+            const idx = list.findIndex(x => x.k === key);
+            if (idx !== -1) {
+                list.splice(idx, 1);
+                saveFavs(list);
+                btn.className = "simple-fav-star";
+                btn.innerHTML = "☆";
+                if (typeof showToast === "function") showToast("🗑️ تمت الإزالة من المفضلة");
+                if (window.v3ViewMode === "favorites") window.openSimpleFavorites();
+            } else {
+                const srv = (document.getElementById("iptv_url")?.value || localStorage.getItem("albasem_url") || "").trim();
+                list.unshift({
+                    k: key,
+                    type: type,
+                    name: st.name || "",
+                    logo: st.logo || "",
+                    group: st.group || "مفضلة",
+                    url: st.url || "",
+                    series_id: st.series_id || "",
+                    server_url: st.server_url || srv
+                });
+                saveFavs(list);
+                btn.className = "simple-fav-star on";
+                btn.innerHTML = "⭐";
+                if (typeof showToast === "function") showToast("⭐ أُضيفت للمفضلة");
+            }
+        };
+        posterEl.appendChild(btn);
+    };
+
+    window.openSimpleFavorites = function() {
+        window.v3ViewMode = "favorites";
+        const sec = document.getElementById("packages_section");
+        if (sec) {
+            sec.style.display = "block";
+            sec.classList.add("v3-in-packages-grid");
+        }
+        const backBtn = document.getElementById("v3_btn_back_folders");
+        if (backBtn) backBtn.style.display = "inline-flex";
+
+        const list = getFavs();
+        const labelEl = document.getElementById("v3_breadcrumb_label");
+        if (labelEl) labelEl.innerHTML = `⭐ المفضلة المحفوظة (${list.length})`;
+
+        const container = document.getElementById("items_container");
+        if (!container) return;
+        container.classList.add("v3-mode-channels");
+        container.classList.remove("v3-mode-packages");
+        container.innerHTML = "";
+
+        if (list.length === 0) {
+            container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; color:#94A3B8;">قائمة المفضلة فارغة. اضغط على (☆) أعلى أي قناة أو فيلم أو مسلسل لحفظه.</div>`;
+            return;
+        }
+
+        list.forEach(item => {
+            const card = document.createElement("div");
+            card.className = "item-card";
+
+            const poster = document.createElement("div");
+            poster.className = "item-poster";
+            poster.style.position = "relative";
+
+            const playDirect = () => {
+                if (item.type === "series") {
+                    if (item.server_url) {
+                        const inp = document.getElementById("iptv_url");
+                        if (inp) inp.value = item.server_url;
+                    }
+                    openSeriesModal(item);
+                } else {
+                    openWebPlayer(item.url, item.name);
+                }
+            };
+
+            poster.onclick = playDirect;
+
+            const playBadge = document.createElement("div");
+            playBadge.className = "play-badge";
+            playBadge.innerText = "▶";
+            poster.appendChild(playBadge);
+
+            window.attachSimpleFavStar(poster, item, item.type);
+
+            const defaultIcon = item.type === "movies" ? "🎬" : (item.type === "series" ? "🍿" : "📺");
+            if (item.logo && item.logo.startsWith("http")) {
+                const img = document.createElement("img");
+                img.src = item.logo.startsWith("http://") ? "https://wsrv.nl/?url=" + encodeURIComponent(item.logo) + "&default=1" : item.logo;
+                img.loading = "lazy";
+                img.onerror = () => { img.style.display = "none"; };
+                poster.appendChild(img);
+            } else {
+                const nl = document.createElement("div");
+                nl.className = "no-logo";
+                nl.innerText = defaultIcon;
+                poster.appendChild(nl);
+            }
+
+            const info = document.createElement("div");
+            info.className = "item-info";
+            info.onclick = playDirect;
+            info.innerHTML = `<div class="item-title">${window.cleanChannelTitle ? window.cleanChannelTitle(item.name) : item.name}</div>`;
+
+            card.appendChild(poster);
+            card.appendChild(info);
+            container.appendChild(card);
+        });
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+        saveFavs(getFavs());
+    });
+})();
+</script>
+<!-- ALBASEM_SIMPLE_LIGHT_ADDON_END -->
 </body>
 </html>
