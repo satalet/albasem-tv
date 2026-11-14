@@ -4768,26 +4768,14 @@ function toggleLinksHub() {
     })();
     
 function saveFetchSettings() {
-    const s = {
-        live: document.getElementById("chk_fetch_live") ? document.getElementById("chk_fetch_live").checked : true,
-        movies: document.getElementById("chk_fetch_movies") ? document.getElementById("chk_fetch_movies").checked : true,
-        series: document.getElementById("chk_fetch_series") ? document.getElementById("chk_fetch_series").checked : true
-    };
-    localStorage.setItem("albasem_fetch_settings", JSON.stringify(s));
+    localStorage.setItem("albasem_fetch_settings", JSON.stringify({ live: true, movies: false, series: false }));
 }
-
 function loadFetchSettings() {
-    try {
-        const raw = localStorage.getItem("albasem_fetch_settings");
-        if (raw) {
-            const s = JSON.parse(raw);
-            if (document.getElementById("chk_fetch_live") && s.live !== undefined) document.getElementById("chk_fetch_live").checked = s.live;
-            if (document.getElementById("chk_fetch_movies") && s.movies !== undefined) document.getElementById("chk_fetch_movies").checked = s.movies;
-            if (document.getElementById("chk_fetch_series") && s.series !== undefined) document.getElementById("chk_fetch_series").checked = s.series;
-        }
-    } catch(e) {}
+    if (document.getElementById("chk_fetch_live")) document.getElementById("chk_fetch_live").checked = true;
+    if (document.getElementById("chk_fetch_movies")) document.getElementById("chk_fetch_movies").checked = false;
+    if (document.getElementById("chk_fetch_series")) document.getElementById("chk_fetch_series").checked = false;
+    localStorage.setItem("albasem_fetch_settings", JSON.stringify({ live: true, movies: false, series: false }));
 }
-window.addEventListener("DOMContentLoaded", loadFetchSettings);
 
 
     async function executeSearch() {
@@ -5717,7 +5705,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "5.3.0";
+    window.ALBASEM_VERSION = "5.4.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -6106,10 +6094,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
                 series: "chk_fetch_series"
             };
             const targetChk = document.getElementById(chkMap[tab]);
-            if (targetChk && !targetChk.checked) {
-                targetChk.checked = true;
-                if (typeof saveFetchSettings === "function") saveFetchSettings();
-            }
+            
 
             const preservedData = {
                 live: Array.isArray(rawData.live) ? [...rawData.live] : [],
