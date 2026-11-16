@@ -3584,10 +3584,30 @@ function playStepChannel(step) {
         return { url: target, type: isLive ? "m3u8" : "auto" };
     }
 
+    window._allHlsInstances = window._allHlsInstances || [];
+    window._allMpegtsInstances = window._allMpegtsInstances || [];
+
+    function killAllStreamEngines() {
+        while (window._allHlsInstances && window._allHlsInstances.length > 0) {
+            const inst = window._allHlsInstances.pop();
+            try { inst.stopLoad(); } catch(e){}
+            try { inst.detachMedia(); } catch(e){}
+            try { inst.destroy(); } catch(e){}
+        }
+        while (window._allMpegtsInstances && window._allMpegtsInstances.length > 0) {
+            const mp = window._allMpegtsInstances.pop();
+            try { mp.unload(); } catch(e){}
+            try { mp.detachMediaElement(); } catch(e){}
+            try { mp.destroy(); } catch(e){}
+        }
+    }
+
     function destroyActivePlayerEngine() {
         window.playerSessionId = (window.playerSessionId || 0) + 1;
         clearTimeout(window.playerRetryTimer);
         window.playerRetryTimer = null;
+
+        killAllStreamEngines();
 
         if (window.art) {
             try {
@@ -3688,18 +3708,23 @@ function playStepChannel(step) {
             customType: {
                 m3u8: function(video, url, art) {
                     if (Hls.isSupported()) {
+                        killAllStreamEngines();
                         const hls = new Hls({
                             enableWorker: true,
                             lowLatencyMode: false,
-                            progressive: true,
-                            startFragPrefetch: true,
+                            progressive: false,
+                            startFragPrefetch: false,
                             backBufferLength: 30,
-                            maxBufferLength: 15,
-                            maxMaxBufferLength: 30,
-                            manifestLoadingRetryDelay: 250,
-                            levelLoadingRetryDelay: 250,
-                            fragLoadingRetryDelay: 250
+                            maxBufferLength: 20,
+                            maxMaxBufferLength: 40,
+                            manifestLoadingMaxRetry: 2,
+                            levelLoadingMaxRetry: 2,
+                            fragLoadingMaxRetry: 2,
+                            manifestLoadingRetryDelay: 800,
+                            levelLoadingRetryDelay: 800,
+                            fragLoadingRetryDelay: 800
                         });
+                        window._allHlsInstances.push(hls);
                         hls.loadSource(url);
                         hls.attachMedia(video);
                         art.hls = hls;
@@ -3774,6 +3799,7 @@ function playStepChannel(step) {
                             player.load();
                             player.play().catch(()=>{});
                             art.mpegts = player;
+                            if (window._allMpegtsInstances) window._allMpegtsInstances.push(player);
 
                             player.on(mpegts.Events.ERROR, function() {
                                 if (sessionId !== window.playerSessionId) return;
@@ -5705,7 +5731,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "5.4.0";
+    window.ALBASEM_VERSION = "5.5.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
