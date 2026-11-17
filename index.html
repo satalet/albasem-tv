@@ -4846,7 +4846,7 @@ function loadFetchSettings() {
         // عرض النتائج المباشرة فوراً
         renderItems();
 
-        if (val.length >= 2) {
+        if (val.length >= 2 && window.albasemAiSearchEnabled === true) {
             if (statusBox && statusText) {
                 statusBox.style.display = "block";
                 statusText.innerHTML = "جاري التحليل واستنتاج القنوات بذكاء <b>Gemini</b>... ⏳";
@@ -5759,7 +5759,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "5.7.0";
+    window.ALBASEM_VERSION = "5.8.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -8485,5 +8485,187 @@ if (typeof origOpenPlayerForPing === "function") {
 })();
 </script>
 <!-- ALBASEM_TV_REMOTE_NAV_END -->
+<!-- ALBASEM_RADAR_CONTROL_START -->
+<script>
+(function() {
+    const SETTINGS_API = "https://albasem-tv.duckdns.org/api/admin/radar_settings";
+    window.albasemAutoRadarEnabled = localStorage.getItem("albasem_auto_radar") === "1";
+    window.albasemAiSearchEnabled = localStorage.getItem("albasem_ai_search") === "1";
+    window.albasemAutoRadarTimer = null;
+
+    function applyAutoRadarTimer() {
+        if (window.albasemAutoRadarTimer) {
+            clearInterval(window.albasemAutoRadarTimer);
+            window.albasemAutoRadarTimer = null;
+        }
+        if (window.albasemAutoRadarEnabled) {
+            // إذا شغله أبو باسم يدوياً، يفحص ويرتب كل 30 دقيقة
+            window.albasemAutoRadarTimer = setInterval(() => {
+                if (window.albasemAutoRadarEnabled && typeof window.runSmartRadar === "function") {
+                    window.runSmartRadar();
+                }
+            }, 30 * 60 * 1000);
+        }
+    }
+
+    function updateRadarControlButtonsUI() {
+        const rBtns = document.querySelectorAll(".btn-toggle-auto-radar");
+        rBtns.forEach(btn => {
+            if (window.albasemAutoRadarEnabled) {
+                btn.style.background = "rgba(16, 185, 129, 0.2)";
+                btn.style.borderColor = "#10B981";
+                btn.style.color = "#10B981";
+                btn.innerHTML = "🟢 دوران الرادار التلقائي: شغال";
+            } else {
+                btn.style.background = "rgba(239, 68, 68, 0.18)";
+                btn.style.borderColor = "#EF4444";
+                btn.style.color = "#FCA5A5";
+                btn.innerHTML = "🛑 دوران الرادار التلقائي: متوقف";
+            }
+        });
+
+        const aiBtns = document.querySelectorAll(".btn-toggle-ai-search");
+        aiBtns.forEach(btn => {
+            if (window.albasemAiSearchEnabled) {
+                btn.style.background = "rgba(56, 189, 248, 0.2)";
+                btn.style.borderColor = "#38BDF8";
+                btn.style.color = "#38BDF8";
+                btn.innerHTML = "🧠 دوران البحث الذكي (AI): شغال";
+            } else {
+                btn.style.background = "rgba(148, 163, 184, 0.15)";
+                btn.style.borderColor = "#64748B";
+                btn.style.color = "#94A3B8";
+                btn.innerHTML = "⚡ البحث الذكي (AI): متوقف (بحث سريع)";
+            }
+        });
+    }
+
+    window.syncRadarSettingsFromServer = async function() {
+        updateRadarControlButtonsUI();
+        try {
+            const res = await fetch(SETTINGS_API + "?_t=" + Date.now());
+            if (res.ok) {
+                const d = await res.json();
+                if (d && d.success) {
+                    window.albasemAutoRadarEnabled = !!d.auto_radar;
+                    window.albasemAiSearchEnabled = !!d.ai_search;
+                    localStorage.setItem("albasem_auto_radar", window.albasemAutoRadarEnabled ? "1" : "0");
+                    localStorage.setItem("albasem_ai_search", window.albasemAiSearchEnabled ? "1" : "0");
+                    applyAutoRadarTimer();
+                    updateRadarControlButtonsUI();
+                }
+            }
+        } catch (e) {}
+    };
+
+    window.toggleAutoRadarMode = async function() {
+        window.albasemAutoRadarEnabled = !window.albasemAutoRadarEnabled;
+        localStorage.setItem("albasem_auto_radar", window.albasemAutoRadarEnabled ? "1" : "0");
+        applyAutoRadarTimer();
+        updateRadarControlButtonsUI();
+
+        try {
+            await fetch(SETTINGS_API, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ auto_radar: window.albasemAutoRadarEnabled })
+            });
+        } catch (e) {}
+
+        if (typeof showToast === "function") {
+            showToast(window.albasemAutoRadarEnabled
+                ? "🟢 تم تفعيل الدوران والترتيب التلقائي للسيرفرات"
+                : "🛑 تم إيقاف الدوران التلقائي (لن يعمل إلا يدوياً بأمرك)");
+        }
+    };
+
+    window.toggleAiSearchRotation = async function() {
+        window.albasemAiSearchEnabled = !window.albasemAiSearchEnabled;
+        localStorage.setItem("albasem_ai_search", window.albasemAiSearchEnabled ? "1" : "0");
+        updateRadarControlButtonsUI();
+
+        if (!window.albasemAiSearchEnabled) {
+            const statusBox = document.getElementById("ai_search_status");
+            if (statusBox) statusBox.style.display = "none";
+            window.aiSearchKeywords = [];
+        }
+
+        try {
+            await fetch(SETTINGS_API, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ai_search: window.albasemAiSearchEnabled })
+            });
+        } catch (e) {}
+
+        if (typeof showToast === "function") {
+            showToast(window.albasemAiSearchEnabled
+                ? "🧠 تم تفعيل البحث الذكي (Gemini AI)"
+                : "⚡ تم إيقاف دوران البحث الذكي واعتماد البحث المباشر السريع");
+        }
+    };
+
+    window.triggerManualRadarFromCodes = function() {
+        const codesModal = document.getElementById("codes_admin_modal");
+        if (codesModal) codesModal.style.display = "none";
+        if (typeof switchMainTab === "function") switchMainTab("links");
+        setTimeout(() => {
+            if (typeof window.runSmartRadar === "function") {
+                window.runSmartRadar();
+            }
+        }, 250);
+    };
+
+    function injectControlsIntoAdminPanels() {
+        // 1. حقن الأزرار داخل لوحة إدارة الكودات (#codes_admin_modal)
+        const codesModalBox = document.querySelector("#codes_admin_modal .codes-modal-box");
+        if (codesModalBox && !document.getElementById("admin_radar_ctrl_bar")) {
+            const bar = document.createElement("div");
+            bar.id = "admin_radar_ctrl_bar";
+            bar.style.cssText = "background:#0B0E14; border:1px solid #334155; border-radius:10px; padding:9px 12px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;";
+            bar.innerHTML = `
+                <span style="font-size:12px; color:#FFB703; font-weight:bold;">⚙️ تحكم الرادار والبحث:</span>
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <button type="button" class="btn-toggle-auto-radar" onclick="window.toggleAutoRadarMode()" style="border:1px solid #EF4444; border-radius:7px; padding:5px 10px; font-size:11.5px; font-weight:bold; cursor:pointer;"></button>
+                    <button type="button" class="btn-toggle-ai-search" onclick="window.toggleAiSearchRotation()" style="border:1px solid #64748B; border-radius:7px; padding:5px 10px; font-size:11.5px; font-weight:bold; cursor:pointer;"></button>
+                    <button type="button" onclick="window.triggerManualRadarFromCodes()" style="background:linear-gradient(135deg, #F59E0B, #D97706); color:#000; border:1px solid #FFB703; border-radius:7px; padding:5px 10px; font-size:11.5px; font-weight:900; cursor:pointer;">🧠 فحص وترتيب الآن (يدوي)</button>
+                </div>
+            `;
+            const firstChild = codesModalBox.children[1];
+            if (firstChild) codesModalBox.insertBefore(bar, firstChild);
+            else codesModalBox.appendChild(bar);
+        }
+
+        // 2. حقن الأزرار داخل قسم سيرفراتي (#links_view_section) بجانب زر الرادار
+        const smartRadarBtn = document.getElementById("btn_smart_radar");
+        if (smartRadarBtn && smartRadarBtn.parentElement && !document.getElementById("links_auto_radar_btn")) {
+            const btn1 = document.createElement("button");
+            btn1.id = "links_auto_radar_btn";
+            btn1.type = "button";
+            btn1.className = "btn-toggle-auto-radar";
+            btn1.onclick = window.toggleAutoRadarMode;
+            btn1.style.cssText = "border:1px solid #EF4444; padding:8px 12px; border-radius:8px; font-weight:bold; font-size:12px; cursor:pointer;";
+
+            const btn2 = document.createElement("button");
+            btn2.id = "links_ai_search_btn";
+            btn2.type = "button";
+            btn2.className = "btn-toggle-ai-search";
+            btn2.onclick = window.toggleAiSearchRotation;
+            btn2.style.cssText = "border:1px solid #64748B; padding:8px 12px; border-radius:8px; font-weight:bold; font-size:12px; cursor:pointer;";
+
+            smartRadarBtn.parentElement.insertBefore(btn1, smartRadarBtn);
+            smartRadarBtn.parentElement.insertBefore(btn2, smartRadarBtn);
+        }
+
+        updateRadarControlButtonsUI();
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        injectControlsIntoAdminPanels();
+        window.syncRadarSettingsFromServer();
+    });
+})();
+</script>
+<!-- ALBASEM_RADAR_CONTROL_END -->
 </body>
 </html>
