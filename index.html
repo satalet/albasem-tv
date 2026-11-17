@@ -3720,9 +3720,9 @@ function playStepChannel(step) {
                             manifestLoadingMaxRetry: 2,
                             levelLoadingMaxRetry: 2,
                             fragLoadingMaxRetry: 2,
-                            manifestLoadingRetryDelay: 800,
-                            levelLoadingRetryDelay: 800,
-                            fragLoadingRetryDelay: 800
+                            manifestLoadingRetryDelay: 1500,
+                            levelLoadingRetryDelay: 1500,
+                            fragLoadingRetryDelay: 1200
                         });
                         window._allHlsInstances.push(hls);
                         hls.loadSource(url);
@@ -3747,11 +3747,11 @@ function playStepChannel(step) {
                             if (sessionId !== window.playerSessionId) return;
                             if (data.fatal) {
                                 if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-                                    if (netRetries < 2) {
+                                    if (netRetries < 4) {
                                         netRetries++;
                                         setTimeout(() => {
                                             if (sessionId === window.playerSessionId && art.hls) art.hls.startLoad();
-                                        }, 250);
+                                        }, 1500);
                                     } else if (isLive && mpegts.isSupported()) {
                                         try { hls.destroy(); art.hls = null; } catch(e){}
                                         const tsResolved = resolveStreamEndpoint(rawUrl, true, true);
@@ -3791,9 +3791,11 @@ function playStepChannel(step) {
                             }, {
                                 enableWorker: true,
                                 lazyLoad: false,
-                                liveBufferLatencyChasing: true,
+                                liveBufferLatencyChasing: false,
                                 autoCleanupSourceBuffer: true,
-                                stashInitialSize: 128
+                                autoCleanupMaxBackwardDuration: 60,
+                                autoCleanupMinBackwardDuration: 30,
+                                stashInitialSize: 393216
                             });
                             player.attachMediaElement(video);
                             player.load();
@@ -5731,7 +5733,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "5.5.0";
+    window.ALBASEM_VERSION = "5.6.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
