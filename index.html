@@ -3715,19 +3715,29 @@ function playStepChannel(step) {
                             progressive: false,
                             startFragPrefetch: false,
                             backBufferLength: 30,
-                            maxBufferLength: 20,
-                            maxMaxBufferLength: 40,
-                            manifestLoadingMaxRetry: 2,
-                            levelLoadingMaxRetry: 2,
-                            fragLoadingMaxRetry: 2,
-                            manifestLoadingRetryDelay: 1500,
-                            levelLoadingRetryDelay: 1500,
-                            fragLoadingRetryDelay: 1200
+                            maxBufferLength: 30,
+                            maxMaxBufferLength: 60,
+                            liveSyncDurationCount: 3,
+                            liveMaxLatencyDurationCount: 10,
+                            manifestLoadingTimeOut: 8000,
+                            manifestLoadingMaxRetry: 12,
+                            levelLoadingTimeOut: 8000,
+                            levelLoadingMaxRetry: 12,
+                            fragLoadingTimeOut: 15000,
+                            fragLoadingMaxRetry: 8,
+                            manifestLoadingRetryDelay: 1000,
+                            levelLoadingRetryDelay: 1000,
+                            fragLoadingRetryDelay: 1000
                         });
                         window._allHlsInstances.push(hls);
                         hls.loadSource(url);
                         hls.attachMedia(video);
                         art.hls = hls;
+
+                        let hasPlayedAnyFrag = false;
+                        let mediaRecoveries = 0;
+                        let netRetries = 0;
+
                         const forcePlay = () => {
                             if (sessionId !== window.playerSessionId) return;
                             const pr = video.play();
@@ -3738,20 +3748,25 @@ function playStepChannel(step) {
                                 });
                             }
                         };
+
                         hls.on(Hls.Events.MANIFEST_PARSED, forcePlay);
                         hls.once(Hls.Events.FRAG_BUFFERED, forcePlay);
+                        hls.on(Hls.Events.FRAG_LOADED, function() {
+                            hasPlayedAnyFrag = true;
+                            netRetries = 0;
+                        });
 
-                        let mediaRecoveries = 0;
-                        let netRetries = 0;
                         hls.on(Hls.Events.ERROR, function(event, data) {
                             if (sessionId !== window.playerSessionId) return;
                             if (data.fatal) {
                                 if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-                                    if (netRetries < 4) {
+                                    if (hasPlayedAnyFrag || netRetries < 3) {
                                         netRetries++;
                                         setTimeout(() => {
-                                            if (sessionId === window.playerSessionId && art.hls) art.hls.startLoad();
-                                        }, 1500);
+                                            if (sessionId === window.playerSessionId && art.hls) {
+                                                art.hls.startLoad();
+                                            }
+                                        }, 1000);
                                     } else if (isLive && mpegts.isSupported()) {
                                         try { hls.destroy(); art.hls = null; } catch(e){}
                                         const tsResolved = resolveStreamEndpoint(rawUrl, true, true);
@@ -3759,9 +3774,20 @@ function playStepChannel(step) {
                                             art.option.customType.ts(video, tsResolved.url, art);
                                         }
                                     }
-                                } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR && mediaRecoveries < 2) {
+                                } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
                                     mediaRecoveries++;
-                                    hls.recoverMediaError();
+                                    if (mediaRecoveries % 2 === 1) {
+                                        hls.recoverMediaError();
+                                    } else {
+                                        hls.swapAudioCodec();
+                                        hls.recoverMediaError();
+                                    }
+                                } else {
+                                    setTimeout(() => {
+                                        if (sessionId === window.playerSessionId && art.hls) {
+                                            art.hls.startLoad();
+                                        }
+                                    }, 1000);
                                 }
                             }
                         });
@@ -5733,7 +5759,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "5.6.0";
+    window.ALBASEM_VERSION = "5.7.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
