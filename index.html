@@ -3606,7 +3606,7 @@ function playStepChannel(step) {
         if (window._compatWatchTimer) { clearTimeout(window._compatWatchTimer); window._compatWatchTimer = null; }
         if (window._isCompatModeActive) {
             window._isCompatModeActive = false;
-            try { navigator.sendBeacon("https://albasem-tv.duckdns.org/api/stop_fix"); } catch(e){}
+            try { fetch("https://albasem-tv.duckdns.org/api/stop_fix?_t=" + Date.now(), { method: "GET", mode: "no-cors", keepalive: true }).catch(() => {}); } catch(e){}
         }
         const _cb = document.getElementById("btn_manual_compat_mode");
         if (_cb) {
@@ -5824,7 +5824,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "5.9.0";
+    window.ALBASEM_VERSION = "5.9.1";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -8737,8 +8737,11 @@ if (typeof origOpenPlayerForPing === "function") {
 (function() {
     function injectCompatButton() {
         if (document.getElementById("btn_manual_compat_mode")) return;
-        const buttons = Array.from(document.querySelectorAll("button"));
-        const anchorBtn = buttons.find(b => b.textContent && b.textContent.includes("تلقائي"));
+        const candidates = Array.from(document.querySelectorAll("button, div, span, a")).filter(el => {
+            const txt = (el.textContent || "").trim();
+            return txt.includes("تلقائي") && txt.length <= 16 && el.children.length <= 2;
+        });
+        const anchorBtn = candidates[candidates.length - 1];
         if (anchorBtn && anchorBtn.parentElement) {
             const btn = document.createElement("button");
             btn.id = "btn_manual_compat_mode";
@@ -8757,7 +8760,8 @@ if (typeof origOpenPlayerForPing === "function") {
         }
     }
     document.addEventListener("DOMContentLoaded", injectCompatButton);
-    setTimeout(injectCompatButton, 1500);
+    setTimeout(injectCompatButton, 1200);
+    setTimeout(injectCompatButton, 3000);
 })();
 </script>
 <!-- ALBASEM_COMPAT_BTN_END -->
