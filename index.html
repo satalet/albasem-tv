@@ -3603,6 +3603,18 @@ function playStepChannel(step) {
     }
 
     function destroyActivePlayerEngine() {
+        if (window._compatWatchTimer) { clearTimeout(window._compatWatchTimer); window._compatWatchTimer = null; }
+        if (window._isCompatModeActive) {
+            window._isCompatModeActive = false;
+            try { navigator.sendBeacon("https://albasem-tv.duckdns.org/api/stop_fix"); } catch(e){}
+        }
+        const _cb = document.getElementById("btn_manual_compat_mode");
+        if (_cb) {
+            _cb.style.background = "#1E293B";
+            _cb.style.borderColor = "#F59E0B";
+            _cb.style.color = "#FBBF24";
+            _cb.innerHTML = "🔧 توافق";
+        }
         window.playerSessionId = (window.playerSessionId || 0) + 1;
         clearTimeout(window.playerRetryTimer);
         window.playerRetryTimer = null;
@@ -3709,6 +3721,14 @@ function playStepChannel(step) {
                 m3u8: function(video, url, art) {
                     if (Hls.isSupported()) {
                         killAllStreamEngines();
+                        if (window._compatWatchTimer) { clearTimeout(window._compatWatchTimer); window._compatWatchTimer = null; }
+
+                        let origStreamUrl = (typeof rawUrl === "string" && rawUrl) ? rawUrl : url;
+                        try {
+                            const parsedU = new URL(url, location.href);
+                            if (parsedU.searchParams.get("url")) origStreamUrl = parsedU.searchParams.get("url");
+                        } catch(e){}
+
                         const hls = new Hls({
                             enableWorker: true,
                             lowLatencyMode: false,
@@ -3737,6 +3757,7 @@ function playStepChannel(step) {
                         let hasPlayedAnyFrag = false;
                         let mediaRecoveries = 0;
                         let netRetries = 0;
+                        let compatTriggered = false;
 
                         const forcePlay = () => {
                             if (sessionId !== window.playerSessionId) return;
@@ -3749,15 +3770,60 @@ function playStepChannel(step) {
                             }
                         };
 
+                        const triggerCompatMode = (reason) => {
+                            if (sessionId !== window.playerSessionId || compatTriggered) return;
+                            compatTriggered = true;
+                            if (window._compatWatchTimer) { clearTimeout(window._compatWatchTimer); window._compatWatchTimer = null; }
+                            try { hls.stopLoad(); hls.detachMedia(); hls.destroy(); } catch(e){}
+                            art.hls = null;
+                            killAllStreamEngines();
+
+                            window._isCompatModeActive = true;
+                            const fixUrl = "https://albasem-tv.duckdns.org/proxy_fix?url=" + encodeURIComponent(origStreamUrl) + "&_t=" + Date.now();
+                            video.src = fixUrl;
+                            video.load();
+                            forcePlay();
+
+                            const cb = document.getElementById("btn_manual_compat_mode");
+                            if (cb) {
+                                cb.style.background = "rgba(16, 185, 129, 0.25)";
+                                cb.style.borderColor = "#10B981";
+                                cb.style.color = "#34D399";
+                                cb.innerHTML = "✅ توافق شغال";
+                            }
+                            if (typeof showToast === "function") {
+                                showToast(reason === "manual"
+                                    ? "🔧 تم تفعيل وضع التوافق (إصلاح الصوت والصورة)..."
+                                    : "🔧 ترميز غير مدعوم بالمتصفح — تم تفعيل وضع التوافق تلقائياً...");
+                            }
+                        };
+
+                        window.activateCompatModeManual = () => triggerCompatMode("manual");
+
+                        video.addEventListener("playing", () => {
+                            if (video.videoWidth > 0 && window._compatWatchTimer) {
+                                clearTimeout(window._compatWatchTimer);
+                                window._compatWatchTimer = null;
+                            }
+                        }, { once: true });
+
                         hls.on(Hls.Events.MANIFEST_PARSED, forcePlay);
                         hls.once(Hls.Events.FRAG_BUFFERED, forcePlay);
                         hls.on(Hls.Events.FRAG_LOADED, function() {
                             hasPlayedAnyFrag = true;
                             netRetries = 0;
+                            if (!compatTriggered && !window._compatWatchTimer && video.videoWidth === 0) {
+                                window._compatWatchTimer = setTimeout(() => {
+                                    if (sessionId !== window.playerSessionId || compatTriggered) return;
+                                    if (video.videoWidth === 0 || video.currentTime < 0.25) {
+                                        triggerCompatMode("blackscreen");
+                                    }
+                                }, 6000);
+                            }
                         });
 
                         hls.on(Hls.Events.ERROR, function(event, data) {
-                            if (sessionId !== window.playerSessionId) return;
+                            if (sessionId !== window.playerSessionId || compatTriggered) return;
                             if (data.fatal) {
                                 if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
                                     if (hasPlayedAnyFrag || netRetries < 3) {
@@ -3776,10 +3842,9 @@ function playStepChannel(step) {
                                     }
                                 } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
                                     mediaRecoveries++;
-                                    if (mediaRecoveries % 2 === 1) {
-                                        hls.recoverMediaError();
+                                    if (mediaRecoveries >= 2) {
+                                        triggerCompatMode("codec");
                                     } else {
-                                        hls.swapAudioCodec();
                                         hls.recoverMediaError();
                                     }
                                 } else {
@@ -5759,7 +5824,7 @@ window.updatePackageShareButton = window.updatePackageShareBtn;
 
 <script id="albasem-v3-interactive-engine">
 (function() {
-    window.ALBASEM_VERSION = "5.8.1";
+    window.ALBASEM_VERSION = "5.9.0";
     window.v3ViewMode = "packages";
     window.v3LastScrollInPackages = 0;
     window.v3LoadedSections = { url: "", live: false, movies: false, series: false };
@@ -8667,5 +8732,34 @@ if (typeof origOpenPlayerForPing === "function") {
 })();
 </script>
 <!-- ALBASEM_RADAR_CONTROL_END -->
+<!-- ALBASEM_COMPAT_BTN_START -->
+<script>
+(function() {
+    function injectCompatButton() {
+        if (document.getElementById("btn_manual_compat_mode")) return;
+        const buttons = Array.from(document.querySelectorAll("button"));
+        const anchorBtn = buttons.find(b => b.textContent && b.textContent.includes("تلقائي"));
+        if (anchorBtn && anchorBtn.parentElement) {
+            const btn = document.createElement("button");
+            btn.id = "btn_manual_compat_mode";
+            btn.type = "button";
+            btn.title = "إصلاح الصوت (MP2/AC3) أو الشاشة السوداء عبر السيرفر";
+            btn.innerHTML = "🔧 توافق";
+            btn.style.cssText = "background:#1E293B; color:#FBBF24; border:1px solid #F59E0B; border-radius:6px; padding:4px 9px; font-size:11.5px; font-weight:bold; cursor:pointer; margin:0 4px; white-space:nowrap;";
+            btn.onclick = function() {
+                if (typeof window.activateCompatModeManual === "function") {
+                    window.activateCompatModeManual();
+                } else if (typeof showToast === "function") {
+                    showToast("شغّل قناة مباشرة أولاً لتفعيل وضع التوافق");
+                }
+            };
+            anchorBtn.parentElement.insertBefore(btn, anchorBtn.nextSibling);
+        }
+    }
+    document.addEventListener("DOMContentLoaded", injectCompatButton);
+    setTimeout(injectCompatButton, 1500);
+})();
+</script>
+<!-- ALBASEM_COMPAT_BTN_END -->
 </body>
 </html>
